@@ -1,3 +1,5 @@
+![Streakly App Preview](https://res.cloudinary.com/dartdvch1/image/upload/v1774367308/screenzy-1774367244497_jrvxhq.jpg)
+
 # Streakly
 
 > A notes app, but better. Built for people who want to show up every day and leave a record of it.
