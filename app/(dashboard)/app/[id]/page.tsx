@@ -246,7 +246,7 @@ export default function GoalDetailPage({
   const canComplete = !isCompleted && allNotesLogged && isPastDueDate;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-16 pb-20">
+    <div className="max-w-6xl mx-auto space-y-10 md:space-y-16 pb-20 px-4 md:px-0">
       {/* Header */}
       <header className="space-y-8">
         <Link
@@ -269,7 +269,7 @@ export default function GoalDetailPage({
             >
               {isCompleted ? "Hall of Fame" : "Active Goal"}
             </div>
-            <h1 className="text-6xl md:text-8xl font-v-headings tracking-tighter leading-[0.85] py-2">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-v-headings tracking-tighter leading-[0.85] py-2">
               {goal.goal}
             </h1>
             <div className="flex items-center gap-6 text-muted-foreground/60 pt-2">
@@ -301,7 +301,7 @@ export default function GoalDetailPage({
       </header>
 
       {/* Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-16 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10 lg:gap-16 items-start">
         {/* Main Feed */}
         <section className="space-y-10">
           <div className="flex items-center justify-between">
@@ -340,12 +340,12 @@ export default function GoalDetailPage({
           </div>
 
           {viewMode === "timeline" ? (
-            <div className="space-y-16 border-l-2 border-secondary/50 pl-10 relative ml-4">
+            <div className="space-y-10 md:space-y-16 border-l-2 border-secondary/50 pl-6 md:pl-10 relative ml-2 md:ml-4">
               {[...timelineData].reverse().map((day) => (
                 <div key={day.dateStr} className="relative group">
                   <div
                     className={cn(
-                      "absolute -left-[51px] top-1 w-6 h-6 rounded-full border-4 border-background transition-all ring-8 ring-transparent group-hover:ring-secondary/30",
+                      "absolute -left-[35px] md:-left-[51px] top-1 w-6 h-6 rounded-full border-4 border-background transition-all ring-8 ring-transparent group-hover:ring-secondary/30",
                       day.dayNotes.length > 0
                         ? "bg-black scale-110 shadow-lg"
                         : day.isMissed

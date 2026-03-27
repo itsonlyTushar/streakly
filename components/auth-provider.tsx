@@ -5,18 +5,17 @@ import {
   onAuthStateChanged,
   User,
   GoogleAuthProvider,
-  GithubAuthProvider,
   signInWithPopup,
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
-  loginWithGithub: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -26,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -40,21 +40,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+        variant: "success",
+      });
       router.push("/app");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error logging in with Google", error);
+      toast({
+        title: "Authentication Error",
+        description: error.message || "Failed to log in with Google",
+        variant: "error",
+      });
     }
   };
 
-  const loginWithGithub = async () => {
-    const provider = new GithubAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      router.push("/app");
-    } catch (error) {
-      console.error("Error logging in with Github", error);
-    }
-  };
 
   const logout = async () => {
     try {
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, loginWithGoogle, loginWithGithub, logout }}
+      value={{ user, loading, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>

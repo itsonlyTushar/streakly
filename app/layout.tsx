@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Gravitas_One, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
-import { ThemeProvider } from "next-themes";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const gravitasOne = Gravitas_One({
   weight: "400",
@@ -32,17 +32,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${gravitasOne.variable} ${outfit.variable} ${gravitasOne.className} ${outfit.className}`}
+      className={`${gravitasOne.variable} ${outfit.variable}`}
       suppressHydrationWarning
     >
-      <body
-        className={`${outfit.className} antialiased bg-background text-foreground`}
-        suppressHydrationWarning
-      >
+      <body className={`${outfit.className} antialiased bg-background text-foreground`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <ToastProvider>{children}</ToastProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

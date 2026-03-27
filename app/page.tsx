@@ -5,7 +5,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import {
   LogIn,
-  Globe,
   Zap,
   Target,
   Scroll,
@@ -23,7 +22,7 @@ import {
 } from "framer-motion";
 
 export default function Home() {
-  const { user, loading, loginWithGoogle, loginWithGithub } = useAuth();
+  const { user, loading, loginWithGoogle } = useAuth();
   const router = useRouter();
 
   // Scroll tracking for step switching
@@ -63,7 +62,7 @@ export default function Home() {
               animate={{ scale: 1, opacity: 1 }}
               className="relative"
             >
-              <Logo className="text-8xl md:text-[11rem] tracking-tighter leading-none block" />
+              <Logo className="text-6xl sm:text-8xl md:text-[11rem] tracking-tighter leading-none block" />
               <div className="absolute -inset-4 bg-primary/5 blur-3xl rounded-full -z-10" />
             </motion.div>
             <motion.p
@@ -90,13 +89,6 @@ export default function Home() {
               <LogIn className="h-5 w-5" />
               Get Started
             </button>
-            <button
-              onClick={loginWithGithub}
-              className="flex-1 flex items-center justify-center gap-3 bg-card border border-border/50 h-14 rounded-2xl font-bold hover:bg-muted active:scale-95 transition-all"
-            >
-              <Globe className="h-5 w-5" />
-              GitHub Sign-in
-            </button>
           </motion.div>
         </div>
       ),
@@ -109,7 +101,7 @@ export default function Home() {
             <span className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase tracking-[0.2em]">
               The Vision
             </span>
-            <h2 className="text-5xl md:text-7xl font-v-headings leading-[1.1] tracking-tighter">
+            <h2 className="text-4xl sm:text-5xl md:text-7xl font-v-headings leading-[1.1] tracking-tighter">
               Less noise, <br />
               <span className="text-muted-foreground italic">
                 more substance.
@@ -156,7 +148,7 @@ export default function Home() {
       content: (
         <div className="max-w-6xl w-full space-y-16 px-6">
           <div className="text-center space-y-4">
-            <h2 className="text-5xl md:text-7xl font-v-headings tracking-tighter">
+            <h2 className="text-4xl sm:text-5xl md:text-7xl font-v-headings tracking-tighter">
               Pure Utility.
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -188,7 +180,7 @@ export default function Home() {
       content: (
         <div className="flex flex-col items-center gap-12 text-center max-w-3xl">
           <div className="space-y-6">
-            <h2 className="text-7xl md:text-[9rem] font-v-headings tracking-tighter leading-none">
+            <h2 className="text-5xl sm:text-7xl md:text-[9rem] font-v-headings tracking-tighter leading-none">
               Start <span className="italic opacity-30">small.</span>
             </h2>
             <p className="text-2xl text-muted-foreground italic">

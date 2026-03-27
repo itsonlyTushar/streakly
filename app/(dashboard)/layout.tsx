@@ -35,7 +35,7 @@ export default function AppLayout({
   return (
     <div className="flex h-screen bg-background overflow-hidden font-v-body">
       <Sidebar onAddGoal={() => setIsAddModalOpen(true)} />
-      <main className="flex-1 overflow-y-auto p-8 md:p-12 relative">
+      <main className="flex-1 overflow-y-auto p-4 md:p-12 relative">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>

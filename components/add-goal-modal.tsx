@@ -80,7 +80,7 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
 
   return (
     <div className="fixed inset-0 bg-background/60 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all animate-in fade-in duration-300">
-      <div className="bg-card border border-border w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl space-y-8 relative overflow-hidden">
+      <div className="bg-card border border-border w-full max-w-md rounded-[2.5rem] p-6 md:p-10 shadow-2xl space-y-6 md:space-y-8 relative overflow-hidden">
         <button
           onClick={onClose}
           className="absolute top-8 right-8 p-2 rounded-full hover:bg-secondary transition-colors"
