@@ -4,9 +4,11 @@ import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { User, Mail, UserCircle, Edit3, Save, X } from "lucide-react";
+import { User, Mail, UserCircle, Edit3, Save, X, Volume2 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
+import { Switch } from "@/components/ui/switch";
+import { useSound } from "@/components/sound-provider";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -15,6 +17,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [newBio, setNewBio] = useState("");
   const [loading, setLoading] = useState(true);
+  const { soundEnabled, setSoundEnabled } = useSound();
 
   useEffect(() => {
     async function fetchProfile() {
@@ -174,6 +177,20 @@ export default function ProfilePage() {
               ? new Date(user.metadata.creationTime).toLocaleDateString()
               : "Unknown"}
           </p>
+        </div>
+        <div className="md:col-span-2 flex items-center justify-between p-6 bg-secondary/20 rounded-3xl border border-border/40">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-background rounded-2xl text-primary shadow-sm border border-border/20">
+              <Volume2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Sound Effects</h3>
+              <p className="text-sm text-muted-foreground">
+                Interactive audio feedback
+              </p>
+            </div>
+          </div>
+          <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
         </div>
       </div>
     </div>

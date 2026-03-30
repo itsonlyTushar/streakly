@@ -24,6 +24,8 @@ export const metadata: Metadata = {
 
 import { ToastProvider } from "@/components/ui/toast";
 
+import { SoundProvider } from "@/components/sound-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,7 +40,9 @@ export default function RootLayout({
       <body className={`${outfit.className} antialiased bg-background text-foreground`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              <SoundProvider>{children}</SoundProvider>
+            </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
       </body>
