@@ -4,7 +4,16 @@ import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { User, Mail, UserCircle, Edit3, Save, X, Volume2 } from "lucide-react";
+import {
+  User,
+  Mail,
+  UserCircle,
+  Edit3,
+  Save,
+  X,
+  Volume2,
+  Bell,
+} from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
 import { Switch } from "@/components/ui/switch";
@@ -18,6 +27,7 @@ export default function ProfilePage() {
   const [newBio, setNewBio] = useState("");
   const [loading, setLoading] = useState(true);
   const { soundEnabled, setSoundEnabled } = useSound();
+  const [emailNotifications, setEmailNotifications] = useState(true);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -28,6 +38,7 @@ export default function ProfilePage() {
         if (docSnap.exists()) {
           setBio(docSnap.data().bio || "");
           setNewBio(docSnap.data().bio || "");
+          setEmailNotifications(docSnap.data().emailNotifications ?? true);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -61,6 +72,34 @@ export default function ProfilePage() {
       toast({
         title: "Error",
         description: "Failed to update bio. Please try again.",
+        variant: "error",
+      });
+    }
+  };
+
+  const handleToggleEmail = async (checked: boolean) => {
+    if (!user?.uid) return;
+    setEmailNotifications(checked);
+    try {
+      await setDoc(
+        doc(db, "profiles", user.uid),
+        {
+          emailNotifications: checked,
+          updatedAt: new Date(),
+        },
+        { merge: true },
+      );
+      toast({
+        title: "Settings Updated",
+        description: `Email reminders ${checked ? "enabled" : "disabled"}.`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Error updating email settings:", error);
+      setEmailNotifications(!checked);
+      toast({
+        title: "Error",
+        description: "Failed to update settings. Please try again.",
         variant: "error",
       });
     }
@@ -160,24 +199,6 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10 space-y-2">
-          <h3 className="font-bold text-sm text-primary uppercase tracking-widest">
-            Email Verified
-          </h3>
-          <p className="text-lg font-medium">
-            {user.emailVerified ? "Yes" : "No"}
-          </p>
-        </div>
-        <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10 space-y-2">
-          <h3 className="font-bold text-sm text-primary uppercase tracking-widest">
-            Account Created
-          </h3>
-          <p className="text-lg font-medium">
-            {user.metadata.creationTime
-              ? new Date(user.metadata.creationTime).toLocaleDateString()
-              : "Unknown"}
-          </p>
-        </div>
         <div className="md:col-span-2 flex items-center justify-between p-6 bg-secondary/20 rounded-3xl border border-border/40">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-background rounded-2xl text-primary shadow-sm border border-border/20">
@@ -191,6 +212,24 @@ export default function ProfilePage() {
             </div>
           </div>
           <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
+        </div>
+
+        <div className="md:col-span-2 flex items-center justify-between p-6 bg-secondary/20 rounded-3xl border border-border/40">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-background rounded-2xl text-primary shadow-sm border border-border/20">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">Email Reminders</h3>
+              <p className="text-sm text-muted-foreground">
+                Daily revision notifications
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={emailNotifications}
+            onCheckedChange={handleToggleEmail}
+          />
         </div>
       </div>
     </div>

@@ -37,5 +37,10 @@ service cloud.firestore {
       allow update: if isOwner(resource.data.userId);
       allow delete: if isOwner(resource.data.userId);
     }
+
+    // Profiles collection rules
+    match /profiles/{userId} {
+      allow read, write: if isOwner(userId);
+    }
   }
 }

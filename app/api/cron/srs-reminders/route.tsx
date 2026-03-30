@@ -59,6 +59,17 @@ export async function GET(request: Request) {
 
     for (const [email, userItems] of Object.entries(userGroups)) {
       try {
+        // Check user profile for notification preference
+        const userId = userItems[0].userId;
+        const profileSnap = await db.collection("profiles").doc(userId).get();
+        const profile = profileSnap.data();
+        const notificationsEnabled = profile?.emailNotifications ?? true;
+
+        if (!notificationsEnabled) {
+          results.push({ email, status: "skipped", reason: "opted-out" });
+          continue;
+        }
+
         // Send Email using React-Email
         if (resend) {
           await resend.emails.send({

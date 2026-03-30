@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 import { ToastProvider } from "@/components/ui/toast";
 
 import { SoundProvider } from "@/components/sound-provider";
+import NextTopLoader from "nextjs-toploader";
 
 export default function RootLayout({
   children,
@@ -38,10 +39,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${outfit.className} antialiased bg-background text-foreground`}>
+        <NextTopLoader color="var(--color-primary)" showSpinner={false} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ToastProvider>
             <AuthProvider>
               <SoundProvider>{children}</SoundProvider>
+
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>
