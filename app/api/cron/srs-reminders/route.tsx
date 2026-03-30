@@ -7,11 +7,10 @@ import { SRSReminderEmail } from "@/emails/srs-reminder";
 import React from "react";
 
 // Using server-side only key for security
-const resend = new Resend(process.env.RESEND_KEY);
-
 const INTERVALS = [1, 3, 7, 30]; // Days for each subsequent review
 
 export async function GET(request: Request) {
+  const resend = process.env.RESEND_KEY ? new Resend(process.env.RESEND_KEY) : null;
   try {
     // 1. Authorization check
     const authHeader = request.headers.get("authorization");
@@ -61,15 +60,19 @@ export async function GET(request: Request) {
     for (const [email, userItems] of Object.entries(userGroups)) {
       try {
         // Send Email using React-Email
-        await resend.emails.send({
-          from: "Streakly <onboarding@resend.dev>",
-          to: email,
-          subject: `${userItems.length} revision${userItems.length > 1 ? "s" : ""} for today!`,
-          react: React.createElement(SRSReminderEmail, {
-            topics: userItems,
-            baseUrl: baseUrl,
-          }),
-        });
+        if (resend) {
+          await resend.emails.send({
+            from: "Streakly <onboarding@resend.dev>",
+            to: email,
+            subject: `${userItems.length} revision${userItems.length > 1 ? "s" : ""} for today!`,
+            react: React.createElement(SRSReminderEmail, {
+              topics: userItems,
+              baseUrl: baseUrl,
+            }),
+          });
+        } else {
+          console.warn("Skipping email send because RESEND_KEY is missing");
+        }
 
         // Update Firebase items
         const updatePromises = userItems.map(async (item) => {
