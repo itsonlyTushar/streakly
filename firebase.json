@@ -5,6 +5,8 @@
   },
   "hosting": {
     "source": ".",
+    "cleanUrls": true,
+    "trailingSlash": false,
     "ignore": [
       ".firebase/**",
       "**/.*",

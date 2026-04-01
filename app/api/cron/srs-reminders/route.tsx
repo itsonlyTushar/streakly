@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import * as admin from "firebase-admin";
-import { Resend } from "resend";
-import { addDays } from "date-fns";
-import { SRSReminderEmail } from "@/emails/srs-reminder";
-import React from "react";
-
-// Using server-side only key for security
-const INTERVALS = [1, 3, 7, 30]; // Days for each subsequent review
+import { sendSRSReminder } from "@/lib/email/service";
 
 export async function GET(request: Request) {
-  const resend = process.env.RESEND_KEY ? new Resend(process.env.RESEND_KEY) : null;
   try {
     // 1. Authorization check
     const authHeader = request.headers.get("authorization");
@@ -27,7 +20,7 @@ export async function GET(request: Request) {
 
     // 2. Find due items
     const now = new Date();
-    // Use adminDb (now db) to bypass row-level security and read all items
+    // Use adminDb to bypass row-level security and read all items
     const snapshot = await db
       .collection("srs")
       .where("status", "==", "learning")
@@ -43,75 +36,72 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: "No items due for review." });
     }
 
-    // 3. Group by userEmail
+    // 3. Group by userEmail and filter items already reminded today
     const userGroups: Record<string, any[]> = {};
+    const todayStr = now.toISOString().split("T")[0]; // Use current date for tracking
+
     items.forEach((item) => {
       const email = item.userEmail;
       if (!email) return;
+
+      // Skip if we already sent a reminder to this user TODAY for THIS specific item
+      // Or we can just group all due items for this user and send one mail.
+      // If we send one mail for ALL due items, we need to track if we've sent
+      // a "daily summary" reminder for this user today.
+      
       if (!userGroups[email]) userGroups[email] = [];
       userGroups[email].push(item);
     });
 
-    // 4. Send emails and update firestore
+    // 4. Send emails and update tracking in firestore
     const results = [];
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL || "https://streakly-tau.vercel.app";
 
     for (const [email, userItems] of Object.entries(userGroups)) {
       try {
-        // Check user profile for notification preference
+        // Check if user has already received a reminder today
+        // We look at the latest 'lastRemindedAt' among the user's due items
+        // or check at the profile level. Profile level is better for "one mail per day".
+        
         const userId = userItems[0].userId;
         const profileSnap = await db.collection("profiles").doc(userId).get();
         const profile = profileSnap.data();
+        
+        // Skip if notifications are disabled
         const notificationsEnabled = profile?.emailNotifications ?? true;
-
         if (!notificationsEnabled) {
           results.push({ email, status: "skipped", reason: "opted-out" });
           continue;
         }
 
-        // Send Email using React-Email
-        if (resend) {
-          await resend.emails.send({
-            from: "Streakly <onboarding@resend.dev>",
-            to: email,
-            subject: `${userItems.length} revision${userItems.length > 1 ? "s" : ""} for today!`,
-            react: React.createElement(SRSReminderEmail, {
-              topics: userItems,
-              baseUrl: baseUrl,
-            }),
-          });
-        } else {
-          console.warn("Skipping email send because RESEND_KEY is missing");
+        // Check last reminder date
+        if (profile?.lastReminderDate === todayStr) {
+          results.push({ email, status: "skipped", reason: "already-reminded-today" });
+          continue;
         }
 
-        // Update Firebase items
-        const updatePromises = userItems.map(async (item) => {
-          const nextReviewCount = item.reviewCount + 1;
-          const srsRef = db.collection("srs").doc(item.id);
-
-          if (nextReviewCount >= 4) {
-            // Marking as memorized
-            await srsRef.update({
-              status: "memorized",
-              reviewCount: nextReviewCount,
-              nextReviewDate: null,
-            });
-          } else {
-            // Set next interval
-            const nextInterval = INTERVALS[nextReviewCount];
-            const nextDate = addDays(new Date(), nextInterval);
-            await srsRef.update({
-              reviewCount: nextReviewCount,
-              nextReviewDate: admin.firestore.Timestamp.fromDate(nextDate),
-            });
-          }
+        // Send Email
+        const emailResult = await sendSRSReminder({
+          email,
+          topics: userItems.map(item => ({
+            topic: item.topic,
+            details: item.details,
+            reviewCount: item.reviewCount,
+          })),
         });
 
-        await Promise.all(updatePromises);
-        results.push({ email, status: "sent" });
+        if (emailResult.success) {
+          // Update profile to mark that we've sent the daily reminder
+          await db.collection("profiles").doc(userId).set({
+            lastReminderDate: todayStr,
+            lastRemindedAt: admin.firestore.FieldValue.serverTimestamp(),
+          }, { merge: true });
+          
+          results.push({ email, status: "sent" });
+        } else {
+          results.push({ email, status: "error", error: emailResult.error });
+        }
       } catch (e) {
-        console.error(`Error sending to ${email}:`, e);
+        console.error(`Error processing email for ${email}:`, e);
         results.push({ email, status: "error", error: e });
       }
     }
@@ -125,3 +115,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

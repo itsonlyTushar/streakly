@@ -569,11 +569,6 @@ function SRSItemCard({
                 ? `Next: ${format(nextDate, "MMM d, h:mm a")}`
                 : "Scheduling..."}
           </div>
-          {isDue && (
-            <div className="animate-pulse flex items-center gap-1 text-amber-600 font-bold">
-              Check your email at 10 AM
-            </div>
-          )}
         </div>
       </div>
     </motion.div>

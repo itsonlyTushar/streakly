@@ -62,7 +62,7 @@ export const SRSReminderEmail = ({
               Built for builders. Honesty above all.
             </Text>
             <Link href={baseUrl} style={footerLink}>
-              streakly.vercel.app
+              streakly-tau.vercel.app
             </Link>
           </Section>
         </Container>
