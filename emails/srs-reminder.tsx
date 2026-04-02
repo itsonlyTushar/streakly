@@ -13,7 +13,6 @@ import {
   Text,
   Font,
 } from "@react-email/components";
-import * as React from "react";
 
 interface SRSReminderEmailProps {
   topics: Array<{
@@ -76,7 +75,7 @@ export const SRSReminderEmail = ({
           <Text style={badgeHeader}>ACTIVE LEARNING</Text>
           <Heading style={h1}>Time for Revision</Heading>
           <Text style={text}>
-            Your brain is about to let go of these topics. A quick review now 
+            Your brain is about to let go of these topics. A quick review now
             will lock them into your long-term memory.
           </Text>
 
@@ -88,7 +87,9 @@ export const SRSReminderEmail = ({
                     <td style={{ verticalAlign: "top" }}>
                       <Text style={itemSubHeader}>TOPIC</Text>
                       <Heading style={h3}>{item.topic}</Heading>
-                      {item.details && <Text style={details}>{item.details}</Text>}
+                      {item.details && (
+                        <Text style={details}>{item.details}</Text>
+                      )}
                     </td>
                   </tr>
                   <tr>
@@ -98,26 +99,44 @@ export const SRSReminderEmail = ({
                         {INTERVALS.map((day, idx) => {
                           const isDone = item.reviewCount > idx;
                           const isCurrent = item.reviewCount === idx;
-                          
+
                           return (
-                            <div key={idx} style={{ 
-                              display: "inline-block", 
-                              textAlign: "center",
-                              marginRight: "16px" 
-                            }}>
-                              <div style={{
-                                fontSize: "9px",
-                                fontWeight: "900",
-                                marginBottom: "4px",
-                                color: isCurrent ? "#f59e0b" : isDone ? "#1c1c1e" : "#8e8e93"
-                              }}>
-                                {day}{day === 1 ? 'ST' : day === 3 ? 'RD' : 'TH'}
+                            <div
+                              key={idx}
+                              style={{
+                                display: "inline-block",
+                                textAlign: "center",
+                                marginRight: "16px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: "9px",
+                                  fontWeight: "900",
+                                  marginBottom: "4px",
+                                  color: isCurrent
+                                    ? "#f59e0b"
+                                    : isDone
+                                      ? "#1c1c1e"
+                                      : "#8e8e93",
+                                }}
+                              >
+                                {day}
+                                {day === 1 ? "ST" : day === 3 ? "RD" : "TH"}
                               </div>
-                              <div style={{
-                                ...dot,
-                                backgroundColor: isDone ? "#1c1c1e" : isCurrent ? "#f59e0b" : "#e5e7eb",
-                                border: isCurrent ? "2px solid #f59e0b" : "none",
-                              }} />
+                              <div
+                                style={{
+                                  ...dot,
+                                  backgroundColor: isDone
+                                    ? "#1c1c1e"
+                                    : isCurrent
+                                      ? "#f59e0b"
+                                      : "#e5e7eb",
+                                  border: isCurrent
+                                    ? "2px solid #f59e0b"
+                                    : "none",
+                                }}
+                              />
                             </div>
                           );
                         })}
@@ -139,17 +158,21 @@ export const SRSReminderEmail = ({
           </Section>
 
           <Hr style={hr} />
-          
+
           <Section style={footer}>
             <Text style={footerHeading}>STREAKLY SYSTEM</Text>
             <Text style={footerText}>
-              This email was sent because you enabled Spaced Repetition 
+              This email was sent because you enabled Spaced Repetition
               reminders for your learning journey.
             </Text>
             <div style={footerLinks}>
-              <Link href={`${baseUrl}/profile`} style={footerLink}>Notification Settings</Link>
+              <Link href={`${baseUrl}/profile`} style={footerLink}>
+                Notification Settings
+              </Link>
               <span style={footerDivider}> • </span>
-              <Link href={`${baseUrl}/srs`} style={footerLink}>View Topics</Link>
+              <Link href={`${baseUrl}/srs`} style={footerLink}>
+                View Topics
+              </Link>
             </div>
             <Text style={copyright}>
               © {new Date().getFullYear()} Streakly. Built for builders.
@@ -342,4 +365,3 @@ const copyright = {
   fontSize: "10px",
   fontWeight: "600",
 };
-
