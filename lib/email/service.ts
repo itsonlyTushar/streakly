@@ -5,7 +5,7 @@ import React from "react";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const FROM_EMAIL = "Streakly <hello@streakly.online>";
-export const BASE_URL = "https://streakly.online";
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://streakly.online";
 
 interface SendReminderParams {
   email: string;
