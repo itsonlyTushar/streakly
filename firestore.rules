@@ -30,6 +30,11 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
+    // Notebooks collection rules
+    match /notebooks/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
     // Spaced Repetition System (SRS) collection rules
     match /srs/{srsId} {
       allow read: if isOwner(resource.data.userId);

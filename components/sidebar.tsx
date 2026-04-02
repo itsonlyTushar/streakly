@@ -9,6 +9,7 @@ import {
   LogOut,
   User,
   Brain,
+  Book,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./auth-provider";
@@ -40,6 +41,7 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
   const navItems = [
     { href: "/app", icon: LayoutDashboard, label: "Active Goals" },
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
+    { href: "/notebook", icon: Book, label: "Notebook" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
@@ -65,6 +67,15 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
       onClick: () => router.push("/srs"),
       className:
         pathname === "/srs" ? "border-primary bg-secondary shadow-inner" : "",
+    },
+    {
+      icon: <Book className="h-5 w-5" />,
+      label: "Notebook",
+      onClick: () => router.push("/notebook"),
+      className:
+        pathname === "/notebook"
+          ? "border-primary bg-secondary shadow-inner"
+          : "",
     },
     {
       icon: <Trophy className="h-5 w-5" />,

@@ -19,6 +19,7 @@ interface RichEditorProps {
   onChange: (content: string) => void;
   placeholder?: string;
   className?: string;
+  wrapperClassName?: string;
 }
 
 const ToolbarButton = ({
@@ -53,6 +54,7 @@ export function RichEditor({
   onChange,
   placeholder,
   className,
+  wrapperClassName,
 }: RichEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -97,8 +99,8 @@ export function RichEditor({
   }
 
   return (
-    <div className="border border-border/50 rounded-3xl overflow-hidden bg-secondary/30 focus-within:ring-4 ring-primary/5 transition-all relative">
-      <div className="flex items-center flex-wrap gap-1 p-2 border-b border-border/30 bg-secondary/10">
+    <div className={cn("border border-border/50 rounded-3xl overflow-hidden bg-secondary/30 focus-within:ring-4 ring-primary/5 transition-all relative flex flex-col", wrapperClassName)}>
+      <div className="flex items-center flex-wrap gap-1 p-2 border-b border-border/30 bg-secondary/10 shrink-0">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive("bold")}
@@ -142,7 +144,7 @@ export function RichEditor({
           <Heading2 className="h-4 w-4" />
         </ToolbarButton>
       </div>
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto" />
     </div>
   );
 }

@@ -1,18 +1,21 @@
 import React, { useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   useColorScheme,
   SafeAreaView,
   StatusBar,
-  Alert
+  Alert,
 } from 'react-native';
 import { LogIn } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { auth } from '../lib/firebase';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { GoogleAuthProvider } from '@react-native-firebase/auth';
 
 export function LoginScreen() {
@@ -21,7 +24,8 @@ export function LoginScreen() {
 
   useEffect(() => {
     GoogleSignin.configure({
-      webClientId: '182440499371-rnlgg5k4t607eui2mgr054jctt6jerfp.apps.googleusercontent.com',
+      webClientId:
+        '182440499371-rnlgg5k4t607eui2mgr054jctt6jerfp.apps.googleusercontent.com',
     });
   }, []);
 
@@ -30,7 +34,7 @@ export function LoginScreen() {
       console.log('Google Login Pressed');
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      
+
       const idToken = userInfo.data?.idToken;
       if (!idToken) {
         throw new Error('No ID token found');
@@ -54,27 +58,45 @@ export function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: currentColors.background }]}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: currentColors.background }]}
+    >
+      <StatusBar
+        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+      />
+
       <View style={styles.content}>
         <View style={styles.heroSection}>
           <Text style={[styles.logo, { color: currentColors.primary }]}>
             Streakly
           </Text>
-          <Text style={[styles.subheadline, { color: currentColors.mutedForeground }]}>
+          <Text
+            style={[
+              styles.subheadline,
+              { color: currentColors.mutedForeground },
+            ]}
+          >
             Minimalist goal tracking + daily notes.
           </Text>
         </View>
 
         <View style={styles.actionSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.button, { backgroundColor: currentColors.primary }]}
             onPress={handleGoogleLogin}
             activeOpacity={0.8}
           >
-            <LogIn color={currentColors.primaryForeground} size={20} style={styles.buttonIcon} />
-            <Text style={[styles.buttonText, { color: currentColors.primaryForeground }]}>
+            <LogIn
+              color={currentColors.primaryForeground}
+              size={20}
+              style={styles.buttonIcon}
+            />
+            <Text
+              style={[
+                styles.buttonText,
+                { color: currentColors.primaryForeground },
+              ]}
+            >
               Get Started
             </Text>
           </TouchableOpacity>
@@ -82,8 +104,10 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: currentColors.mutedForeground }]}>
-          PRIVACY   TERMS   FAQ
+        <Text
+          style={[styles.footerText, { color: currentColors.mutedForeground }]}
+        >
+          PRIVACY TERMS
         </Text>
       </View>
     </SafeAreaView>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   AnimatePresence,
   motion,
@@ -120,13 +121,13 @@ export default function Home() {
                   <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                     Focus Mode
                   </div>
-                  <h3 className="text-3xl font-v-headings">Product Launch</h3>
+                  <h3 className="text-3xl font-v-headings">Learn French</h3>
                 </div>
                 <Zap className="h-8 w-8 text-primary/40" />
               </div>
               <div className="space-y-4">
                 <div className="flex justify-between text-sm font-bold">
-                  <span>Momentum</span>
+                  <span>60 Days</span>
                   <span className="text-primary">92%</span>
                 </div>
                 <div className="h-3 w-full bg-muted rounded-full overflow-hidden">
@@ -195,16 +196,19 @@ export default function Home() {
               Sign Up Free
               <LogIn className="h-6 w-6 group-hover:translate-x-2 transition-transform" />
             </button>
-            <div className="flex gap-8 text-[10px] uppercase tracking-[0.3em] font-bold text-muted-foreground/50">
-              <a href="#" className="hover:text-primary transition-colors">
+            <div className="flex gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground/50">
+              <Link
+                href="/privacy"
+                className="hover:text-primary transition-colors"
+              >
                 Privacy
-              </a>
-              <a href="#" className="hover:text-primary transition-colors">
+              </Link>
+              <Link
+                href="/terms"
+                className="hover:text-primary transition-colors"
+              >
                 Terms
-              </a>
-              <a href="#" className="hover:text-primary transition-colors">
-                FAQ
-              </a>
+              </Link>
             </div>
           </div>
         </div>

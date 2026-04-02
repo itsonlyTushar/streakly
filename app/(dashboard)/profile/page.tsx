@@ -18,6 +18,8 @@ import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
 import { Switch } from "@/components/ui/switch";
 import { useSound } from "@/components/sound-provider";
+import Link from "next/link";
+import { ShieldCheck, FileText } from "lucide-react";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -230,6 +232,36 @@ export default function ProfilePage() {
             checked={emailNotifications}
             onCheckedChange={handleToggleEmail}
           />
+        </div>
+      </div>
+
+      <div className="pt-8 border-t border-border/20">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6 px-2">
+          Legal
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link
+            href="/privacy"
+            className="flex items-center justify-between p-5 bg-secondary/10 hover:bg-secondary/30 rounded-2xl border border-border/40 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                Privacy Policy
+              </span>
+            </div>
+          </Link>
+          <Link
+            href="/terms"
+            className="flex items-center justify-between p-5 bg-secondary/10 hover:bg-secondary/30 rounded-2xl border border-border/40 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <span className="font-semibold text-muted-foreground group-hover:text-primary transition-colors">
+                Terms of Service
+              </span>
+            </div>
+          </Link>
         </div>
       </div>
     </div>
