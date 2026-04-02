@@ -2,10 +2,10 @@ import { Resend } from "resend";
 import { SRSReminderEmail } from "@/emails/srs-reminder";
 import React from "react";
 
-const resend = process.env.RESEND_KEY ? new Resend(process.env.RESEND_KEY) : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-export const FROM_EMAIL = "Streakly <onboarding@resend.dev>";
-export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://streakly-tau.vercel.app";
+export const FROM_EMAIL = "Streakly <hello@streakly.online>";
+export const BASE_URL = "https://streakly.online";
 
 interface SendReminderParams {
   email: string;
@@ -18,8 +18,8 @@ interface SendReminderParams {
 
 export async function sendSRSReminder({ email, topics }: SendReminderParams) {
   if (!resend) {
-    console.warn("Skipping email send because RESEND_KEY is missing");
-    return { success: false, error: "RESEND_KEY missing" };
+    console.warn("Skipping email send because RESEND_API_KEY is missing");
+    return { success: false, error: "RESEND_API_KEY missing" };
   }
 
   try {

@@ -19,7 +19,13 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Streakly",
-  description: "Minimalist goal tracker and daily note logger.",
+  description: "Minimalist goal tracker and revision system.",
+  metadataBase: new URL("https://streakly.online"),
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 import { ToastProvider } from "@/components/ui/toast";

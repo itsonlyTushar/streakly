@@ -23,7 +23,6 @@ export async function GET(request: Request) {
     // Use adminDb to bypass row-level security and read all items
     const snapshot = await db
       .collection("srs")
-      .where("status", "==", "learning")
       .where("nextReviewDate", "<=", admin.firestore.Timestamp.fromDate(now))
       .get();
 
