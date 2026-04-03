@@ -37,10 +37,31 @@ export default function ProfilePage() {
       try {
         const docRef = doc(db, "profiles", user.uid);
         const docSnap = await getDoc(docRef);
+        
+        // Ensure email is stored in profile for more robust reminder delivery
+        const initialData: any = {
+          updatedAt: new Date(),
+        };
+        if (user.email) initialData.email = user.email;
+        
         if (docSnap.exists()) {
-          setBio(docSnap.data().bio || "");
-          setNewBio(docSnap.data().bio || "");
-          setEmailNotifications(docSnap.data().emailNotifications ?? true);
+          const data = docSnap.data();
+          setBio(data.bio || "");
+          setNewBio(data.bio || "");
+          setEmailNotifications(data.emailNotifications ?? true);
+          
+          // Self-heal: update email if missing in profile
+          if (!data.email && user.email) {
+            await setDoc(docRef, { email: user.email }, { merge: true });
+          }
+        } else {
+          // Initialize profile if it doesn't exist
+          await setDoc(docRef, {
+            email: user.email,
+            emailNotifications: true,
+            createdAt: new Date(),
+            ...initialData
+          });
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -49,7 +70,7 @@ export default function ProfilePage() {
       }
     }
     fetchProfile();
-  }, [user?.uid]);
+  }, [user?.uid, user?.email]);
 
   const handleSaveBio = async () => {
     if (!user?.uid) return;
