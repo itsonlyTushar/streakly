@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RichEditor } from "@/components/rich-editor";
+import { RichEditor } from "@/components/ui/rich-editor";
 import { CanvasDraw } from "@/components/notebook/canvas-draw";
 import { cn } from "@/lib/utils";
 
