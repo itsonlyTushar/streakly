@@ -1,20 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { useEffect, useState, use } from "react";
-import { db } from "@/lib/firebase";
-import {
-  doc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { useState, use } from "react";
 import {
   format,
   differenceInDays,
@@ -24,8 +11,6 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
-  CheckCircle2,
-  Save,
   ArrowLeft,
   Calendar as CalendarIcon,
   Trophy,
@@ -34,16 +19,21 @@ import {
   List as ListIcon,
   Trash2,
   Edit3,
-  X,
 } from "lucide-react";
+import { CheckCircle2, Save } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { RichEditor } from "@/components/rich-editor";
 import { useToast } from "@/components/ui/toast";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { Logo } from "@/components/logo";
+import { useGoal, useCompleteGoal } from "@/hooks/use-goals";
+import {
+  useGoalNotes,
+  useAddNote,
+  useUpdateNote,
+  useDeleteNote,
+} from "@/hooks/use-notes";
 
 export default function GoalDetailPage({
   params,
@@ -53,78 +43,32 @@ export default function GoalDetailPage({
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const [goal, setGoal] = useState<any>(null);
-  const [notes, setNotes] = useState<any[]>([]);
+
+  const { data: goal, isLoading: goalLoading } = useGoal(id);
+  const { data: notes = [], isLoading: notesLoading } = useGoalNotes(id);
+
+  const addNoteMutation = useAddNote();
+  const updateNoteMutation = useUpdateNote();
+  const deleteNoteMutation = useDeleteNote();
+  const completeGoalMutation = useCompleteGoal();
+
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingContent, setEditingContent] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"timeline" | "grid">("timeline");
 
   // States for delete confirmation
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/");
-    }
-  }, [user, authLoading, router]);
-
-  useEffect(() => {
-    if (!user || !id) return;
-
-    const goalRef = doc(db, "goals", id);
-    const unsubscribeGoal = onSnapshot(goalRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setGoal({ id: docSnap.id, ...docSnap.data() });
-      }
-      setLoading(false);
-    });
-
-    const notesQuery = query(
-      collection(db, "notes"),
-      where("goalId", "==", id),
-      where("userId", "==", user.uid),
-      orderBy("date", "asc"),
-    );
-
-    const unsubscribeNotes = onSnapshot(notesQuery, (snapshot) => {
-      const notesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setNotes(notesData);
-    });
-
-    return () => {
-      unsubscribeGoal();
-      unsubscribeNotes();
-    };
-  }, [user, id]);
 
   const saveNote = async () => {
-    // TipTap empty content check (can be <p></p>)
     if (!newNote || newNote === "<p></p>" || !user || !goal) return;
-    setIsSaving(true);
-    try {
-      await addDoc(collection(db, "notes"), {
-        goalId: goal.id,
-        userId: user.uid,
-        content: newNote,
-        date: serverTimestamp(),
-        dateString: format(new Date(), "yyyy-MM-dd"),
-      });
-      setNewNote("");
-    } catch (error) {
-      console.error("Error saving/updating note", error);
-    } finally {
-      setIsSaving(false);
-    }
+    addNoteMutation.mutate(
+      { goalId: id, content: newNote },
+      {
+        onSuccess: () => setNewNote(""),
+      },
+    );
   };
 
   const openDeleteConfirm = (noteId: string) => {
@@ -137,44 +81,34 @@ export default function GoalDetailPage({
     setNoteToDelete(null);
   };
 
-  const deleteNote = async () => {
+  const handleDeleteNote = async () => {
     if (!noteToDelete) return;
-    setIsDeleting(true);
-    try {
-      await deleteDoc(doc(db, "notes", noteToDelete));
-      toast({
-        title: "Log Deleted",
-        description: "The activity log has been removed.",
-        variant: "warning",
-      });
-      closeDeleteConfirm();
-    } catch (error) {
-      console.error("Error deleting note", error);
-      toast({
-        title: "Error!",
-        description: "Failed to delete log. Please try again.",
-        variant: "error",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteNoteMutation.mutate(
+      { noteId: noteToDelete, goalId: id },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Log Deleted",
+            description: "The activity log has been removed.",
+            variant: "warning",
+          });
+          closeDeleteConfirm();
+        },
+      },
+    );
   };
 
-  const updateNote = async (noteId: string) => {
+  const handleUpdateNote = async (noteId: string) => {
     if (!editingContent || editingContent === "<p></p>") return;
-    setIsSaving(true);
-    try {
-      await updateDoc(doc(db, "notes", noteId), {
-        content: editingContent,
-        updatedAt: serverTimestamp(),
-      });
-      setEditingNoteId(null);
-      setEditingContent("");
-    } catch (error) {
-      console.error("Error updating note", error);
-    } finally {
-      setIsSaving(false);
-    }
+    updateNoteMutation.mutate(
+      { noteId, content: editingContent, goalId: id },
+      {
+        onSuccess: () => {
+          setEditingNoteId(null);
+          setEditingContent("");
+        },
+      },
+    );
   };
 
   const startEditing = (note: any) => {
@@ -187,19 +121,12 @@ export default function GoalDetailPage({
     setEditingContent("");
   };
 
-  const completeGoal = async () => {
+  const handleCompleteGoal = async () => {
     if (!goal) return;
-    try {
-      await updateDoc(doc(db, "goals", goal.id), {
-        status: "completed",
-        completedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error("Error completing goal", error);
-    }
+    completeGoalMutation.mutate(goal.id);
   };
 
-  if (authLoading || loading || !goal) {
+  if (authLoading || goalLoading || notesLoading || !goal) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-muted-foreground animate-pulse font-bold text-2xl flex items-center gap-1">
@@ -290,7 +217,7 @@ export default function GoalDetailPage({
 
           {canComplete && (
             <button
-              onClick={completeGoal}
+              onClick={handleCompleteGoal}
               className="h-20 px-10 bg-black text-white rounded-[2rem] font-bold text-2xl hover:scale-[1.03] active:scale-95 transition-all shadow-2xl flex items-center gap-3"
             >
               <Trophy className="h-7 w-7 text-yellow-500" />
@@ -393,11 +320,13 @@ export default function GoalDetailPage({
                                     Cancel
                                   </button>
                                   <button
-                                    onClick={() => updateNote(note.id)}
-                                    disabled={isSaving}
+                                    onClick={() => handleUpdateNote(note.id)}
+                                    disabled={updateNoteMutation.isPending}
                                     className="px-6 py-2 bg-black text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
                                   >
-                                    {isSaving ? "Saving..." : "Save Changes"}
+                                    {updateNoteMutation.isPending
+                                      ? "Saving..."
+                                      : "Save Changes"}
                                   </button>
                                 </div>
                               </div>
@@ -524,7 +453,7 @@ export default function GoalDetailPage({
                                   Cancel
                                 </button>
                                 <button
-                                  onClick={() => updateNote(note.id)}
+                                  onClick={() => handleUpdateNote(note.id)}
                                   className="text-[10px] font-bold uppercase tracking-widest text-primary"
                                 >
                                   Save
@@ -638,7 +567,7 @@ export default function GoalDetailPage({
                                   Cancel
                                 </button>
                                 <button
-                                  onClick={() => updateNote(note.id)}
+                                  onClick={() => handleUpdateNote(note.id)}
                                   className="text-[10px] font-bold uppercase tracking-widest text-primary"
                                 >
                                   Save
@@ -689,10 +618,16 @@ export default function GoalDetailPage({
                   />
                   <button
                     onClick={saveNote}
-                    disabled={isSaving || !newNote || newNote === "<p></p>"}
+                    disabled={
+                      addNoteMutation.isPending ||
+                      !newNote ||
+                      newNote === "<p></p>"
+                    }
                     className="w-full h-20 bg-black text-white rounded-[2rem] font-bold text-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-20 shadow-2xl flex items-center justify-center gap-4 group"
                   >
-                    {isSaving ? "Syncing..." : "Record Activity"}
+                    {addNoteMutation.isPending
+                      ? "Syncing..."
+                      : "Record Activity"}
                     <Save className="h-6 w-6 group-hover:rotate-12 transition-transform" />
                   </button>
                 </div>
@@ -722,11 +657,13 @@ export default function GoalDetailPage({
               Cancel
             </button>
             <button
-              onClick={deleteNote}
-              disabled={isDeleting}
+              onClick={handleDeleteNote}
+              disabled={deleteNoteMutation.isPending}
               className="flex-[2] h-16 rounded-2xl text-lg font-bold bg-destructive text-destructive-foreground hover:opacity-90 transition-all shadow-lg active:scale-95 disabled:opacity-50"
             >
-              {isDeleting ? "Deleting..." : "Delete Permanently"}
+              {deleteNoteMutation.isPending
+                ? "Deleting..."
+                : "Delete Permanently"}
             </button>
           </div>
         </div>

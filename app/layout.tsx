@@ -29,8 +29,8 @@ export const metadata: Metadata = {
 };
 
 import { ToastProvider } from "@/components/ui/toast";
-
 import { SoundProvider } from "@/components/sound-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import NextTopLoader from "nextjs-toploader";
 
 export default function RootLayout({
@@ -46,14 +46,15 @@ export default function RootLayout({
     >
       <body className={`${outfit.className} antialiased bg-background text-foreground`}>
         <NextTopLoader color="var(--color-primary)" showSpinner={false} />
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ToastProvider>
-            <AuthProvider>
-              <SoundProvider>{children}</SoundProvider>
-
-            </AuthProvider>
-          </ToastProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ToastProvider>
+              <AuthProvider>
+                <SoundProvider>{children}</SoundProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -1,39 +1,12 @@
 "use client";
 
-import { useAuth } from "@/components/auth-provider";
-import { useEffect, useState } from "react";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useActiveGoals } from "@/hooks/use-goals";
 import { GoalCard } from "@/components/goal-card";
 
 export default function AppPage() {
-  const { user } = useAuth();
-  const [goals, setGoals] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: goals = [], isLoading } = useActiveGoals();
 
-  useEffect(() => {
-    if (!user) return;
-
-    const q = query(
-      collection(db, "goals"),
-      where("userId", "==", user.uid),
-      where("status", "==", "active"),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const goalsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setGoals(goalsData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-8 animate-pulse">
         <div className="h-12 w-48 bg-secondary rounded-2xl" />

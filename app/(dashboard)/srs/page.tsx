@@ -1,19 +1,6 @@
 "use client";
 
-import { useAuth } from "@/components/auth-provider";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  onSnapshot,
-  serverTimestamp,
-  Timestamp,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-import { useState, useEffect } from "react";
+import { useSRSItems, useAddSRSItem, useUpdateSRSItem } from "@/hooks/use-srs";
 import {
   Brain,
   Plus,
@@ -21,136 +8,69 @@ import {
   CheckCircle2,
   Clock,
   Search,
-  BookOpen,
   Calendar,
   Sparkles,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
-
-interface SRSItem {
-  id: string;
-  userId: string;
-  topic: string;
-  details?: string;
-  dateLearned: Timestamp;
-  nextReviewDate: Timestamp;
-  reviewCount: number;
-  createdAt: Timestamp;
-}
+import { Timestamp } from "firebase/firestore";
 
 const INTERVALS = [1, 3, 7, 30]; // Exact stages as per request
 
 export default function SRSPage() {
-  const { user } = useAuth();
-  const [items, setItems] = useState<SRSItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: items = [], isLoading } = useSRSItems();
+  const addMutation = useAddSRSItem();
+  const updateMutation = useUpdateSRSItem();
+  
   const [newTopic, setNewTopic] = useState("");
   const [newDetails, setNewDetails] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    if (!user) return;
-
-    const q = query(collection(db, "srs"), where("userId", "==", user.uid));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const SRSItems = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as SRSItem[];
-
-        SRSItems.sort((a, b) => {
-          // Stable sort by creation date (newest first)
-          const dateA = a.createdAt?.toMillis() || 0;
-          const dateB = b.createdAt?.toMillis() || 0;
-          if (dateA !== dateB) return dateB - dateA;
-          // Fallback to topic name for absolute stability
-          return a.topic.localeCompare(b.topic);
-        });
-
-        setItems(SRSItems);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Firestore error:", error);
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, [user]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newTopic.trim()) return;
+    if (!newTopic.trim()) return;
 
-    setIsAdding(true);
-    try {
-      const today = new Date();
-      const firstReviewDate = set(addDays(today, 1), {
-        hours: 10,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
+    const today = new Date();
+    const firstReviewDate = set(addDays(today, 1), {
+      hours: 10,
+      minutes: 0,
+      seconds: 0,
+      milliseconds: 0,
+    });
 
-      await addDoc(collection(db, "srs"), {
-        userId: user.uid,
-        userEmail: user.email,
-        topic: newTopic.trim(),
-        details: newDetails.trim(),
-        dateLearned: serverTimestamp(),
-        nextReviewDate: Timestamp.fromDate(firstReviewDate),
-        reviewCount: 0,
-        createdAt: serverTimestamp(),
-      });
-
-      setNewTopic("");
-      setNewDetails("");
-    } catch (error) {
-      console.error("Error adding SRS item:", error);
-    } finally {
-      setIsAdding(false);
-    }
+    addMutation.mutate({
+      topic: newTopic.trim(),
+      details: newDetails.trim(),
+      nextReviewDate: firstReviewDate,
+    }, {
+      onSuccess: () => {
+        setNewTopic("");
+        setNewDetails("");
+      }
+    });
   };
 
-  const handleReview = async (item: SRSItem) => {
-    if (!user) return;
-
-    try {
-      const nextReviewCount = item.reviewCount + 1;
-      
-      // If we finished the 30th day (last stage), we can either hide it or keep it at max
-      if (nextReviewCount >= INTERVALS.length) {
-        await updateDoc(doc(db, "srs", item.id), {
-          reviewCount: nextReviewCount,
-          lastReviewedAt: serverTimestamp(),
-          // We could set nextReviewDate to null or very far in future if "completed"
-          nextReviewDate: null, 
-        });
-        return;
-      }
-
+  const handleReview = async (item: any) => {
+    const nextReviewCount = item.reviewCount + 1;
+    
+    let nextDateValue: Date | null = null;
+    if (nextReviewCount < INTERVALS.length) {
       const nextInterval = INTERVALS[nextReviewCount];
-      const nextDate = set(addDays(new Date(), nextInterval), {
+      nextDateValue = set(addDays(new Date(), nextInterval), {
         hours: 10,
         minutes: 0,
         seconds: 0,
         milliseconds: 0,
       });
-
-      await updateDoc(doc(db, "srs", item.id), {
-        reviewCount: nextReviewCount,
-        lastReviewedAt: serverTimestamp(),
-        nextReviewDate: Timestamp.fromDate(nextDate),
-      });
-    } catch (error) {
-      console.error("Error updating SRS item:", error);
     }
+
+    updateMutation.mutate({
+      itemId: item.id,
+      data: {
+        reviewCount: nextReviewCount,
+        nextReviewDate: nextDateValue ? Timestamp.fromDate(nextDateValue) : null as any,
+      }
+    });
   };
 
   const filteredItems = items.filter(
@@ -159,7 +79,7 @@ export default function SRSPage() {
       item.details?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin text-primary">
@@ -231,10 +151,10 @@ export default function SRSPage() {
           <div className="md:col-span-2 flex items-end">
             <button
               type="submit"
-              disabled={isAdding || !newTopic.trim()}
+              disabled={addMutation.isPending || !newTopic.trim()}
               className="w-full h-[60px] bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
             >
-              {isAdding ? "Saving..." : "Start"}
+              {addMutation.isPending ? "Saving..." : "Start"}
             </button>
           </div>
         </form>
@@ -376,11 +296,12 @@ export default function SRSPage() {
                           {!isCompleted && (
                             <button
                               onClick={() => handleReview(item)}
+                              disabled={updateMutation.isPending}
                               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
                                 isDue
                                   ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95"
                                   : "bg-secondary text-muted-foreground opacity-40 hover:opacity-100 hover:bg-primary hover:text-primary-foreground"
-                              }`}
+                                } disabled:opacity-50`}
                             >
                               {isDue ? "Review Now" : "Mark Step"}
                             </button>

@@ -2,8 +2,7 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import {
   User,
   Mail,
@@ -13,119 +12,69 @@ import {
   X,
   Volume2,
   Bell,
+  ShieldCheck,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
 import { Switch } from "@/components/ui/switch";
 import { useSound } from "@/components/sound-provider";
 import Link from "next/link";
-import { ShieldCheck, FileText } from "lucide-react";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [bio, setBio] = useState("");
+  const { data: profile, isLoading } = useProfile();
+  const updateMutation = useUpdateProfile();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [newBio, setNewBio] = useState("");
-  const [loading, setLoading] = useState(true);
   const { soundEnabled, setSoundEnabled } = useSound();
-  const [emailNotifications, setEmailNotifications] = useState(true);
 
+  // Sync internal state when profile data loads
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user?.uid) return;
-      try {
-        const docRef = doc(db, "profiles", user.uid);
-        const docSnap = await getDoc(docRef);
-        
-        // Ensure email is stored in profile for more robust reminder delivery
-        const initialData: any = {
-          updatedAt: new Date(),
-        };
-        if (user.email) initialData.email = user.email;
-        
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setBio(data.bio || "");
-          setNewBio(data.bio || "");
-          setEmailNotifications(data.emailNotifications ?? true);
-          
-          // Self-heal: update email if missing in profile
-          if (!data.email && user.email) {
-            await setDoc(docRef, { email: user.email }, { merge: true });
-          }
-        } else {
-          // Initialize profile if it doesn't exist
-          await setDoc(docRef, {
-            email: user.email,
-            emailNotifications: true,
-            createdAt: new Date(),
-            ...initialData
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      } finally {
-        setLoading(false);
-      }
+    if (profile?.bio) {
+      setNewBio(profile.bio);
     }
-    fetchProfile();
-  }, [user?.uid, user?.email]);
+  }, [profile]);
 
   const handleSaveBio = async () => {
-    if (!user?.uid) return;
-    try {
-      await setDoc(
-        doc(db, "profiles", user.uid),
-        {
-          bio: newBio,
-          updatedAt: new Date(),
-        },
-        { merge: true },
-      );
-      setBio(newBio);
-      setIsEditing(false);
-      toast({
-        title: "Profile Updated",
-        description: "Your bio has been saved successfully.",
-        variant: "success",
-      });
-    } catch (error) {
-      console.error("Error saving bio:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update bio. Please try again.",
-        variant: "error",
-      });
-    }
+    updateMutation.mutate({ bio: newBio }, {
+      onSuccess: () => {
+        setIsEditing(false);
+        toast({
+          title: "Profile Updated",
+          description: "Your bio has been saved successfully.",
+          variant: "success",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to update bio. Please try again.",
+          variant: "error",
+        });
+      }
+    });
   };
 
   const handleToggleEmail = async (checked: boolean) => {
-    if (!user?.uid) return;
-    setEmailNotifications(checked);
-    try {
-      await setDoc(
-        doc(db, "profiles", user.uid),
-        {
-          emailNotifications: checked,
-          updatedAt: new Date(),
-        },
-        { merge: true },
-      );
-      toast({
-        title: "Settings Updated",
-        description: `Email reminders ${checked ? "enabled" : "disabled"}.`,
-        variant: "success",
-      });
-    } catch (error) {
-      console.error("Error updating email settings:", error);
-      setEmailNotifications(!checked);
-      toast({
-        title: "Error",
-        description: "Failed to update settings. Please try again.",
-        variant: "error",
-      });
-    }
+    updateMutation.mutate({ emailNotifications: checked }, {
+      onSuccess: () => {
+        toast({
+          title: "Settings Updated",
+          description: `Email reminders ${checked ? "enabled" : "disabled"}.`,
+          variant: "success",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to update settings. Please try again.",
+          variant: "error",
+        });
+      }
+    });
   };
 
   if (!user) return null;
@@ -192,7 +141,8 @@ export default function ProfilePage() {
               </button>
               <button
                 onClick={handleSaveBio}
-                className="p-2 hover:bg-primary/10 rounded-xl transition-colors text-primary"
+                disabled={updateMutation.isPending}
+                className="p-2 hover:bg-primary/10 rounded-xl transition-colors text-primary disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
               </button>
@@ -209,13 +159,13 @@ export default function ProfilePage() {
           />
         ) : (
           <div className="min-h-[100px] p-4 bg-secondary/20 rounded-2xl border border-transparent italic text-muted-foreground font-v-body">
-            {loading ? (
+            {isLoading ? (
               <div className="animate-pulse flex space-y-2 flex-col">
                 <div className="h-4 bg-muted rounded w-3/4"></div>
                 <div className="h-4 bg-muted rounded w-1/2"></div>
               </div>
             ) : (
-              bio || "No bio yet. Click the edit icon to add one!"
+              profile?.bio || "No bio yet. Click the edit icon to add one!"
             )}
           </div>
         )}
@@ -250,8 +200,9 @@ export default function ProfilePage() {
             </div>
           </div>
           <Switch
-            checked={emailNotifications}
+            checked={profile?.emailNotifications ?? true}
             onCheckedChange={handleToggleEmail}
+            disabled={updateMutation.isPending}
           />
         </div>
       </div>
