@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { notesService, GoalNote } from "@/services/notes.service";
 import { useAuth } from "@/components/auth-provider";
+import { useMutationWrapper } from "./use-mutation-wrapper";
 
 const QUERY_KEY = ["notes"];
 
@@ -28,41 +29,33 @@ export function useGoalNotes(goalId: string) {
 
 export function useAddNote() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (vars: { goalId: string; content: string }) => {
+  return useMutationWrapper<any, Error, { goalId: string; content: string }>({
+    mutationFn: (vars) => {
       if (!user) throw new Error("Auth required");
       return notesService.addNote(vars.goalId, user.uid, vars.content);
     },
-    onSuccess: (data, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "goal", vars.goalId] });
-    },
+    invalidateKeys: (_, vars) => [[QUERY_KEY, "goal", vars.goalId]],
+    successMessage: "Progress recorded.",
   });
 }
 
 export function useUpdateNote() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (vars: { noteId: string; content: string; goalId: string }) => {
+  return useMutationWrapper<any, Error, { noteId: string; content: string; goalId: string }>({
+    mutationFn: (vars) => {
       return notesService.updateNote(vars.noteId, vars.content);
     },
-    onSuccess: (data, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "goal", vars.goalId] });
-    },
+    invalidateKeys: (_, vars) => [[QUERY_KEY, "goal", vars.goalId]],
+    successMessage: "Log updated.",
   });
 }
 
 export function useDeleteNote() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (vars: { noteId: string; goalId: string }) => {
+  return useMutationWrapper<any, Error, { noteId: string; goalId: string }>({
+    mutationFn: (vars) => {
       return notesService.deleteNote(vars.noteId);
     },
-    onSuccess: (data, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "goal", vars.goalId] });
-    },
+    invalidateKeys: (_, vars) => [[QUERY_KEY, "goal", vars.goalId]],
+    successMessage: "Log deleted.",
   });
 }

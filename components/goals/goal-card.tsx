@@ -5,16 +5,10 @@ import { cn } from "@/lib/utils";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { GoalData } from "@/lib/schemas/goal.schema";
+
 interface GoalCardProps {
-  goal: {
-    id: string;
-    goal: string;
-    dueDate: string;
-    createdAt: any;
-    userId: string;
-    status: "active" | "completed";
-    color?: string;
-  };
+  goal: GoalData;
 }
 
 const COLORS = [

@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { notebookService, NotebookData } from "@/services/notebook.service";
 import { useAuth } from "@/components/auth-provider";
+import { useMutationWrapper } from "./use-mutation-wrapper";
 
 const QUERY_KEY = ["notebook"];
 
@@ -18,11 +19,12 @@ export function useSaveNotebook() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (drawing: string) => {
       if (!user) throw new Error("Auth required");
       return notebookService.saveNotebook(user.uid, drawing);
     },
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
     // Optimistic Update
     onMutate: async (newDrawing) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEY, user?.uid] });
@@ -37,13 +39,11 @@ export function useSaveNotebook() {
 
       return { previousNotebook };
     },
-    onError: (err, newDrawing, context) => {
+    onError: (err, newDrawing, context: any) => {
       if (context?.previousNotebook) {
         queryClient.setQueryData([QUERY_KEY, user?.uid], context.previousNotebook);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, user?.uid] });
-    },
+    // No success message for auto-save as it would be too noisy
   });
 }

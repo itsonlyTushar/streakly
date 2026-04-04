@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { Logo } from '@/components/logo';
+import { Logo } from '@/components/ui/logo';
 import * as motion from 'framer-motion/client';
 
 export const metadata: Metadata = {

@@ -23,10 +23,10 @@ import {
 import { CheckCircle2, Save } from "lucide-react";
 import Link from "next/link";
 
-import { RichEditor } from "@/components/rich-editor";
+import { RichEditor } from "@/components/ui/rich-editor";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
-import { Logo } from "@/components/logo";
+import { Logo } from "@/components/ui/logo";
 import { useGoal, useCompleteGoal } from "@/hooks/use-goals";
 import {
   useGoalNotes,
@@ -87,11 +87,6 @@ export default function GoalDetailPage({
       { noteId: noteToDelete, goalId: id },
       {
         onSuccess: () => {
-          toast({
-            title: "Log Deleted",
-            description: "The activity log has been removed.",
-            variant: "warning",
-          });
           closeDeleteConfirm();
         },
       },
@@ -138,7 +133,6 @@ export default function GoalDetailPage({
   }
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const todayNotes = notes.filter((n) => n.dateString === todayStr);
 
   const startDate = goal.createdAt?.toDate() || new Date();
   const daysSinceStart =
@@ -540,75 +534,6 @@ export default function GoalDetailPage({
               </div>
             ) : (
               <div className="space-y-10 relative z-10">
-                {todayNotes.length > 0 && (
-                  <div className="space-y-6">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      Today's Progress
-                    </p>
-                    <div className="space-y-3">
-                      {todayNotes.map((note: any) => (
-                        <div
-                          key={note.id}
-                          className="p-5 bg-secondary/30 rounded-2xl border border-border/30 flex items-start justify-between group/note transition-all hover:bg-secondary/50"
-                        >
-                          {editingNoteId === note.id ? (
-                            <div className="flex-1 space-y-4">
-                              <RichEditor
-                                content={editingContent}
-                                onChange={setEditingContent}
-                                className="min-h-[80px] p-2 text-sm"
-                              />
-                              <div className="flex gap-2 justify-end">
-                                <button
-                                  onClick={cancelEditing}
-                                  className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  onClick={() => handleUpdateNote(note.id)}
-                                  className="text-[10px] font-bold uppercase tracking-widest text-primary"
-                                >
-                                  Save
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div
-                              className="prose prose-sm dark:prose-invert flex-1"
-                              dangerouslySetInnerHTML={{ __html: note.content }}
-                            />
-                          )}
-                          <div className="flex flex-col items-end gap-2 ml-4">
-                            <span className="text-[10px] font-bold text-muted-foreground/30 whitespace-nowrap pt-1">
-                              {format(
-                                note.date?.toDate() || new Date(),
-                                "h:mm a",
-                              )}
-                            </span>
-                            {!isCompleted && editingNoteId !== note.id && (
-                              <div className="flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => startEditing(note)}
-                                  className="p-1.5 hover:bg-white dark:hover:bg-card rounded-lg transition-all"
-                                >
-                                  <Edit3 className="h-3 w-3 text-muted-foreground/60" />
-                                </button>
-                                <button
-                                  onClick={() => openDeleteConfirm(note.id)}
-                                  className="p-1.5 hover:bg-destructive/10 rounded-lg transition-all"
-                                >
-                                  <Trash2 className="h-3 w-3 text-destructive/60" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-6">
                   <RichEditor

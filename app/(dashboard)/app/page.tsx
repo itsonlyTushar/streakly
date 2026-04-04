@@ -1,7 +1,7 @@
 "use client";
 
 import { useActiveGoals } from "@/hooks/use-goals";
-import { GoalCard } from "@/components/goal-card";
+import { GoalCard } from "@/components/goals/goal-card";
 
 export default function AppPage() {
   const { data: goals = [], isLoading } = useActiveGoals();

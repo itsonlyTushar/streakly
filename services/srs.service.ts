@@ -12,17 +12,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export interface SRSItem {
-  id: string;
-  userId: string;
-  userEmail?: string | null;
-  topic: string;
-  details?: string;
-  dateLearned: Timestamp;
-  nextReviewDate: Timestamp;
-  reviewCount: number;
-  createdAt: Timestamp;
-}
+import { SRSItem, SRSItemSchema } from "@/lib/schemas/srs.schema";
+export type { SRSItem };
 
 const COLLECTION_NAME = "srs";
 
@@ -35,10 +26,10 @@ export const srsService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as SRSItem[];
+      const items = snapshot.docs.map((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        return SRSItemSchema.parse(data);
+      });
 
       // Sort by creation date (newest first)
       items.sort((a, b) => {
@@ -59,10 +50,10 @@ export const srsService = {
       where("userId", "==", userId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as SRSItem[];
+    return snapshot.docs.map((doc) => {
+      const data = { id: doc.id, ...doc.data() };
+      return SRSItemSchema.parse(data);
+    });
   },
 
   addItem: async (userId: string, email: string | null, topic: string, details: string, nextReviewDate: Date) => {

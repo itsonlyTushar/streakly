@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { goalsService, GoalData } from "@/services/goals.service";
 import { useAuth } from "@/components/auth-provider";
+import { useMutationWrapper } from "./use-mutation-wrapper";
 
 const QUERY_KEY = ["goals"];
 
@@ -69,41 +70,39 @@ export function useGoal(id: string) {
 
 export function useAddGoal() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (vars: { goal: string; dueDate: string; color?: string }) => {
       if (!user) throw new Error("Auth required");
       return goalsService.addGoal(user.uid, vars.goal, vars.dueDate, vars.color);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "active", user?.uid] });
-    },
+    invalidateKeys: [[QUERY_KEY, "active", user?.uid]],
+    successMessage: "Goal created! Stay consistent.",
   });
 }
 
 export function useCompleteGoal() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (id: string) => goalsService.completeGoal(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "active", user?.uid] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "completed", user?.uid] });
-    },
+    invalidateKeys: [
+      [QUERY_KEY, "active", user?.uid],
+      [QUERY_KEY, "completed", user?.uid]
+    ],
+    successMessage: "Goal achieved! Welcome to the Hall of Fame.",
   });
 }
 
 export function useDeleteGoal() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (id: string) => goalsService.deleteGoal(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "active", user?.uid] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "completed", user?.uid] });
-    },
+    invalidateKeys: [
+      [QUERY_KEY, "active", user?.uid],
+      [QUERY_KEY, "completed", user?.uid]
+    ],
+    successMessage: "Goal removed.",
   });
 }

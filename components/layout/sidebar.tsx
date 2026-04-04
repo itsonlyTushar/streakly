@@ -12,12 +12,12 @@ import {
   Book,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "./auth-provider";
-import { ThemeToggle } from "./theme-toggle";
-import { Tooltip } from "./ui/tooltip";
-import { ConfirmationModal } from "./ui/confirmation-modal";
+import { useAuth } from "@/components/auth-provider";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Tooltip } from "@/components/ui/tooltip";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { useState, useEffect } from "react";
-import Dock from "./ui/doc";
+import Dock from "@/components/ui/doc";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCompletedGoals } from "@/hooks/use-goals";
-import { GoalCard } from "@/components/goal-card";
-import { Logo } from "@/components/logo";
+import { GoalCard } from "@/components/goals/goal-card";
+import { Logo } from "@/components/ui/logo";
 
 export default function HallOfFamePage() {
   const { data: goals = [], isLoading } = useCompletedGoals();

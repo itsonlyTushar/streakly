@@ -3,21 +3,16 @@ import { db } from "@/lib/firebase";
 
 const COLLECTION_NAME = "profiles";
 
-export interface ProfileData {
-  userId: string;
-  email?: string;
-  bio?: string;
-  emailNotifications?: boolean;
-  createdAt?: any;
-  updatedAt?: any;
-}
+import { ProfileData, ProfileSchema } from "@/lib/schemas/profile.schema";
+export type { ProfileData };
 
 export const profileService = {
   getProfile: async (userId: string): Promise<ProfileData | null> => {
     const docRef = doc(db, COLLECTION_NAME, userId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return docSnap.data() as ProfileData;
+      const data = { id: docSnap.id, ...docSnap.data() };
+      return ProfileSchema.parse(data);
     }
     return null;
   },

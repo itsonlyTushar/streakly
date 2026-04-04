@@ -1,11 +1,11 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { Sidebar } from "@/components/sidebar";
+import { Sidebar } from "@/components/layout/sidebar";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AddGoalModal } from "@/components/add-goal-modal";
-import { Logo } from "@/components/logo";
+import { AddGoalModal } from "@/components/goals/add-goal-modal";
+import { Logo } from "@/components/ui/logo";
 
 export default function AppLayout({
   children,

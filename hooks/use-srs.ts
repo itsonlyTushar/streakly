@@ -1,7 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { srsService, SRSItem } from "@/services/srs.service";
 import { useAuth } from "@/components/auth-provider";
+import { useMutationWrapper } from "./use-mutation-wrapper";
 
 const QUERY_KEY = ["srs"];
 
@@ -32,16 +33,14 @@ export function useSRSItems() {
 
 export function useAddSRSItem() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (vars: { topic: string; details: string; nextReviewDate: Date }) => {
       if (!user) throw new Error("Auth required");
       return srsService.addItem(user.uid, user.email, vars.topic, vars.details, vars.nextReviewDate);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, user?.uid] });
-    },
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
+    successMessage: "Topic added to your SRS list.",
   });
 }
 
@@ -49,10 +48,11 @@ export function useUpdateSRSItem() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (vars: { itemId: string; data: Partial<SRSItem> }) => {
       return srsService.updateItem(vars.itemId, vars.data);
     },
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
     // Optimistic Update
     onMutate: async (newInfo) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEY, user?.uid] });
@@ -69,13 +69,10 @@ export function useUpdateSRSItem() {
 
       return { previousItems };
     },
-    onError: (err, newInfo, context) => {
+    onError: (err, newInfo, context: any) => {
       if (context?.previousItems) {
         queryClient.setQueryData([QUERY_KEY, user?.uid], context.previousItems);
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, user?.uid] });
     },
   });
 }

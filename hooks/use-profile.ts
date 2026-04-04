@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { profileService, ProfileData } from "@/services/profile.service";
 import { useAuth } from "@/components/auth-provider";
+import { useMutationWrapper } from "./use-mutation-wrapper";
 
 const QUERY_KEY = ["profile"];
 
@@ -18,11 +19,13 @@ export function useUpdateProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutationWrapper({
     mutationFn: (data: Partial<ProfileData>) => {
       if (!user) throw new Error("Auth required");
       return profileService.updateProfile(user.uid, data);
     },
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
+    successMessage: "Profile updated successfully.",
     // Optimistic Update
     onMutate: async (newData) => {
       await queryClient.cancelQueries({ queryKey: [QUERY_KEY, user?.uid] });
@@ -37,13 +40,10 @@ export function useUpdateProfile() {
 
       return { previousProfile };
     },
-    onError: (err, newData, context) => {
+    onError: (err, newData, context: any) => {
       if (context?.previousProfile?.[0]) {
         queryClient.setQueryData([QUERY_KEY, user?.uid], context.previousProfile[0][1]);
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, user?.uid] });
     },
   });
 }

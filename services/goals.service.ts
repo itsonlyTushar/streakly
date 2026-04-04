@@ -14,16 +14,8 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export interface GoalData {
-  id: string;
-  userId: string;
-  goal: string;
-  dueDate: string;
-  status: "active" | "completed";
-  color?: string;
-  createdAt: any;
-  completedAt?: any;
-}
+import { GoalData, GoalSchema } from "@/lib/schemas/goal.schema";
+export type { GoalData };
 
 const COLLECTION_NAME = "goals";
 
@@ -38,10 +30,10 @@ export const goalsService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const goals = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as any),
-      })) as GoalData[];
+      const goals = snapshot.docs.map((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        return GoalSchema.parse(data);
+      });
       callback(goals);
     });
   },
@@ -56,10 +48,10 @@ export const goalsService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const goals = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as any),
-      })) as GoalData[];
+      const goals = snapshot.docs.map((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        return GoalSchema.parse(data);
+      });
       callback(goals);
     });
   },
@@ -69,7 +61,8 @@ export const goalsService = {
     const docRef = doc(db, COLLECTION_NAME, id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...(docSnap.data() as any) } as GoalData;
+      const data = { id: docSnap.id, ...docSnap.data() };
+      return GoalSchema.parse(data);
     }
     return null;
   },
@@ -79,7 +72,8 @@ export const goalsService = {
     const docRef = doc(db, COLLECTION_NAME, id);
     return onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        callback({ id: docSnap.id, ...(docSnap.data() as any) } as GoalData);
+        const data = { id: docSnap.id, ...docSnap.data() };
+        callback(GoalSchema.parse(data));
       } else {
         callback(null);
       }

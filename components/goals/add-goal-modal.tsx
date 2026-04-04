@@ -3,11 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth } from "../components/auth-provider";
+import { useAuth } from "@/components/auth-provider";
 import { X, Calendar as CalendarIcon, Type, ChevronRight } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { format, startOfToday } from "date-fns";
-import { Calendar } from "./ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +35,10 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
+      if (
+        calendarRef.current &&
+        !calendarRef.current.contains(event.target as Node)
+      ) {
         setIsCalendarOpen(false);
       }
     };
@@ -94,7 +97,7 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
 
   return (
     <div className="fixed inset-0 bg-background/40 backdrop-blur-md z-[60] flex items-center justify-center p-4 transition-all overflow-y-auto">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-card border border-border w-full max-w-md rounded-[2.5rem] p-6 md:p-10 shadow-2xl space-y-6 md:space-y-8 relative overflow-visible my-auto"
@@ -141,19 +144,25 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
                 Target Date
               </label>
             </div>
-            
+
             <button
               type="button"
               onClick={() => setIsCalendarOpen(!isCalendarOpen)}
               className="w-full bg-secondary/50 border border-transparent focus:border-primary/20 rounded-2xl p-5 outline-none transition-all font-medium text-lg flex items-center justify-between hover:bg-secondary active:scale-[0.99] group"
             >
-              <span className={dueDate ? "text-foreground" : "text-muted-foreground/30"}>
+              <span
+                className={
+                  dueDate ? "text-foreground" : "text-muted-foreground/30"
+                }
+              >
                 {dueDate ? format(dueDate, "MMMM d, yyyy") : "Pick a date"}
               </span>
-              <ChevronRight className={cn(
-                "h-5 w-5 text-muted-foreground transition-transform duration-300",
-                isCalendarOpen && "rotate-90"
-              )} />
+              <ChevronRight
+                className={cn(
+                  "h-5 w-5 text-muted-foreground transition-transform duration-300",
+                  isCalendarOpen && "rotate-90",
+                )}
+              />
             </button>
 
             <AnimatePresence>
@@ -165,7 +174,7 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
                   className="absolute top-full left-0 right-0 mt-3 z-[70] bg-card border border-border rounded-[2rem] shadow-2xl overflow-hidden p-2"
                 >
-                  <Calendar 
+                  <Calendar
                     selected={dueDate}
                     onSelect={(date) => {
                       setDueDate(date);
@@ -190,6 +199,5 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
         </form>
       </motion.div>
     </div>
-
   );
 }

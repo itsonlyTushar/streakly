@@ -14,14 +14,8 @@ import {
 import { db } from "@/lib/firebase";
 import { format } from "date-fns";
 
-export interface GoalNote {
-  id: string;
-  goalId: string;
-  userId: string;
-  content: string;
-  date: any;
-  dateString: string;
-}
+import { Note as GoalNote, NoteSchema } from "@/lib/schemas/note.schema";
+export type { GoalNote };
 
 const COLLECTION_NAME = "notes";
 
@@ -36,10 +30,10 @@ export const notesService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const notes = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as any),
-      })) as GoalNote[];
+      const notes = snapshot.docs.map((doc) => {
+        const data = { id: doc.id, ...doc.data() };
+        return NoteSchema.parse(data);
+      });
       callback(notes);
     });
   },
@@ -53,10 +47,10 @@ export const notesService = {
       orderBy("date", "asc")
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as any),
-    })) as GoalNote[];
+    return snapshot.docs.map((doc) => {
+      const data = { id: doc.id, ...doc.data() };
+      return NoteSchema.parse(data);
+    });
   },
 
   addNote: async (goalId: string, userId: string, content: string) => {

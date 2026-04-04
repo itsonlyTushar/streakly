@@ -15,7 +15,7 @@ import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
 import { Timestamp } from "firebase/firestore";
 
-const INTERVALS = [1, 3, 7, 30]; // Exact stages as per request
+import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
 
 export default function SRSPage() {
   const { data: items = [], isLoading } = useSRSItems();
@@ -30,18 +30,10 @@ export default function SRSPage() {
     e.preventDefault();
     if (!newTopic.trim()) return;
 
-    const today = new Date();
-    const firstReviewDate = set(addDays(today, 1), {
-      hours: 10,
-      minutes: 0,
-      seconds: 0,
-      milliseconds: 0,
-    });
-
     addMutation.mutate({
       topic: newTopic.trim(),
       details: newDetails.trim(),
-      nextReviewDate: firstReviewDate,
+      nextReviewDate: getInitialReviewDate(),
     }, {
       onSuccess: () => {
         setNewTopic("");
@@ -52,17 +44,7 @@ export default function SRSPage() {
 
   const handleReview = async (item: any) => {
     const nextReviewCount = item.reviewCount + 1;
-    
-    let nextDateValue: Date | null = null;
-    if (nextReviewCount < INTERVALS.length) {
-      const nextInterval = INTERVALS[nextReviewCount];
-      nextDateValue = set(addDays(new Date(), nextInterval), {
-        hours: 10,
-        minutes: 0,
-        seconds: 0,
-        milliseconds: 0,
-      });
-    }
+    const nextDateValue = calculateNextReviewDate(nextReviewCount);
 
     updateMutation.mutate({
       itemId: item.id,
@@ -208,7 +190,7 @@ export default function SRSPage() {
                 ) : (
                   filteredItems.map((item) => {
                     const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
-                    const isCompleted = item.reviewCount >= INTERVALS.length;
+                    const isCompleted = item.reviewCount >= SRS_INTERVALS.length;
                     
                     return (
                       <tr
@@ -236,7 +218,7 @@ export default function SRSPage() {
                             
                             {/* The Circle Progression UI */}
                             <div className="flex items-center gap-4">
-                              {INTERVALS.map((day, idx) => {
+                              {SRS_INTERVALS.map((day: number, idx: number) => {
                                 const isDone = item.reviewCount > idx;
                                 const isCurrent = item.reviewCount === idx;
                                 
