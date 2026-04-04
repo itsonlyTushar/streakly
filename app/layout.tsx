@@ -3,6 +3,8 @@ import { Gravitas_One, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Analytics } from "@vercel/analytics/next";
+
 
 const gravitasOne = Gravitas_One({
   weight: "400",
@@ -51,6 +53,8 @@ export default function RootLayout({
             <ToastProvider>
               <AuthProvider>
                 <SoundProvider>{children}</SoundProvider>
+                <Analytics />
+
               </AuthProvider>
             </ToastProvider>
           </ThemeProvider>
