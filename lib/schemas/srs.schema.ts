@@ -9,6 +9,7 @@ export const SRSItemSchema = z.object({
   dateLearned: z.any(), // Firebase Timestamp
   nextReviewDate: z.any(), // Firebase Timestamp
   reviewCount: z.number().nonnegative(),
+  reminderDate: z.any().optional().nullable(), // Firebase Timestamp
   createdAt: z.any(),
 });
 

@@ -4,5 +4,12 @@
       "source": "/__/auth/:path*",
       "destination": "https://notes-7f730.firebaseapp.com/__/auth/:path*"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/srs-reminders",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
+

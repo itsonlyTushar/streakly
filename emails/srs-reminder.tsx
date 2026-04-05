@@ -19,6 +19,7 @@ interface SRSReminderEmailProps {
     topic: string;
     details?: string;
     reviewCount: number;
+    isOneOff?: boolean;
   }>;
   baseUrl?: string;
 }
@@ -94,53 +95,59 @@ export const SRSReminderEmail = ({
                   </tr>
                   <tr>
                     <td style={{ paddingTop: "20px" }}>
-                      <Text style={itemSubHeader}>LEARNING PATH</Text>
-                      <div style={milestonesContainer}>
-                        {INTERVALS.map((day, idx) => {
-                          const isDone = item.reviewCount > idx;
-                          const isCurrent = item.reviewCount === idx;
+                      <Text style={itemSubHeader}>{item.isOneOff ? "DATE REMINDER" : "LEARNING PATH"}</Text>
+                      {item.isOneOff ? (
+                        <div style={{ color: "#1c1c1e", fontWeight: "800", fontSize: "14px", marginTop: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "18px" }}>🔔</span> One-time reminder as requested.
+                        </div>
+                      ) : (
+                        <div style={milestonesContainer}>
+                          {INTERVALS.map((day, idx) => {
+                            const isDone = item.reviewCount > idx;
+                            const isCurrent = item.reviewCount === idx;
 
-                          return (
-                            <div
-                              key={idx}
-                              style={{
-                                display: "inline-block",
-                                textAlign: "center",
-                                marginRight: "16px",
-                              }}
-                            >
+                            return (
                               <div
+                                key={idx}
                                 style={{
-                                  fontSize: "9px",
-                                  fontWeight: "900",
-                                  marginBottom: "4px",
-                                  color: isCurrent
-                                    ? "#f59e0b"
-                                    : isDone
-                                      ? "#1c1c1e"
-                                      : "#8e8e93",
+                                  display: "inline-block",
+                                  textAlign: "center",
+                                  marginRight: "16px",
                                 }}
                               >
-                                {day}
-                                {day === 1 ? "ST" : day === 3 ? "RD" : "TH"}
-                              </div>
-                              <div
-                                style={{
-                                  ...dot,
-                                  backgroundColor: isDone
-                                    ? "#1c1c1e"
-                                    : isCurrent
+                                <div
+                                  style={{
+                                    fontSize: "9px",
+                                    fontWeight: "900",
+                                    marginBottom: "4px",
+                                    color: isCurrent
                                       ? "#f59e0b"
-                                      : "#e5e7eb",
-                                  border: isCurrent
-                                    ? "2px solid #f59e0b"
-                                    : "none",
-                                }}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
+                                      : isDone
+                                        ? "#1c1c1e"
+                                        : "#8e8e93",
+                                  }}
+                                >
+                                  {day}
+                                  {day === 1 ? "ST" : day === 3 ? "RD" : "TH"}
+                                </div>
+                                <div
+                                  style={{
+                                    ...dot,
+                                    backgroundColor: isDone
+                                      ? "#1c1c1e"
+                                      : isCurrent
+                                        ? "#f59e0b"
+                                        : "#e5e7eb",
+                                    border: isCurrent
+                                      ? "2px solid #f59e0b"
+                                      : "none",
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 </table>

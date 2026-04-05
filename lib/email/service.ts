@@ -13,6 +13,7 @@ interface SendReminderParams {
     topic: string;
     details?: string;
     reviewCount: number;
+    isOneOff?: boolean;
   }>;
 }
 

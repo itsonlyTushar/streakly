@@ -5,7 +5,6 @@ import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/next";
 
-
 const gravitasOne = Gravitas_One({
   weight: "400",
   variable: "--font-gravitas-one",
@@ -46,7 +45,9 @@ export default function RootLayout({
       className={`${gravitasOne.variable} ${outfit.variable}`}
       suppressHydrationWarning
     >
-      <body className={`${outfit.className} antialiased bg-background text-foreground`}>
+      <body
+        className={`${outfit.className} antialiased bg-background text-foreground`}
+      >
         <NextTopLoader color="var(--color-primary)" showSpinner={false} />
         <QueryProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -54,7 +55,6 @@ export default function RootLayout({
               <AuthProvider>
                 <SoundProvider>{children}</SoundProvider>
                 <Analytics />
-
               </AuthProvider>
             </ToastProvider>
           </ThemeProvider>

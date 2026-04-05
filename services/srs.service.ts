@@ -56,15 +56,16 @@ export const srsService = {
     });
   },
 
-  addItem: async (userId: string, email: string | null, topic: string, details: string, nextReviewDate: Date) => {
+  addItem: async (userId: string, email: string | null, topic: string, details: string, nextReviewDate: Date | null, reminderDate?: Date | null) => {
     return await addDoc(collection(db, COLLECTION_NAME), {
       userId,
       userEmail: email,
       topic: topic.trim(),
       details: details.trim(),
       dateLearned: serverTimestamp(),
-      nextReviewDate: Timestamp.fromDate(nextReviewDate),
+      nextReviewDate: nextReviewDate ? Timestamp.fromDate(nextReviewDate) : null,
       reviewCount: 0,
+      reminderDate: reminderDate ? Timestamp.fromDate(reminderDate) : null,
       createdAt: serverTimestamp(),
     });
   },

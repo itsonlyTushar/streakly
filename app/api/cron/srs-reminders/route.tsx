@@ -25,7 +25,10 @@ export async function GET(request: Request) {
     
     const snapshot = await db
       .collection("srs")
-      .where("nextReviewDate", "<=", admin.firestore.Timestamp.fromDate(endOfToday))
+      .where(admin.firestore.Filter.or(
+        admin.firestore.Filter.where("nextReviewDate", "<=", admin.firestore.Timestamp.fromDate(endOfToday)),
+        admin.firestore.Filter.where("reminderDate", "<=", admin.firestore.Timestamp.fromDate(endOfToday))
+      ))
       .get();
 
     if (snapshot.empty) {
@@ -56,8 +59,13 @@ export async function GET(request: Request) {
         userGroups[userId].email = email;
       }
       
+      // Determine if this is a one-off reminder (reminderDate is matched)
+      // or a normal SRS reminder (nextReviewDate is matched)
+      const isOneOff = data.reminderDate && data.reminderDate.toDate() <= endOfToday;
+      
       userGroups[userId].items.push({
         id: doc.id,
+        isOneOff,
         ...data,
       });
     });
@@ -99,6 +107,7 @@ export async function GET(request: Request) {
             topic: item.topic,
             details: item.details,
             reviewCount: item.reviewCount,
+            isOneOff: item.isOneOff,
           })),
         });
 
@@ -109,6 +118,16 @@ export async function GET(request: Request) {
             lastRemindedAt: admin.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
           
+          // Clear reminderDate for processed one-off reminders
+          const itemsToClear = group.items.filter(item => item.isOneOff);
+          if (itemsToClear.length > 0) {
+            const batch = db.batch();
+            itemsToClear.forEach(item => {
+              batch.update(db.collection("srs").doc(item.id), { reminderDate: null });
+            });
+            await batch.commit();
+          }
+
           results.push({ userId, email, status: "sent" });
         } else {
           results.push({ userId, email, status: "error", error: emailResult.error });

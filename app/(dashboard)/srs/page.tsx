@@ -10,10 +10,13 @@ import {
   Search,
   Calendar,
   Sparkles,
+  Bell,
 } from "lucide-react";
 import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
 import { Timestamp } from "firebase/firestore";
+import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/components/ui/date-picker";
 
 import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
 
@@ -25,6 +28,8 @@ export default function SRSPage() {
   const [newTopic, setNewTopic] = useState("");
   const [newDetails, setNewDetails] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasReminder, setHasReminder] = useState(false);
+  const [reminderSelectedDate, setReminderSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,11 +38,13 @@ export default function SRSPage() {
     addMutation.mutate({
       topic: newTopic.trim(),
       details: newDetails.trim(),
-      nextReviewDate: getInitialReviewDate(),
+      nextReviewDate: hasReminder ? null : getInitialReviewDate(),
+      reminderDate: (hasReminder && reminderSelectedDate) ? reminderSelectedDate : null,
     }, {
       onSuccess: () => {
         setNewTopic("");
         setNewDetails("");
+        setHasReminder(false);
       }
     });
   };
@@ -90,9 +97,11 @@ export default function SRSPage() {
       </header>
 
       {/* Add New Learning Form - Refined & Premium */}
-      <section className="bg-gradient-to-br from-card to-secondary/20 border border-border/60 rounded-3xl p-6 md:p-8 shadow-2xl shadow-primary/5 relative overflow-hidden group">
-        <div className="absolute -top-10 -right-10 p-8 text-primary/5 -rotate-12 transition-transform group-hover:scale-110 duration-700">
-          <Brain className="h-64 w-64" />
+      <section className="bg-gradient-to-br from-card to-secondary/20 border border-border/60 rounded-3xl p-6 md:p-8 shadow-2xl shadow-primary/5 relative group">
+        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+          <div className="absolute -top-10 -right-10 p-8 text-primary/5 -rotate-12 transition-transform group-hover:scale-110 duration-700">
+            <Brain className="h-64 w-64" />
+          </div>
         </div>
 
         <form onSubmit={handleAddItem} className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -130,13 +139,39 @@ export default function SRSPage() {
             />
           </div>
 
-          <div className="md:col-span-2 flex items-end">
+          <div className="md:col-span-12 flex flex-wrap items-center gap-6 mt-2">
+            <div className="flex items-center gap-3 bg-background/50 border border-border/40 px-4 py-2 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2">
+                <Bell className={`h-4 w-4 ${hasReminder ? 'text-primary' : 'text-muted-foreground/30'}`} />
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Set Reminder</span>
+              </div>
+              <Switch checked={hasReminder} onCheckedChange={setHasReminder} />
+            </div>
+
+            {hasReminder && (
+              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                <div className="flex flex-col min-w-[200px]">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                    Reminder Date
+                  </label>
+                  <DatePicker
+                    selected={reminderSelectedDate}
+                    onSelect={setReminderSelectedDate}
+                    placeholder="Pick a date"
+                    buttonClassName="p-2 md:p-2 text-sm h-10 rounded-xl"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="md:col-span-12 flex justify-end">
             <button
               type="submit"
               disabled={addMutation.isPending || !newTopic.trim()}
-              className="w-full h-[60px] bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
+              className="w-full md:w-auto px-12 h-[60px] bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
             >
-              {addMutation.isPending ? "Saving..." : "Start"}
+              {addMutation.isPending ? "Saving..." : "Start Learning Path"}
             </button>
           </div>
         </form>
@@ -207,75 +242,99 @@ export default function SRSPage() {
                                 {item.details}
                               </div>
                             )}
+                            {item.reminderDate && (
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary mt-1 bg-primary/5 w-fit px-2 py-0.5 rounded-full border border-primary/10">
+                                <Bell className="h-2.5 w-2.5" />
+                                Reminder: {format(item.reminderDate.toDate(), "MMM d, yyyy")}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="p-5 align-top border-r border-border/50">
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              Started {item.dateLearned ? format(item.dateLearned.toDate(), "MMM d") : "---"}
-                            </div>
-                            
-                            {/* The Circle Progression UI */}
-                            <div className="flex items-center gap-4">
-                              {SRS_INTERVALS.map((day: number, idx: number) => {
-                                const isDone = item.reviewCount > idx;
-                                const isCurrent = item.reviewCount === idx;
-                                
-                                return (
-                                  <div key={day} className="flex flex-col items-center gap-2">
-                                    <span className={`text-[10px] font-black ${isCurrent && isDue ? 'text-amber-500' : isDone ? 'text-primary' : 'text-muted-foreground/40'}`}>
-                                      {day}{day === 1 ? 'st' : day === 3 ? 'rd' : day === 7 ? 'th' : 'th'}
-                                    </span>
-                                    <div 
-                                      className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all ${
-                                        isDone 
-                                          ? 'bg-primary border-primary shadow-lg shadow-primary/20' 
-                                          : isCurrent && isDue
-                                            ? 'border-amber-500 animate-pulse bg-amber-500/5'
-                                            : 'border-border/60 bg-secondary/20'
-                                      }`}
-                                    >
-                                      {isDone && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
-                                      {isCurrent && !isDone && <div className={`h-2 w-2 rounded-full ${isDue ? 'bg-amber-500' : 'bg-primary/40'}`} />}
+                          {item.nextReviewDate ? (
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                Started {item.dateLearned ? format(item.dateLearned.toDate(), "MMM d") : "---"}
+                              </div>
+                              
+                              {/* The Circle Progression UI */}
+                              <div className="flex items-center gap-4">
+                                {SRS_INTERVALS.map((day: number, idx: number) => {
+                                  const isDone = item.reviewCount > idx;
+                                  const isCurrent = item.reviewCount === idx;
+                                  
+                                  return (
+                                    <div key={day} className="flex flex-col items-center gap-2">
+                                      <span className={`text-[10px] font-black ${isCurrent && isDue ? 'text-amber-500' : isDone ? 'text-primary' : 'text-muted-foreground/40'}`}>
+                                        {day}{day === 1 ? 'st' : day === 3 ? 'rd' : day === 7 ? 'th' : 'th'}
+                                      </span>
+                                      <div 
+                                        className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                                          isDone 
+                                            ? 'bg-primary border-primary shadow-lg shadow-primary/20' 
+                                            : isCurrent && isDue
+                                              ? 'border-amber-500 animate-pulse bg-amber-500/5'
+                                              : 'border-border/60 bg-secondary/20'
+                                        }`}
+                                      >
+                                        {isDone && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
+                                        {isCurrent && !isDone && <div className={`h-2 w-2 rounded-full ${isDue ? 'bg-amber-500' : 'bg-primary/40'}`} />}
+                                      </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full py-2 bg-secondary/20 rounded-xl border border-dashed border-border/50">
+                              <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">No intervals</div>
+                            </div>
+                          )}
                         </td>
                         <td className="p-5 align-top border-r border-border/50">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between min-w-[120px]">
-                              {isCompleted ? (
-                                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                                  <Sparkles className="h-3 w-3" />
-                                  Mastered
-                                </div>
-                              ) : (
-                                <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isDue ? "text-amber-600" : "text-primary/60"}`}>
-                                  {isDue ? (
-                                    <>
-                                      <Clock className="h-3 w-3" />
-                                      Due Now
-                                    </>
-                                  ) : (
-                                    <>
-                                      <History className="h-3 w-3" />
-                                      Scheduled
-                                    </>
-                                  )}
-                                </div>
-                              )}
+                          {item.nextReviewDate ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between min-w-[120px]">
+                                {isCompleted ? (
+                                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                                    <Sparkles className="h-3 w-3" />
+                                    Mastered
+                                  </div>
+                                ) : (
+                                  <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isDue ? "text-amber-600" : "text-primary/60"}`}>
+                                    {isDue ? (
+                                      <>
+                                        <Clock className="h-3 w-3" />
+                                        Due Now
+                                      </>
+                                    ) : (
+                                      <>
+                                        <History className="h-3 w-3" />
+                                        Scheduled
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-xs font-black text-muted-foreground">
+                                {isCompleted ? "Goal achieved" : item.nextReviewDate ? format(item.nextReviewDate.toDate(), "MMM d, h:mm a") : "---"}
+                              </div>
                             </div>
-                            <div className="text-xs font-black text-muted-foreground">
-                              {isCompleted ? "Goal achieved" : item.nextReviewDate ? format(item.nextReviewDate.toDate(), "MMM d, h:mm a") : "---"}
+                          ) : (
+                            <div className="flex flex-col gap-1.5">
+                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60">
+                                <Bell className="h-3 w-3" />
+                                One-off Alert
+                              </div>
+                              <div className="text-xs font-black text-muted-foreground italic">
+                                SRS cycle disabled
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </td>
                         <td className="p-5 align-top text-right px-8">
-                          {!isCompleted && (
+                          {item.nextReviewDate && !isCompleted && (
                             <button
                               onClick={() => handleReview(item)}
                               disabled={updateMutation.isPending}
@@ -287,6 +346,11 @@ export default function SRSPage() {
                             >
                               {isDue ? "Review Now" : "Mark Step"}
                             </button>
+                          )}
+                          {!item.nextReviewDate && (
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">
+                               Fixed reminder
+                            </div>
                           )}
                         </td>
                       </tr>

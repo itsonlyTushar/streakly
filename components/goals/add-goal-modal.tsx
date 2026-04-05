@@ -4,10 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/components/auth-provider";
-import { X, Calendar as CalendarIcon, Type, ChevronRight } from "lucide-react";
+import { X, Calendar as CalendarIcon, Type } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { format, startOfToday } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+import { DatePicker } from "@/components/ui/date-picker";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -29,22 +29,7 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
   const { toast } = useToast();
   const [goal, setGoal] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const calendarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        calendarRef.current &&
-        !calendarRef.current.contains(event.target as Node)
-      ) {
-        setIsCalendarOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   if (!isOpen) return null;
 
@@ -145,46 +130,11 @@ export function AddGoalModal({ isOpen, onClose }: AddGoalModalProps) {
               </label>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-              className="w-full bg-secondary/50 border border-transparent focus:border-primary/20 rounded-2xl p-5 outline-none transition-all font-medium text-lg flex items-center justify-between hover:bg-secondary active:scale-[0.99] group"
-            >
-              <span
-                className={
-                  dueDate ? "text-foreground" : "text-muted-foreground/30"
-                }
-              >
-                {dueDate ? format(dueDate, "MMMM d, yyyy") : "Pick a date"}
-              </span>
-              <ChevronRight
-                className={cn(
-                  "h-5 w-5 text-muted-foreground transition-transform duration-300",
-                  isCalendarOpen && "rotate-90",
-                )}
-              />
-            </button>
-
-            <AnimatePresence>
-              {isCalendarOpen && (
-                <motion.div
-                  ref={calendarRef}
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className="absolute top-full left-0 right-0 mt-3 z-[70] bg-card border border-border rounded-[2rem] shadow-2xl overflow-hidden p-2"
-                >
-                  <Calendar
-                    selected={dueDate}
-                    onSelect={(date) => {
-                      setDueDate(date);
-                      setIsCalendarOpen(false);
-                    }}
-                    className="rounded-3xl"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <DatePicker
+              selected={dueDate}
+              onSelect={(date) => setDueDate(date)}
+              placeholder="Pick a date"
+            />
           </div>
 
           <div className="flex gap-4 pt-4 pb-2">
