@@ -11,6 +11,9 @@ import {
   Calendar,
   Sparkles,
   Bell,
+  Edit2,
+  Save,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
@@ -30,6 +33,11 @@ export default function SRSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hasReminder, setHasReminder] = useState(false);
   const [reminderSelectedDate, setReminderSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
+
+  // Edit states
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTopic, setEditTopic] = useState("");
+  const [editDetails, setEditDetails] = useState("");
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +66,34 @@ export default function SRSPage() {
       data: {
         reviewCount: nextReviewCount,
         nextReviewDate: nextDateValue ? Timestamp.fromDate(nextDateValue) : null as any,
+      }
+    });
+  };
+
+  const handleStartEdit = (item: any) => {
+    setEditingId(item.id);
+    setEditTopic(item.topic);
+    setEditDetails(item.details || "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditTopic("");
+    setEditDetails("");
+  };
+
+  const handleSaveEdit = async (itemId: string) => {
+    if (!editTopic.trim()) return;
+    
+    updateMutation.mutate({
+      itemId,
+      data: {
+        topic: editTopic.trim(),
+        details: editDetails.trim(),
+      }
+    }, {
+      onSuccess: () => {
+        handleCancelEdit();
       }
     });
   };
@@ -233,22 +269,65 @@ export default function SRSPage() {
                         className="hover:bg-secondary/10 transition-colors group"
                       >
                         <td className="p-5 align-top border-r border-border/50">
-                          <div className="flex flex-col gap-1">
-                            <div className="font-bold text-lg leading-tight group-hover:text-primary transition-colors">
-                              {item.topic}
+                          {editingId === item.id ? (
+                            <div className="flex flex-col gap-3">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editTopic}
+                                onChange={(e) => setEditTopic(e.target.value)}
+                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-sm font-bold focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all"
+                                placeholder="Topic Title"
+                              />
+                              <textarea
+                                value={editDetails}
+                                onChange={(e) => setEditDetails(e.target.value)}
+                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all min-h-[60px]"
+                                placeholder="Details..."
+                              />
+                              <div className="flex items-center gap-2 mt-1">
+                                <button
+                                  onClick={() => handleSaveEdit(item.id)}
+                                  disabled={updateMutation.isPending || !editTopic.trim()}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-black uppercase tracking-wider hover:brightness-110 disabled:opacity-50"
+                                >
+                                  <Save className="h-3 w-3" /> Save
+                                </button>
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-muted-foreground rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                                >
+                                  <X className="h-3 w-3" /> Cancel
+                                </button>
+                              </div>
                             </div>
-                            {item.details && (
-                              <div className="text-xs text-muted-foreground font-medium max-w-[300px]">
-                                {item.details}
+                          ) : (
+                            <div className="flex flex-col gap-1 relative group/title">
+                              <div className="flex items-center gap-2">
+                                <div className="font-bold text-lg leading-tight group-hover/title:text-primary transition-colors">
+                                  {item.topic}
+                                </div>
+                                <button
+                                  onClick={() => handleStartEdit(item)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded-md text-muted-foreground/50 hover:text-primary"
+                                  title="Edit topic"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
                               </div>
-                            )}
-                            {item.reminderDate && (
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary mt-1 bg-primary/5 w-fit px-2 py-0.5 rounded-full border border-primary/10">
-                                <Bell className="h-2.5 w-2.5" />
-                                Reminder: {format(item.reminderDate.toDate(), "MMM d, yyyy")}
-                              </div>
-                            )}
-                          </div>
+                              {item.details && (
+                                <div className="text-xs text-muted-foreground font-medium max-w-[300px]">
+                                  {item.details}
+                                </div>
+                              )}
+                              {item.reminderDate && (
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary mt-1 bg-primary/5 w-fit px-2 py-0.5 rounded-full border border-primary/10">
+                                  <Bell className="h-2.5 w-2.5" />
+                                  Reminder: {format(item.reminderDate.toDate(), "MMM d, yyyy")}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="p-5 align-top border-r border-border/50">
                           {item.nextReviewDate ? (
