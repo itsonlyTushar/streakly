@@ -3,10 +3,12 @@
 import { useNotebook, useSaveNotebook } from "@/hooks/use-notebook";
 import { Book } from "lucide-react";
 import { CanvasDraw } from "@/components/notebook/canvas-draw";
+import { useAuthGuard } from "@/components/auth-guard";
 
 export default function ExcalidrawInspiredWhiteboard() {
   const { data: notebook, isLoading } = useNotebook();
   const saveMutation = useSaveNotebook();
+  const { requireAuth } = useAuthGuard();
 
   if (isLoading) {
     return (
@@ -24,7 +26,9 @@ export default function ExcalidrawInspiredWhiteboard() {
       <CanvasDraw
         initialData={notebook?.drawing || ""}
         onSave={(newDrawing) => {
-          saveMutation.mutate(newDrawing);
+          requireAuth(() => {
+            saveMutation.mutate(newDrawing);
+          });
         }}
         className="h-full w-full"
       />

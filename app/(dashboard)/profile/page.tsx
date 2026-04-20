@@ -77,7 +77,29 @@ export default function ProfilePage() {
     });
   };
 
-  if (!user) return null;
+  const { loginWithGoogle } = useAuth();
+
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+          <UserCircle className="w-12 h-12 text-primary" />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-4xl font-black font-v-headings">Sign in to see your profile</h1>
+          <p className="text-muted-foreground text-lg max-w-md mx-auto">
+            Create an account to track your progress, build streaks, and customize your experience.
+          </p>
+        </div>
+        <button
+          onClick={loginWithGoogle}
+          className="flex items-center gap-3 bg-primary text-primary-foreground px-8 h-14 rounded-2xl font-bold hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20"
+        >
+          Sign in with Google
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

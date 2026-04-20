@@ -90,6 +90,12 @@ export default function Home() {
               <LogIn className="h-5 w-5" />
               Get Started
             </button>
+            <Link
+              href="/app"
+              className="flex-1 flex items-center justify-center gap-3 bg-secondary text-secondary-foreground h-14 rounded-2xl font-bold hover:bg-secondary/80 transition-all border border-border/50"
+            >
+              Explore App
+            </Link>
           </motion.div>
         </div>
       ),
@@ -188,14 +194,20 @@ export default function Home() {
               "The finish line is just a series of starts."
             </p>
           </div>
-          <div className="flex flex-col items-center gap-8 w-full mt-4">
+          <div className="flex flex-col items-center gap-6 w-full mt-4">
             <button
               onClick={loginWithGoogle}
-              className="group relative flex items-center gap-4 bg-primary text-primary-foreground px-12 h-16 rounded-full font-bold text-2xl hover:scale-105 transition-all"
+              className="group relative flex items-center gap-4 bg-primary text-primary-foreground px-12 h-16 rounded-full font-bold text-2xl hover:scale-105 transition-all shadow-xl shadow-primary/20"
             >
               Sign Up Free
               <LogIn className="h-6 w-6 group-hover:translate-x-2 transition-transform" />
             </button>
+            <Link
+              href="/app"
+              className="text-muted-foreground hover:text-primary transition-colors text-sm font-bold uppercase tracking-widest"
+            >
+              Or explore the app first
+            </Link>
             <div className="flex gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground/50">
               <Link
                 href="/privacy"

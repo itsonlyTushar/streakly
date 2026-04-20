@@ -20,19 +20,27 @@ import { format, addDays, isPast, set } from "date-fns";
 import { Timestamp } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useAuthGuard } from "@/components/auth-guard";
 
-import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
+import {
+  SRS_INTERVALS,
+  calculateNextReviewDate,
+  getInitialReviewDate,
+} from "@/lib/srs-utils";
 
 export default function SRSPage() {
   const { data: items = [], isLoading } = useSRSItems();
   const addMutation = useAddSRSItem();
   const updateMutation = useUpdateSRSItem();
-  
+  const { requireAuth } = useAuthGuard();
+
   const [newTopic, setNewTopic] = useState("");
   const [newDetails, setNewDetails] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [hasReminder, setHasReminder] = useState(false);
-  const [reminderSelectedDate, setReminderSelectedDate] = useState<Date | undefined>(addDays(new Date(), 1));
+  const [reminderSelectedDate, setReminderSelectedDate] = useState<
+    Date | undefined
+  >(addDays(new Date(), 1));
 
   // Edit states
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,30 +51,40 @@ export default function SRSPage() {
     e.preventDefault();
     if (!newTopic.trim()) return;
 
-    addMutation.mutate({
-      topic: newTopic.trim(),
-      details: newDetails.trim(),
-      nextReviewDate: hasReminder ? null : getInitialReviewDate(),
-      reminderDate: (hasReminder && reminderSelectedDate) ? reminderSelectedDate : null,
-    }, {
-      onSuccess: () => {
-        setNewTopic("");
-        setNewDetails("");
-        setHasReminder(false);
-      }
+    requireAuth(() => {
+      addMutation.mutate(
+        {
+          topic: newTopic.trim(),
+          details: newDetails.trim(),
+          nextReviewDate: hasReminder ? null : getInitialReviewDate(),
+          reminderDate:
+            hasReminder && reminderSelectedDate ? reminderSelectedDate : null,
+        },
+        {
+          onSuccess: () => {
+            setNewTopic("");
+            setNewDetails("");
+            setHasReminder(false);
+          },
+        },
+      );
     });
   };
 
   const handleReview = async (item: any) => {
-    const nextReviewCount = item.reviewCount + 1;
-    const nextDateValue = calculateNextReviewDate(nextReviewCount);
+    requireAuth(() => {
+      const nextReviewCount = item.reviewCount + 1;
+      const nextDateValue = calculateNextReviewDate(nextReviewCount);
 
-    updateMutation.mutate({
-      itemId: item.id,
-      data: {
-        reviewCount: nextReviewCount,
-        nextReviewDate: nextDateValue ? Timestamp.fromDate(nextDateValue) : null as any,
-      }
+      updateMutation.mutate({
+        itemId: item.id,
+        data: {
+          reviewCount: nextReviewCount,
+          nextReviewDate: nextDateValue
+            ? Timestamp.fromDate(nextDateValue)
+            : (null as any),
+        },
+      });
     });
   };
 
@@ -84,17 +102,22 @@ export default function SRSPage() {
 
   const handleSaveEdit = async (itemId: string) => {
     if (!editTopic.trim()) return;
-    
-    updateMutation.mutate({
-      itemId,
-      data: {
-        topic: editTopic.trim(),
-        details: editDetails.trim(),
-      }
-    }, {
-      onSuccess: () => {
-        handleCancelEdit();
-      }
+
+    requireAuth(() => {
+      updateMutation.mutate(
+        {
+          itemId,
+          data: {
+            topic: editTopic.trim(),
+            details: editDetails.trim(),
+          },
+        },
+        {
+          onSuccess: () => {
+            handleCancelEdit();
+          },
+        },
+      );
     });
   };
 
@@ -140,14 +163,17 @@ export default function SRSPage() {
           </div>
         </div>
 
-        <form onSubmit={handleAddItem} className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6">
+        <form
+          onSubmit={handleAddItem}
+          className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6"
+        >
           <div className="md:col-span-12">
             <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
               <Plus className="h-5 w-5 text-primary" />
               Capture new knowledge
             </h2>
           </div>
-          
+
           <div className="md:col-span-5">
             <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
               Topic Title
@@ -178,8 +204,12 @@ export default function SRSPage() {
           <div className="md:col-span-12 flex flex-wrap items-center gap-6 mt-2">
             <div className="flex items-center gap-3 bg-background/50 border border-border/40 px-4 py-2 rounded-2xl shadow-sm">
               <div className="flex items-center gap-2">
-                <Bell className={`h-4 w-4 ${hasReminder ? 'text-primary' : 'text-muted-foreground/30'}`} />
-                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Set Reminder</span>
+                <Bell
+                  className={`h-4 w-4 ${hasReminder ? "text-primary" : "text-muted-foreground/30"}`}
+                />
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  Set Reminder
+                </span>
               </div>
               <Switch checked={hasReminder} onCheckedChange={setHasReminder} />
             </div>
@@ -254,15 +284,21 @@ export default function SRSPage() {
               <tbody className="divide-y divide-border">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="p-20 text-center text-muted-foreground font-medium italic">
+                    <td
+                      colSpan={4}
+                      className="p-20 text-center text-muted-foreground font-medium italic"
+                    >
                       No items found matching your search.
                     </td>
                   </tr>
                 ) : (
                   filteredItems.map((item) => {
-                    const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
-                    const isCompleted = item.reviewCount >= SRS_INTERVALS.length;
-                    
+                    const isDue =
+                      item.nextReviewDate &&
+                      isPast(item.nextReviewDate.toDate());
+                    const isCompleted =
+                      item.reviewCount >= SRS_INTERVALS.length;
+
                     return (
                       <tr
                         key={item.id}
@@ -288,7 +324,10 @@ export default function SRSPage() {
                               <div className="flex items-center gap-2 mt-1">
                                 <button
                                   onClick={() => handleSaveEdit(item.id)}
-                                  disabled={updateMutation.isPending || !editTopic.trim()}
+                                  disabled={
+                                    updateMutation.isPending ||
+                                    !editTopic.trim()
+                                  }
                                   className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-black uppercase tracking-wider hover:brightness-110 disabled:opacity-50"
                                 >
                                   <Save className="h-3 w-3" /> Save
@@ -323,7 +362,11 @@ export default function SRSPage() {
                               {item.reminderDate && (
                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary mt-1 bg-primary/5 w-fit px-2 py-0.5 rounded-full border border-primary/10">
                                   <Bell className="h-2.5 w-2.5" />
-                                  Reminder: {format(item.reminderDate.toDate(), "MMM d, yyyy")}
+                                  Reminder:{" "}
+                                  {format(
+                                    item.reminderDate.toDate(),
+                                    "MMM d, yyyy",
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -334,40 +377,65 @@ export default function SRSPage() {
                             <div className="flex flex-col gap-3">
                               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                Started {item.dateLearned ? format(item.dateLearned.toDate(), "MMM d") : "---"}
+                                Started{" "}
+                                {item.dateLearned
+                                  ? format(item.dateLearned.toDate(), "MMM d")
+                                  : "---"}
                               </div>
-                              
+
                               {/* The Circle Progression UI */}
                               <div className="flex items-center gap-4">
-                                {SRS_INTERVALS.map((day: number, idx: number) => {
-                                  const isDone = item.reviewCount > idx;
-                                  const isCurrent = item.reviewCount === idx;
-                                  
-                                  return (
-                                    <div key={day} className="flex flex-col items-center gap-2">
-                                      <span className={`text-[10px] font-black ${isCurrent && isDue ? 'text-amber-500' : isDone ? 'text-primary' : 'text-muted-foreground/40'}`}>
-                                        {day}{day === 1 ? 'st' : day === 3 ? 'rd' : day === 7 ? 'th' : 'th'}
-                                      </span>
-                                      <div 
-                                        className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all ${
-                                          isDone 
-                                            ? 'bg-primary border-primary shadow-lg shadow-primary/20' 
-                                            : isCurrent && isDue
-                                              ? 'border-amber-500 animate-pulse bg-amber-500/5'
-                                              : 'border-border/60 bg-secondary/20'
-                                        }`}
+                                {SRS_INTERVALS.map(
+                                  (day: number, idx: number) => {
+                                    const isDone = item.reviewCount > idx;
+                                    const isCurrent = item.reviewCount === idx;
+
+                                    return (
+                                      <div
+                                        key={day}
+                                        className="flex flex-col items-center gap-2"
                                       >
-                                        {isDone && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
-                                        {isCurrent && !isDone && <div className={`h-2 w-2 rounded-full ${isDue ? 'bg-amber-500' : 'bg-primary/40'}`} />}
+                                        <span
+                                          className={`text-[10px] font-black ${isCurrent && isDue ? "text-amber-500" : isDone ? "text-primary" : "text-muted-foreground/40"}`}
+                                        >
+                                          {day}
+                                          {day === 1
+                                            ? "st"
+                                            : day === 3
+                                              ? "rd"
+                                              : day === 7
+                                                ? "th"
+                                                : "th"}
+                                        </span>
+                                        <div
+                                          className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                                            isDone
+                                              ? "bg-primary border-primary shadow-lg shadow-primary/20"
+                                              : isCurrent && isDue
+                                                ? "border-amber-500 animate-pulse bg-amber-500/5"
+                                                : "border-border/60 bg-secondary/20"
+                                          }`}
+                                        >
+                                          {isDone && (
+                                            <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
+                                          )}
+                                          {isCurrent && !isDone && (
+                                            <div
+                                              className={`h-2 w-2 rounded-full ${isDue ? "bg-amber-500" : "bg-primary/40"}`}
+                                            />
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  );
-                                })}
+                                    );
+                                  },
+                                )}
                               </div>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center h-full py-2 bg-secondary/20 rounded-xl border border-dashed border-border/50">
-                              <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">No intervals</div>
+                              <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">
+                                No intervals
+                              </div>
                             </div>
                           )}
                         </td>
@@ -381,7 +449,9 @@ export default function SRSPage() {
                                     Mastered
                                   </div>
                                 ) : (
-                                  <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isDue ? "text-amber-600" : "text-primary/60"}`}>
+                                  <div
+                                    className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isDue ? "text-amber-600" : "text-primary/60"}`}
+                                  >
                                     {isDue ? (
                                       <>
                                         <Clock className="h-3 w-3" />
@@ -397,7 +467,14 @@ export default function SRSPage() {
                                 )}
                               </div>
                               <div className="text-xs font-black text-muted-foreground">
-                                {isCompleted ? "Goal achieved" : item.nextReviewDate ? format(item.nextReviewDate.toDate(), "MMM d, h:mm a") : "---"}
+                                {isCompleted
+                                  ? "Goal achieved"
+                                  : item.nextReviewDate
+                                    ? format(
+                                        item.nextReviewDate.toDate(),
+                                        "MMM d, h:mm a",
+                                      )
+                                    : "---"}
                               </div>
                             </div>
                           ) : (
@@ -421,14 +498,14 @@ export default function SRSPage() {
                                 isDue
                                   ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95"
                                   : "bg-secondary text-muted-foreground opacity-40 hover:opacity-100 hover:bg-primary hover:text-primary-foreground"
-                                } disabled:opacity-50`}
+                              } disabled:opacity-50`}
                             >
                               {isDue ? "Review Now" : "Mark Step"}
                             </button>
                           )}
                           {!item.nextReviewDate && (
                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">
-                               Fixed reminder
+                              Fixed reminder
                             </div>
                           )}
                         </td>

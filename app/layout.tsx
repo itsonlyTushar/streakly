@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Gravitas_One, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
+import { AuthGuardProvider } from "@/components/auth-guard";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -47,14 +48,17 @@ export default function RootLayout({
     >
       <body
         className={`${outfit.className} antialiased bg-background text-foreground`}
+        suppressHydrationWarning
       >
         <NextTopLoader color="var(--color-primary)" showSpinner={false} />
         <QueryProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <ToastProvider>
               <AuthProvider>
-                <SoundProvider>{children}</SoundProvider>
-                <Analytics />
+                <AuthGuardProvider>
+                  <SoundProvider>{children}</SoundProvider>
+                  <Analytics />
+                </AuthGuardProvider>
               </AuthProvider>
             </ToastProvider>
           </ThemeProvider>

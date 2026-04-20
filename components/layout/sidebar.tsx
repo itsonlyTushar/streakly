@@ -29,10 +29,11 @@ interface SidebarProps {
 export function Sidebar({ onAddGoal }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, user } = useAuth();
-  const { theme, setTheme } = useTheme();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { loginWithGoogle, logout, user } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -50,7 +51,13 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
     {
       icon: <Plus className="h-5 w-5" />,
       label: "Add Goal",
-      onClick: onAddGoal,
+      onClick: () => {
+        if (!user) {
+          setIsAuthModalOpen(true);
+        } else {
+          onAddGoal();
+        }
+      },
       className:
         "bg-primary text-primary-foreground border-primary shadow-lg scale-110",
     },
@@ -121,7 +128,13 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
         <div className="mb-8">
           <Tooltip content="Add New Goal" side="right">
             <button
-              onClick={onAddGoal}
+              onClick={() => {
+                if (!user) {
+                  setIsAuthModalOpen(true);
+                } else {
+                  onAddGoal();
+                }
+              }}
               className="w-10 h-10 md:w-12 md:h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
               aria-label="Add New Goal"
             >
@@ -181,6 +194,20 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
         confirmText="Sign Out"
         variant="destructive"
         icon="logout"
+      />
+
+      <ConfirmationModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onConfirm={async () => {
+          setIsAuthModalOpen(false);
+          await loginWithGoogle();
+        }}
+        title="Join Streakly"
+        description="You need an account to save your goals and track progress. Sign in now to get started!"
+        confirmText="Sign in with Google"
+        variant="primary"
+        icon="question"
       />
     </>
   );

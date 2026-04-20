@@ -16,13 +16,9 @@ export default function AppLayout({
   const router = useRouter();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
+  // Guest exploration is allowed, so we don't redirect to "/" if no user is found.
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-muted-foreground animate-pulse font-bold text-2xl flex items-center gap-1">
