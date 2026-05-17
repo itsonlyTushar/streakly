@@ -76,3 +76,35 @@ export function useUpdateSRSItem() {
     },
   });
 }
+
+export function useDeleteSRSItem() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutationWrapper({
+    mutationFn: (itemId: string) => {
+      return srsService.deleteItem(itemId);
+    },
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
+    // Optimistic Update
+    onMutate: async (itemId) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY, user?.uid] });
+      const previousItems = queryClient.getQueryData<SRSItem[]>([QUERY_KEY, user?.uid]);
+
+      if (previousItems) {
+        queryClient.setQueryData(
+          [QUERY_KEY, user?.uid],
+          previousItems.filter((item) => item.id !== itemId)
+        );
+      }
+
+      return { previousItems };
+    },
+    onError: (err, itemId, context: any) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([QUERY_KEY, user?.uid], context.previousItems);
+      }
+    },
+    successMessage: "Topic deleted from your SRS list.",
+  });
+}

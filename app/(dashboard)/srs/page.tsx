@@ -1,6 +1,11 @@
 "use client";
 
-import { useSRSItems, useAddSRSItem, useUpdateSRSItem } from "@/hooks/use-srs";
+import {
+  useSRSItems,
+  useAddSRSItem,
+  useUpdateSRSItem,
+  useDeleteSRSItem,
+} from "@/hooks/use-srs";
 import {
   Brain,
   Plus,
@@ -14,6 +19,10 @@ import {
   Edit2,
   Save,
   X,
+  Trash2,
+  Check,
+  RefreshCw,
+  Trophy,
 } from "lucide-react";
 import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
@@ -32,6 +41,7 @@ export default function SRSPage() {
   const { data: items = [], isLoading } = useSRSItems();
   const addMutation = useAddSRSItem();
   const updateMutation = useUpdateSRSItem();
+  const deleteMutation = useDeleteSRSItem();
   const { requireAuth } = useAuthGuard();
 
   const [newTopic, setNewTopic] = useState("");
@@ -46,6 +56,25 @@ export default function SRSPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTopic, setEditTopic] = useState("");
   const [editDetails, setEditDetails] = useState("");
+
+  // Delete states
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "due" | "in-progress" | "mastered" | "reminders"
+  >("all");
+
+  // Focus Session states
+  const [inFocusSession, setInFocusSession] = useState(false);
+  const [sessionIndex, setSessionIndex] = useState(0);
+  const [revealDetails, setRevealDetails] = useState(false);
+
+  const handleStartFocusSession = () => {
+    setInFocusSession(true);
+    setSessionIndex(0);
+    setRevealDetails(false);
+  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +100,7 @@ export default function SRSPage() {
     });
   };
 
-  const handleReview = async (item: any) => {
+  const handleReviewSuccess = async (item: any) => {
     requireAuth(() => {
       const nextReviewCount = item.reviewCount + 1;
       const nextDateValue = calculateNextReviewDate(nextReviewCount);
@@ -83,6 +112,32 @@ export default function SRSPage() {
           nextReviewDate: nextDateValue
             ? Timestamp.fromDate(nextDateValue)
             : (null as any),
+        },
+      });
+    });
+  };
+
+  const handleReviewForgot = async (item: any) => {
+    requireAuth(() => {
+      const nextDateValue = calculateNextReviewDate(0);
+
+      updateMutation.mutate({
+        itemId: item.id,
+        data: {
+          reviewCount: 0,
+          nextReviewDate: nextDateValue
+            ? Timestamp.fromDate(nextDateValue)
+            : (null as any),
+        },
+      });
+    });
+  };
+
+  const handleDeleteConfirm = async (itemId: string) => {
+    requireAuth(() => {
+      deleteMutation.mutate(itemId, {
+        onSuccess: () => {
+          setDeletingId(null);
         },
       });
     });
@@ -121,11 +176,55 @@ export default function SRSPage() {
     });
   };
 
-  const filteredItems = items.filter(
+  // Status counts
+  const counts = {
+    all: items.length,
+    due: items.filter(
+      (item) =>
+        item.nextReviewDate &&
+        isPast(item.nextReviewDate.toDate()) &&
+        item.reviewCount < SRS_INTERVALS.length,
+    ).length,
+    inProgress: items.filter(
+      (item) =>
+        item.nextReviewDate &&
+        !isPast(item.nextReviewDate.toDate()) &&
+        item.reviewCount < SRS_INTERVALS.length,
+    ).length,
+    mastered: items.filter(
+      (item) => item.nextReviewDate && item.reviewCount >= SRS_INTERVALS.length,
+    ).length,
+    reminders: items.filter((item) => !item.nextReviewDate && item.reminderDate)
+      .length,
+  };
+
+  const searchedItems = items.filter(
     (item) =>
       item.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.details?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+
+  const filteredItems = searchedItems.filter((item) => {
+    if (statusFilter === "all") return true;
+
+    const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
+    const isCompleted =
+      item.nextReviewDate && item.reviewCount >= SRS_INTERVALS.length;
+
+    if (statusFilter === "due") {
+      return item.nextReviewDate && isDue && !isCompleted;
+    }
+    if (statusFilter === "in-progress") {
+      return item.nextReviewDate && !isDue && !isCompleted;
+    }
+    if (statusFilter === "mastered") {
+      return isCompleted;
+    }
+    if (statusFilter === "reminders") {
+      return !item.nextReviewDate && item.reminderDate;
+    }
+    return true;
+  });
 
   if (isLoading) {
     return (
@@ -153,6 +252,15 @@ export default function SRSPage() {
             Retain mastery through scheduled revision milestones.
           </p>
         </div>
+        {counts.due > 0 && (
+          <button
+            onClick={handleStartFocusSession}
+            className="flex items-center gap-2.5 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-amber-500/25 border border-amber-400/20"
+          >
+            <Sparkles className="h-4 w-4 animate-pulse" />
+            Start Focus Session ({counts.due} Due)
+          </button>
+        )}
       </header>
 
       {/* Add New Learning Form - Refined & Premium */}
@@ -245,20 +353,129 @@ export default function SRSPage() {
 
       {/* Main Content - Search and Table */}
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative w-full max-w-md">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter topics..."
+              placeholder="Filter topics by title or details..."
               className="w-full h-12 pl-12 pr-4 bg-secondary/30 rounded-xl border border-border/50 focus:ring-2 ring-primary/20 outline-none transition-all"
             />
           </div>
-          <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50">
-            {filteredItems.length} TOPICS TRACKED
+          <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50 self-end md:self-auto uppercase tracking-wider">
+            {filteredItems.length} of {items.length} Showing
           </div>
+        </div>
+
+        {/* Filter Tabs / Pills */}
+        <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border/40">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              statusFilter === "all"
+                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/10"
+                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            All
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                statusFilter === "all"
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-secondary-foreground/10 text-muted-foreground"
+              }`}
+            >
+              {counts.all}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("due")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              statusFilter === "due"
+                ? "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/10"
+                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <div
+              className={`h-2.5 w-2.5 rounded-full bg-amber-500 ${counts.due > 0 ? "animate-pulse" : ""}`}
+            />
+            Due Now
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                statusFilter === "due"
+                  ? "bg-white/20 text-white"
+                  : "bg-secondary-foreground/10 text-muted-foreground"
+              }`}
+            >
+              {counts.due}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("in-progress")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              statusFilter === "in-progress"
+                ? "bg-sky-500 text-white border-sky-500 shadow-lg shadow-sky-500/10"
+                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
+            In Progress
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                statusFilter === "in-progress"
+                  ? "bg-white/20 text-white"
+                  : "bg-secondary-foreground/10 text-muted-foreground"
+              }`}
+            >
+              {counts.inProgress}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("mastered")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              statusFilter === "mastered"
+                ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/10"
+                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            Mastered
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                statusFilter === "mastered"
+                  ? "bg-white/20 text-white"
+                  : "bg-secondary-foreground/10 text-muted-foreground"
+              }`}
+            >
+              {counts.mastered}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("reminders")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              statusFilter === "reminders"
+                ? "bg-violet-500 text-white border-violet-500 shadow-lg shadow-violet-500/10"
+                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Bell className="h-3 w-3" />
+            Fixed Reminders
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                statusFilter === "reminders"
+                  ? "bg-white/20 text-white"
+                  : "bg-secondary-foreground/10 text-muted-foreground"
+              }`}
+            >
+              {counts.reminders}
+            </span>
+          </button>
         </div>
 
         {/* The "Propro" Table */}
@@ -342,17 +559,51 @@ export default function SRSPage() {
                             </div>
                           ) : (
                             <div className="flex flex-col gap-1 relative group/title">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <div className="font-bold text-lg leading-tight group-hover/title:text-primary transition-colors">
                                   {item.topic}
                                 </div>
-                                <button
-                                  onClick={() => handleStartEdit(item)}
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded-md text-muted-foreground/50 hover:text-primary"
-                                  title="Edit topic"
-                                >
-                                  <Edit2 className="h-3.5 w-3.5" />
-                                </button>
+                                {deletingId === item.id ? (
+                                  <div className="flex items-center gap-1.5 animate-in fade-in zoom-in duration-200 bg-destructive/10 border border-destructive/20 rounded-lg px-2 py-0.5 ml-2">
+                                    <span className="text-[9px] font-black text-destructive uppercase tracking-wider">
+                                      Confirm Delete?
+                                    </span>
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteConfirm(item.id)
+                                      }
+                                      disabled={deleteMutation.isPending}
+                                      className="p-0.5 hover:bg-destructive hover:text-white rounded text-destructive transition-colors"
+                                      title="Yes, delete"
+                                    >
+                                      <Check className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeletingId(null)}
+                                      className="p-0.5 hover:bg-secondary rounded text-muted-foreground transition-colors"
+                                      title="Cancel"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleStartEdit(item)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded-md text-muted-foreground/50 hover:text-primary transition-colors"
+                                      title="Edit topic"
+                                    >
+                                      <Edit2 className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => setDeletingId(item.id)}
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded-md text-muted-foreground/50 hover:text-destructive transition-colors"
+                                      title="Delete topic"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                               {item.details && (
                                 <div className="text-xs text-muted-foreground font-medium max-w-[300px]">
@@ -491,17 +742,39 @@ export default function SRSPage() {
                         </td>
                         <td className="p-5 align-top text-right px-8">
                           {item.nextReviewDate && !isCompleted && (
-                            <button
-                              onClick={() => handleReview(item)}
-                              disabled={updateMutation.isPending}
-                              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                isDue
-                                  ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95"
-                                  : "bg-secondary text-muted-foreground opacity-40 hover:opacity-100 hover:bg-primary hover:text-primary-foreground"
-                              } disabled:opacity-50`}
-                            >
-                              {isDue ? "Review Now" : "Mark Step"}
-                            </button>
+                            <>
+                              {isDue ? (
+                                <div className="flex items-center justify-end gap-2 flex-wrap">
+                                  <button
+                                    onClick={() => handleReviewForgot(item)}
+                                    disabled={updateMutation.isPending}
+                                    className="flex items-center justify-center gap-1.5 px-3 py-2 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all text-xs font-black uppercase tracking-widest active:scale-95 disabled:opacity-50"
+                                    title="Forgot this topic? Reset the SRS path to Day 1."
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                    Forgot
+                                  </button>
+                                  <button
+                                    onClick={() => handleReviewSuccess(item)}
+                                    disabled={updateMutation.isPending}
+                                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-xl hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                                    title="Remembered this topic! Advance to next milestone."
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                    Got it!
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleReviewSuccess(item)}
+                                  disabled={updateMutation.isPending}
+                                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-secondary text-muted-foreground opacity-40 hover:opacity-100 hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                                  title="Manually advance to the next interval"
+                                >
+                                  Mark Step
+                                </button>
+                              )}
+                            </>
                           )}
                           {!item.nextReviewDate && (
                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">
@@ -518,6 +791,143 @@ export default function SRSPage() {
           </div>
         </div>
       </div>
+
+      {/* Spaced Repetition Focus Session Immersive Overlay */}
+      {inFocusSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
+          <div className="bg-gradient-to-br from-card to-secondary/30 border border-border/80 rounded-3xl p-8 max-w-xl w-full shadow-2xl relative overflow-hidden">
+            {/* Decorative gradient glowing spots */}
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8 relative z-10">
+              <div className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Review Session ({sessionIndex + 1} of {counts.due})
+                </span>
+              </div>
+              <button
+                onClick={() => setInFocusSession(false)}
+                className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden mb-10 relative z-10">
+              <div
+                className="bg-gradient-to-r from-primary to-amber-500 h-full transition-all duration-300"
+                style={{ width: `${(sessionIndex / counts.due) * 100}%` }}
+              />
+            </div>
+
+            {/* Card content */}
+            {sessionIndex < counts.due ? (
+              (() => {
+                const currentDueItems = items.filter(
+                  (item) =>
+                    item.nextReviewDate &&
+                    isPast(item.nextReviewDate.toDate()) &&
+                    item.reviewCount < SRS_INTERVALS.length,
+                );
+                const item = currentDueItems[sessionIndex];
+
+                if (!item) return null;
+
+                return (
+                  <div className="space-y-8 relative z-10 flex flex-col min-h-[250px] justify-between">
+                    <div className="space-y-4">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-primary/60 bg-primary/5 px-2.5 py-1 rounded-full border border-primary/10 w-fit block">
+                        Active Recall Prompt
+                      </span>
+                      <h3 className="text-3xl font-black tracking-tight leading-tight">
+                        {item.topic}
+                      </h3>
+
+                      {revealDetails ? (
+                        <div className="mt-4 p-5 bg-background/50 border border-border/40 rounded-2xl animate-in slide-in-from-bottom-2 fade-in duration-300 text-sm font-medium text-foreground max-h-[150px] overflow-y-auto">
+                          {item.details || (
+                            <span className="italic text-muted-foreground">
+                              No extra details provided.
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setRevealDetails(true)}
+                          className="w-full py-8 border border-dashed border-border/80 rounded-2xl hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all font-bold text-sm flex items-center justify-center gap-2 group mt-4"
+                        >
+                          <Sparkles className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                          Click to Reveal Answer / Details
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Grading Controls */}
+                    {revealDetails && (
+                      <div className="flex items-center gap-4 mt-6 animate-in fade-in duration-200">
+                        <button
+                          onClick={async () => {
+                            await handleReviewForgot(item);
+                            if (sessionIndex + 1 < counts.due) {
+                              setSessionIndex(sessionIndex + 1);
+                              setRevealDetails(false);
+                            } else {
+                              setSessionIndex(counts.due);
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-2xl hover:bg-destructive hover:text-white transition-all text-xs font-black uppercase tracking-widest active:scale-95"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          Forgot
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await handleReviewSuccess(item);
+                            if (sessionIndex + 1 < counts.due) {
+                              setSessionIndex(sessionIndex + 1);
+                              setRevealDetails(false);
+                            } else {
+                              setSessionIndex(counts.due);
+                            }
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-4 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-2xl hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest"
+                        >
+                          <Check className="h-4 w-4" />
+                          Got it!
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            ) : (
+              /* Celebration Completion Screen */
+              <div className="text-center py-10 space-y-6 relative z-10 animate-in zoom-in-95 fade-in duration-500">
+                <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 mb-2">
+                  <Trophy className="h-10 w-10 animate-bounce" />
+                </div>
+                <h3 className="text-3xl font-black tracking-tight">
+                  Review Complete!
+                </h3>
+                <p className="text-muted-foreground font-medium max-w-sm mx-auto">
+                  Amazing work! You've reviewed all pending topics for today.
+                  Keep up the active learning streak! 🚀
+                </p>
+                <button
+                  onClick={() => setInFocusSession(false)}
+                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-primary/20"
+                >
+                  Back to Topics
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

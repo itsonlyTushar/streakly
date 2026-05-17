@@ -9,6 +9,7 @@ import {
   doc,
   updateDoc,
   getDocs,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -76,5 +77,10 @@ export const srsService = {
       ...data,
       updatedAt: serverTimestamp(),
     });
+  },
+
+  deleteItem: async (itemId: string) => {
+    const docRef = doc(db, COLLECTION_NAME, itemId);
+    return await deleteDoc(docRef);
   },
 };
