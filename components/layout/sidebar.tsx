@@ -10,6 +10,7 @@ import {
   User,
   Brain,
   Book,
+  Code,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -42,6 +43,7 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
   const navItems = [
     { href: "/app", icon: LayoutDashboard, label: "Active Goals" },
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
+    { href: "/dsa", icon: Code, label: "DSA Arena" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
@@ -73,6 +75,13 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
       onClick: () => router.push("/srs"),
       className:
         pathname === "/srs" ? "border-primary bg-secondary shadow-inner" : "",
+    },
+    {
+      icon: <Code className="h-5 w-5" />,
+      label: "DSA",
+      onClick: () => router.push("/dsa"),
+      className:
+        pathname === "/dsa" ? "border-primary bg-secondary shadow-inner" : "",
     },
     {
       icon: <Trophy className="h-5 w-5" />,
