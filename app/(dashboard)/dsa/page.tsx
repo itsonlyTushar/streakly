@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, Fragment } from "react";
+import { useState, Fragment, useEffect } from "react";
+import Link from "next/link";
 import {
   Code,
   Plus,
@@ -22,6 +23,7 @@ import {
   ChevronUp,
   Copy,
   PenTool,
+  Info,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { Timestamp } from "firebase/firestore";
@@ -29,6 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuthGuard } from "@/components/auth-guard";
 import { CanvasDraw } from "@/components/notebook/canvas-draw";
 import { useToast } from "@/components/ui/toast";
+import { Tooltip } from "@/components/ui/tooltip";
 
 import {
   useDSAItems,
@@ -55,10 +58,21 @@ const PRESET_TOPICS = [
   "Backtracking",
   "Dynamic Programming",
   "Greedy",
+  "Sorting",
+  "Hashmaps",
   "Bit Manipulation",
 ];
 
 const COMPLEXITIES = ["O(1)", "O(log N)", "O(N)", "O(N log N)", "O(N^2)", "O(2^N)", "O(N!)"];
+
+const generateLeetCodeUrl = (name: string) => {
+  if (!name) return "";
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-") // replace non-alphanumeric characters with -
+    .replace(/^-+|-+$/g, ""); // trim leading/trailing hyphens
+  return `https://leetcode.com/problems/${slug}/`;
+};
 
 export default function DSAPage() {
   const { data: items = [], isLoading } = useDSAItems();
@@ -72,6 +86,7 @@ export default function DSAPage() {
   const [isOpenAddForm, setIsOpenAddForm] = useState(false);
   const [problemName, setProblemName] = useState("");
   const [problemUrl, setProblemUrl] = useState("");
+  const [isUrlPristine, setIsUrlPristine] = useState(true);
   const [difficulty, setDifficulty] = useState<DSADifficulty>("Medium");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [timeComplexity, setTimeComplexity] = useState("O(N)");
@@ -79,6 +94,18 @@ export default function DSAPage() {
   const [intuition, setIntuition] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
   const [hasSrs, setHasSrs] = useState(true);
+
+  // AI Auto-Fill states
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Load configuration from localStorage on mount and when form toggles
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const key = localStorage.getItem("streakly:dsa:gemini_api_key") || "";
+      setGeminiApiKey(key);
+    }
+  }, [isOpenAddForm]);
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -149,6 +176,7 @@ export default function DSAPage() {
           onSuccess: () => {
             setProblemName("");
             setProblemUrl("");
+            setIsUrlPristine(true);
             setDifficulty("Medium");
             setSelectedTopics([]);
             setTimeComplexity("O(N)");
@@ -161,6 +189,153 @@ export default function DSAPage() {
         }
       );
     });
+  };
+
+  const handleAiAutofill = async () => {
+    if (!problemName.trim()) {
+      toast({ title: "Please enter a problem name first.", variant: "error" });
+      return;
+    }
+    if (!geminiApiKey.trim()) {
+      toast({ title: "Please configure your Gemini API key.", variant: "error" });
+      return;
+    }
+
+    setIsAiLoading(true);
+
+    const ATTEMPTS_TO_TRY = [
+      // Strictly use 'v1beta' for all attempts because structured JSON responseSchema is natively supported there.
+      // 1. Primary Model: Gemini 2.5 Flash (user tier has active quota!)
+      { model: "gemini-2.5-flash", apiVersion: "v1beta" },
+
+      // 2. High Resilience fallbacks (standard free models)
+      { model: "gemini-1.5-flash", apiVersion: "v1beta" },
+      { model: "gemini-1.5-flash-latest", apiVersion: "v1beta" },
+      { model: "gemini-1.5-flash-8b", apiVersion: "v1beta" },
+      { model: "gemini-1.5-pro", apiVersion: "v1beta" },
+      { model: "gemini-1.5-pro-latest", apiVersion: "v1beta" },
+    ];
+
+    const prompt = `You are a DSA expert. Given the problem name "${problemName.trim()}", analyze it and provide standard DSA information. Keep the intuition brief and direct (2-3 sentences max). Keep the code snippet clean, optimal, and without unnecessary comments:
+1. LeetCode URL (standard problem link)
+2. Difficulty (Easy, Medium, Hard)
+3. Topics (Choose relevant topics from this list: ${PRESET_TOPICS.join(", ")})
+4. Time Complexity (e.g., O(N), O(N log N), O(1))
+5. Space Complexity (e.g., O(1), O(N))
+6. Intuition (Brief AHA! concept and core algorithmic idea in 2-3 sentences)
+7. CodeSnippet (Clear, standard, optimal solution in standard programming language, preferably TypeScript/JavaScript or Python/C++ with minimal comments)`;
+
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        problemUrl: { type: "STRING" },
+        difficulty: { type: "STRING", enum: ["Easy", "Medium", "Hard"] },
+        topics: { type: "ARRAY", items: { type: "STRING" } },
+        timeComplexity: { type: "STRING" },
+        spaceComplexity: { type: "STRING" },
+        intuition: { type: "STRING" },
+        codeSnippet: { type: "STRING" }
+      },
+      required: ["problemUrl", "difficulty", "topics", "timeComplexity", "spaceComplexity", "intuition", "codeSnippet"]
+    };
+
+    let success = false;
+    let lastError = null;
+    const errorsList: string[] = [];
+
+    for (const attempt of ATTEMPTS_TO_TRY) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/${attempt.apiVersion}/models/${attempt.model}:generateContent?key=${geminiApiKey.trim()}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: prompt,
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+                temperature: 0.1,
+                maxOutputTokens: 1024,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errText = await response.text();
+          let parsedMsg = errText;
+          try {
+            const parsedErr = JSON.parse(errText);
+            if (parsedErr?.error?.message) {
+              parsedMsg = parsedErr.error.message;
+            }
+          } catch (_) {}
+          throw new Error(`Status ${response.status}: ${parsedMsg}`);
+        }
+
+        const resData = await response.json();
+        const contentText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!contentText) {
+          throw new Error("Empty response from model");
+        }
+
+        const parsed = JSON.parse(contentText);
+
+        // Populate fields
+        if (parsed.problemUrl) setProblemUrl(parsed.problemUrl);
+        if (parsed.difficulty) setDifficulty(parsed.difficulty as DSADifficulty);
+        
+        // Filter parsed topics against PRESET_TOPICS
+        if (Array.isArray(parsed.topics)) {
+          const matchedTopics = parsed.topics.filter((topic: string) => {
+            return PRESET_TOPICS.some(t => t.toLowerCase() === topic.toLowerCase());
+          }).map((topic: string) => {
+            const original = PRESET_TOPICS.find(t => t.toLowerCase() === topic.toLowerCase());
+            return original || topic;
+          });
+          setSelectedTopics(matchedTopics);
+        }
+
+        if (parsed.timeComplexity) setTimeComplexity(parsed.timeComplexity);
+        if (parsed.spaceComplexity) setSpaceComplexity(parsed.spaceComplexity);
+        if (parsed.intuition) setIntuition(parsed.intuition);
+        if (parsed.codeSnippet) setCodeSnippet(parsed.codeSnippet);
+
+        setIsUrlPristine(false);
+        success = true;
+        toast({ title: `AI successfully generated problem details using ${attempt.model} (${attempt.apiVersion})!`, variant: "success" });
+        break; // Stop fallbacks on success
+      } catch (err: any) {
+        const errMsg = err?.message || String(err);
+        console.warn(`Model ${attempt.model} on ${attempt.apiVersion} failed:`, errMsg);
+        errorsList.push(`${attempt.model} (${attempt.apiVersion}): ${errMsg}`);
+        lastError = err;
+      }
+    }
+
+    setIsAiLoading(false);
+
+    if (!success) {
+      console.error("All AI Auto-Fill attempts failed. Details:", errorsList);
+      // Give a concise breakdown of the first failed model + status, rather than a giant unreadable block
+      const topErrorMsg = errorsList.length > 0 ? errorsList[0] : "Check your API key and network connection.";
+      toast({
+        title: "AI generation failed.",
+        description: `Top model failure: ${topErrorMsg}. Please check console logs or Profile API configuration.`,
+        variant: "error"
+      });
+    }
   };
 
   const handleStartFocusSession = () => {
@@ -386,23 +561,68 @@ export default function DSAPage() {
       {isOpenAddForm && (
         <section className="bg-gradient-to-br from-card to-secondary/15 border border-border/60 rounded-3xl p-6 md:p-8 shadow-2xl shadow-primary/5 relative animate-in slide-in-from-top-4 fade-in duration-300">
           <form onSubmit={handleAddProblem} className="grid grid-cols-1 md:grid-cols-12 gap-6 relative z-10">
-            <div className="md:col-span-12 border-b border-border/40 pb-2 mb-2">
+            <div className="md:col-span-12 border-b border-border/40 pb-3 mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <Code className="h-5 w-5 text-primary" />
                 Vault a solved problem
               </h2>
+
+              {/* Gemini AI Auto-Fill Button in Header */}
+              {geminiApiKey.trim() ? (
+                <button
+                  type="button"
+                  disabled={isAiLoading || !problemName.trim()}
+                  onClick={handleAiAutofill}
+                  className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:from-violet-600/30 disabled:to-indigo-600/30 text-white disabled:text-white/40 border border-violet-500/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 transition-all shadow-md shadow-violet-500/10 cursor-pointer self-start sm:self-auto"
+                  title={problemName.trim() ? "Auto-fill problem details with Gemini AI" : "Enter a problem name first to generate details"}
+                >
+                  {isAiLoading ? (
+                    <>
+                      <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                      <span>Auto-Fill with Gemini AI</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500 hover:text-background text-amber-500 border border-amber-500/20 hover:border-transparent px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all self-start sm:self-auto"
+                >
+                  <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                  Enable Gemini AI
+                </Link>
+              )}
             </div>
 
             {/* Problem Name */}
             <div className="md:col-span-6">
-              <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
-                Problem Name *
-              </label>
+              <div className="flex items-center gap-1.5 ml-1 mb-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  Problem Name *
+                </label>
+                <Tooltip content="Add the exact name of the problem to auto generate the URL" side="top">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary cursor-help transition-colors" />
+                </Tooltip>
+              </div>
               <input
                 required
                 type="text"
                 value={problemName}
-                onChange={(e) => setProblemName(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setProblemName(val);
+                  if (val.trim() === "") {
+                    setIsUrlPristine(true);
+                    setProblemUrl("");
+                  } else if (isUrlPristine && !geminiApiKey.trim()) {
+                    setProblemUrl(generateLeetCodeUrl(val));
+                  }
+                }}
                 placeholder="e.g., 3Sum"
                 className="w-full bg-background border border-border/60 rounded-xl px-4 py-3.5 text-base font-bold focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all"
               />
@@ -410,16 +630,50 @@ export default function DSAPage() {
 
             {/* Platform URL */}
             <div className="md:col-span-6">
-              <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
-                Problem URL
-              </label>
-              <input
-                type="url"
-                value={problemUrl}
-                onChange={(e) => setProblemUrl(e.target.value)}
-                placeholder="e.g., https://leetcode.com/problems/3sum/"
-                className="w-full bg-background border border-border/60 rounded-xl px-4 py-3.5 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all"
-              />
+              <div className="flex justify-between items-center ml-1 mb-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  Problem URL
+                </label>
+                {problemName.trim() && !geminiApiKey.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProblemUrl(generateLeetCodeUrl(problemName));
+                      setIsUrlPristine(false);
+                    }}
+                    className="text-[9px] font-black uppercase tracking-wider text-primary hover:text-primary/80 flex items-center gap-1 transition-all"
+                    title="Generate standard LeetCode URL from Problem Name"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Auto LeetCode URL
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="url"
+                  value={problemUrl}
+                  onChange={(e) => {
+                    setProblemUrl(e.target.value);
+                    setIsUrlPristine(false);
+                  }}
+                  placeholder="e.g., https://leetcode.com/problems/3sum/"
+                  className="w-full bg-background border border-border/60 rounded-xl pl-4 pr-12 py-3.5 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all"
+                />
+                {problemName.trim() && !geminiApiKey.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProblemUrl(generateLeetCodeUrl(problemName));
+                      setIsUrlPristine(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all"
+                    title="Generate LeetCode URL from Problem Name"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Difficulty */}
@@ -698,13 +952,25 @@ export default function DSAPage() {
                                 className="bg-background border border-border/60 rounded-lg px-3 py-1.5 text-sm font-bold outline-none focus:border-primary"
                                 placeholder="Problem Name"
                               />
-                              <input
-                                type="url"
-                                value={editUrl}
-                                onChange={(e) => setEditUrl(e.target.value)}
-                                className="bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary"
-                                placeholder="LeetCode URL"
-                              />
+                              <div className="relative flex items-center w-full">
+                                <input
+                                  type="url"
+                                  value={editUrl}
+                                  onChange={(e) => setEditUrl(e.target.value)}
+                                  className="w-full bg-background border border-border/60 rounded-lg pl-3 pr-8 py-1.5 text-xs outline-none focus:border-primary"
+                                  placeholder="LeetCode URL"
+                                />
+                                {editName.trim() && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditUrl(generateLeetCodeUrl(editName))}
+                                    className="absolute right-2 text-primary hover:text-primary/80 transition-colors"
+                                    title="Generate LeetCode URL from Edit Name"
+                                  >
+                                    <Sparkles className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
                               <div className="flex gap-2">
                                 {(["Easy", "Medium", "Hard"] as DSADifficulty[]).map((d) => (
                                   <button

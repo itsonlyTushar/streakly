@@ -14,6 +14,11 @@ import {
   Bell,
   ShieldCheck,
   FileText,
+  Sparkles,
+  ExternalLink,
+  Key,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
@@ -30,6 +35,45 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [newBio, setNewBio] = useState("");
   const { soundEnabled, setSoundEnabled } = useSound();
+
+  // Gemini AI Key states
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [isKeySaved, setIsKeySaved] = useState(false);
+
+  // Load key from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const key = localStorage.getItem("streakly:dsa:gemini_api_key") || "";
+      setGeminiApiKey(key);
+      setIsKeySaved(!!key);
+    }
+  }, []);
+
+  const handleSaveApiKey = () => {
+    localStorage.setItem("streakly:dsa:gemini_api_key", geminiApiKey.trim());
+    if (geminiApiKey.trim()) {
+      localStorage.setItem("streakly:dsa:ai_enabled", "true");
+      setIsKeySaved(true);
+    }
+    toast({
+      title: "API Key Configured",
+      description: "Your Gemini API Key has been saved successfully.",
+      variant: "success",
+    });
+  };
+
+  const handleClearApiKey = () => {
+    setGeminiApiKey("");
+    setIsKeySaved(false);
+    localStorage.removeItem("streakly:dsa:gemini_api_key");
+    localStorage.setItem("streakly:dsa:ai_enabled", "false");
+    toast({
+      title: "API Key Removed",
+      description: "Gemini API Key cleared and AI companion disabled.",
+      variant: "success",
+    });
+  };
 
   // Sync internal state when profile data loads
   useEffect(() => {
@@ -226,6 +270,84 @@ export default function ProfilePage() {
             onCheckedChange={handleToggleEmail}
             disabled={updateMutation.isPending}
           />
+        </div>
+
+        {/* Gemini AI Integration Section */}
+        <div className="md:col-span-2 flex flex-col p-6 bg-gradient-to-br from-violet-600/5 to-indigo-600/5 border border-violet-500/10 rounded-3xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-500 shadow-sm border border-violet-500/20">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-foreground flex items-center gap-1.5">
+                  Gemini AI Auto-Fill
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Power up your DSA problem solver with intelligent auto-fill
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://aistudio.google.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-black uppercase tracking-widest text-violet-500 hover:text-violet-400 transition-colors flex items-center gap-1 self-start sm:self-auto"
+            >
+              Get Free API Key <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+
+          <div className="space-y-3 relative z-10">
+            <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
+              Configure your Gemini AI API Key once to enable instant, automatic generation of platform URLs, topic tags, optimal time/space complexities, intuitions, and working code solutions when adding problems to your DSA vault. Your key is stored locally in your browser and never leaves your device.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60">
+                  <Key className="h-4 w-4" />
+                </div>
+                <input
+                  type={showKey ? "text" : "password"}
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="Enter your AI Studio API key (starts with AIzaSy...)"
+                  className="w-full bg-background border border-border/60 focus:border-violet-500 focus:ring-4 ring-violet-500/5 rounded-2xl pl-11 pr-11 py-3 text-sm outline-none transition-all font-mono"
+                />
+                {geminiApiKey && (
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                  >
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveApiKey}
+                  disabled={!geminiApiKey.trim()}
+                  className="flex-1 sm:flex-initial bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs uppercase tracking-widest px-6 h-12 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-md shadow-violet-500/10 disabled:opacity-50 disabled:scale-100 disabled:shadow-none"
+                >
+                  Save Key
+                </button>
+                {isKeySaved && (
+                  <button
+                    type="button"
+                    onClick={handleClearApiKey}
+                    className="p-3 bg-secondary hover:bg-destructive/15 text-muted-foreground hover:text-destructive border border-border/40 hover:border-destructive/20 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all"
+                    title="Remove API Key"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
