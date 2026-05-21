@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import {
   Code,
   Plus,
@@ -18,13 +18,12 @@ import {
   History,
   Sparkles,
   Trophy,
-  Flame,
   ChevronDown,
   ChevronUp,
   Copy,
   PenTool,
 } from "lucide-react";
-import { format, addDays, isPast } from "date-fns";
+import { format, isPast } from "date-fns";
 import { Timestamp } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { useAuthGuard } from "@/components/auth-guard";
@@ -297,11 +296,7 @@ export default function DSAPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Metrics calculations
-  const totalSolved = items.length;
-  const easySolved = items.filter((i) => i.difficulty === "Easy").length;
-  const mediumSolved = items.filter((i) => i.difficulty === "Medium").length;
-  const hardSolved = items.filter((i) => i.difficulty === "Hard").length;
+
 
   const dueItems = items.filter(
     (item) =>
@@ -310,29 +305,7 @@ export default function DSAPage() {
       item.reviewCount < SRS_INTERVALS.length
   );
 
-  // Topics solved count
-  const topicsMap: { [key: string]: number } = {};
-  items.forEach((item) => {
-    item.topics.forEach((t) => {
-      topicsMap[t] = (topicsMap[t] || 0) + 1;
-    });
-  });
 
-  // Calculate consistency streak (basic check for last 7 days)
-  const last7Days = Array.from({ length: 7 }).map((_, i) => {
-    const d = addDays(new Date(), -i);
-    return {
-      date: d,
-      dateString: format(d, "yyyy-MM-dd"),
-      dayOfWeek: format(d, "EEE"),
-      solved: items.some((item) => {
-        const itemDate = item.createdAt?.toDate();
-        return itemDate && format(itemDate, "yyyy-MM-dd") === format(d, "yyyy-MM-dd");
-      }),
-    };
-  }).reverse();
-
-  const currentStreak = last7Days.reduce((acc, day) => (day.solved ? acc + 1 : acc), 0);
 
   // Filtering
   const searchedItems = items.filter(
@@ -380,9 +353,6 @@ export default function DSAPage() {
           <h1 className="text-5xl font-black tracking-tighter">
             DSA Tracker
           </h1>
-          <p className="text-muted-foreground font-medium max-w-sm">
-            Track solved problems, record core intuitions, and review via Spaced Repetition.
-          </p>
         </div>
 
         <div className="flex gap-4">
@@ -410,88 +380,7 @@ export default function DSAPage() {
         </div>
       </header>
 
-      {/* Grid: Metrics, Streak & Topic Mastery */}
-      <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Metric Solved */}
-        <div className="bg-gradient-to-br from-card to-secondary/10 border border-border/60 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total Solved</span>
-          <div className="flex items-baseline gap-2 py-4">
-            <span className="text-6xl font-black tracking-tighter">{totalSolved}</span>
-            <span className="text-xs text-muted-foreground font-bold">problems</span>
-          </div>
-          <div className="flex gap-2">
-            <span className="text-[10px] font-black uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 px-2 py-1 rounded-md">
-              E: {easySolved}
-            </span>
-            <span className="text-[10px] font-black uppercase bg-amber-500/10 border border-amber-500/20 text-amber-500 px-2 py-1 rounded-md">
-              M: {mediumSolved}
-            </span>
-            <span className="text-[10px] font-black uppercase bg-rose-500/10 border border-rose-500/20 text-rose-500 px-2 py-1 rounded-md">
-              H: {hardSolved}
-            </span>
-          </div>
-        </div>
 
-        {/* Streak / Consistency */}
-        <div className="bg-gradient-to-br from-card to-secondary/10 border border-border/60 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Consistency Log</span>
-            <div className="flex items-center gap-1.5 text-xs text-orange-500 font-black uppercase">
-              <Flame className="h-4 w-4" />
-              {currentStreak} Day Streak
-            </div>
-          </div>
-          <div className="flex justify-between py-6">
-            {last7Days.map((day) => (
-              <div key={day.dateString} className="flex flex-col items-center gap-2">
-                <span className="text-[9px] font-black text-muted-foreground/40 uppercase">{day.dayOfWeek}</span>
-                <div
-                  className={`h-7 w-7 rounded-lg border transition-all ${
-                    day.solved
-                      ? "bg-emerald-500 border-emerald-500 shadow-md shadow-emerald-500/20"
-                      : "bg-secondary/20 border-border/40"
-                  }`}
-                  title={day.solved ? `Solved on ${day.dateString}` : "No solves"}
-                />
-              </div>
-            ))}
-          </div>
-          <span className="text-[9px] font-black text-muted-foreground/30 uppercase text-center block">Streak updates instantly upon solves</span>
-        </div>
-
-        {/* Topic Mastery breakdown */}
-        <div className="md:col-span-2 bg-gradient-to-br from-card to-secondary/10 border border-border/60 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 block">Topic Distribution</span>
-          <div className="grid grid-cols-2 gap-4 max-h-[110px] overflow-y-auto pr-2">
-            {Object.entries(topicsMap).length === 0 ? (
-              <div className="col-span-2 text-xs text-muted-foreground font-medium italic py-6 text-center">
-                Add solved problems to see topic coverage
-              </div>
-            ) : (
-              Object.entries(topicsMap)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 6)
-                .map(([topic, count]) => {
-                  const percentage = Math.min(100, Math.round((count / totalSolved) * 100));
-                  return (
-                    <div key={topic} className="space-y-1">
-                      <div className="flex justify-between text-xs font-black uppercase tracking-wider text-muted-foreground">
-                        <span>{topic}</span>
-                        <span>{count} solved</span>
-                      </div>
-                      <div className="h-2 w-full bg-secondary/40 rounded-full overflow-hidden border border-border/20">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Add New Problem Form - Premium Drawer / Collapsible block */}
       {isOpenAddForm && (
@@ -783,10 +672,10 @@ export default function DSAPage() {
                     const isCompleted = item.reviewCount >= SRS_INTERVALS.length;
 
                     return (
-                      <tr
-                        key={item.id}
-                        className="hover:bg-secondary/5 transition-all group/row"
-                      >
+                      <Fragment key={item.id}>
+                        <tr
+                          className="hover:bg-secondary/5 transition-all group/row"
+                        >
                         {/* Table layout detail row rendering toggle */}
                         <td className="p-4 text-center border-r border-border/50 align-middle">
                           <button
@@ -1063,42 +952,30 @@ export default function DSAPage() {
                           )}
                         </td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Collapsible detail rows rendered underneath the table rows */}
-        <div className="space-y-4">
-          {filteredItems.map((item) => {
-            const isExpanded = expandedIds.has(item.id);
-            if (!isExpanded) return null;
-
-            return (
-              <div
-                key={`detail-${item.id}`}
-                className="bg-secondary/10 border border-border/40 rounded-2xl p-6 space-y-4 animate-in slide-in-from-top-2 duration-300"
-              >
-                <div className="w-full">
-                  {/* Intuition section */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
-                      <BookOpen className="h-4 w-4" />
-                      The Intuition / Approach
-                    </h4>
-                    <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {item.intuition || "No approach logged for this problem yet. Add one in edit mode."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                      {isExpanded && (
+                        <tr className="bg-secondary/10 transition-all animate-in fade-in duration-200">
+                          <td colSpan={5} className="p-6 border-t border-border/40">
+                            <div className="space-y-2">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                                <BookOpen className="h-4 w-4" />
+                                The Intuition / Approach
+                              </h4>
+                              <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                {item.intuition || "No approach logged for this problem yet. Add one in edit mode."}
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
 
       {/* Focus revision modal with Whiteboard sketchpad */}
       {inFocusSession && dueItems.length > 0 && (
