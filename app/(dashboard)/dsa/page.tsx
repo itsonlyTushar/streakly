@@ -555,7 +555,25 @@ export default function DSAPage() {
         </div>
       </header>
 
-
+      {/* Small Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Vaulted</span>
+          <span className="text-2xl font-black">{items.length}</span>
+        </div>
+        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Mastered</span>
+          <span className="text-2xl font-black">{items.filter(i => i.reviewCount >= SRS_INTERVALS.length).length}</span>
+        </div>
+        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Due Review</span>
+          <span className="text-2xl font-black">{dueItems.length}</span>
+        </div>
+        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Hard Mode</span>
+          <span className="text-2xl font-black">{items.filter(i => i.difficulty === "Hard").length}</span>
+        </div>
+      </div>
 
       {/* Add New Problem Form - Premium Drawer / Collapsible block */}
       {isOpenAddForm && (
@@ -1007,6 +1025,12 @@ export default function DSAPage() {
                                   </button>
                                 ))}
                               </div>
+                              <textarea
+                                value={editIntuition}
+                                onChange={(e) => setEditIntuition(e.target.value)}
+                                placeholder="The Intuition / Approach"
+                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-y"
+                              />
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleSaveEdit(item.id)}
