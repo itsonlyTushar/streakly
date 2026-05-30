@@ -3,6 +3,9 @@ import { z } from "zod";
 export const DSADifficultySchema = z.enum(["Easy", "Medium", "Hard"]);
 export type DSADifficulty = z.infer<typeof DSADifficultySchema>;
 
+export const DSAPrioritySchema = z.enum(["High", "Medium", "Low", "Unprioritized"]);
+export type DSAPriority = z.infer<typeof DSAPrioritySchema>;
+
 export const DSAItemSchema = z.object({
   id: z.string(),
   userId: z.string(),
@@ -10,6 +13,7 @@ export const DSAItemSchema = z.object({
   problemName: z.string().min(1, "Problem name is required"),
   problemUrl: z.string().optional().nullable(),
   difficulty: DSADifficultySchema,
+  priority: DSAPrioritySchema.default("Unprioritized"),
   topics: z.array(z.string()).default([]),
   timeComplexity: z.string().optional().nullable(),
   spaceComplexity: z.string().optional().nullable(),

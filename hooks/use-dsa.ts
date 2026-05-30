@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { dsaService, DSAItem } from "@/services/dsa.service";
 import { useAuth } from "@/components/auth-provider";
 import { useMutationWrapper } from "./use-mutation-wrapper";
-import { DSADifficulty } from "@/lib/schemas/dsa.schema";
+import { DSADifficulty, DSAPriority } from "@/lib/schemas/dsa.schema";
 
 const QUERY_KEY = ["dsa"];
 
@@ -46,6 +46,7 @@ export function useAddDSAItem() {
       intuition?: string | null;
       codeSnippet?: string | null;
       nextReviewDate: Date | null;
+      priority?: DSAPriority;
     }) => {
       if (!user) throw new Error("Auth required");
       return dsaService.addItem({

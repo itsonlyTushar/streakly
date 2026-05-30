@@ -24,8 +24,11 @@ import {
   Copy,
   PenTool,
   Info,
+  Kanban,
+  List,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
+import { DSAKanbanBoard } from "@/components/dsa/dsa-kanban-board";
 import { Timestamp } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { useAuthGuard } from "@/components/auth-guard";
@@ -81,6 +84,9 @@ export default function DSAPage() {
   const deleteMutation = useDeleteDSAItem();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
+
+  // View states
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
 
   // Form states
   const [isOpenAddForm, setIsOpenAddForm] = useState(false);
@@ -830,8 +836,34 @@ export default function DSAPage() {
             />
           </div>
 
-          <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50 self-end md:self-auto uppercase tracking-wider">
-            {filteredItems.length} of {items.length} Vaulted
+          <div className="flex items-center gap-4 self-end md:self-auto">
+            <div className="flex items-center bg-secondary/30 rounded-xl p-1 border border-border/50">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-2 rounded-lg flex items-center justify-center transition-all ${
+                  viewMode === "table"
+                    ? "bg-background text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+                title="Table View"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`p-2 rounded-lg flex items-center justify-center transition-all ${
+                  viewMode === "kanban"
+                    ? "bg-background text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+                title="Kanban View"
+              >
+                <Kanban className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50 uppercase tracking-wider">
+              {filteredItems.length} of {items.length} Vaulted
+            </div>
           </div>
         </div>
 
@@ -909,9 +941,12 @@ export default function DSAPage() {
           </div>
         </div>
 
-        {/* The DSA Problems Table */}
-        <div className="overflow-hidden rounded-2xl border border-border shadow-md bg-card">
-          <div className="overflow-x-auto">
+        {/* Render View */}
+        {viewMode === "kanban" ? (
+          <DSAKanbanBoard items={filteredItems} />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-border shadow-md bg-card">
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-secondary/40 border-b border-border">
@@ -1265,6 +1300,7 @@ export default function DSAPage() {
           </table>
         </div>
       </div>
+      )}
     </div>
 
       {/* Focus revision modal with Whiteboard sketchpad */}

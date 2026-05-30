@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-import { DSAItem, DSAItemSchema, DSADifficulty } from "@/lib/schemas/dsa.schema";
+import { DSAItem, DSAItemSchema, DSADifficulty, DSAPriority } from "@/lib/schemas/dsa.schema";
 export type { DSAItem };
 
 const COLLECTION_NAME = "dsa";
@@ -69,6 +69,7 @@ export const dsaService = {
     intuition?: string | null;
     codeSnippet?: string | null;
     nextReviewDate: Date | null;
+    priority?: DSAPriority;
   }) => {
     const {
       userId,
@@ -82,6 +83,7 @@ export const dsaService = {
       intuition,
       codeSnippet,
       nextReviewDate,
+      priority,
     } = params;
 
     return await addDoc(collection(db, COLLECTION_NAME), {
@@ -98,6 +100,7 @@ export const dsaService = {
       dateLearned: serverTimestamp(),
       nextReviewDate: nextReviewDate ? Timestamp.fromDate(nextReviewDate) : null,
       reviewCount: 0,
+      priority: priority || "Unprioritized",
       createdAt: serverTimestamp(),
     });
   },
