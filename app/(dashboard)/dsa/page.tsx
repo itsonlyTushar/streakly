@@ -35,6 +35,7 @@ import { useAuthGuard } from "@/components/auth-guard";
 import { CanvasDraw } from "@/components/notebook/canvas-draw";
 import { useToast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
+import { CodeBlock, CodeTextarea } from "@/components/ui/code-block";
 
 import {
   useDSAItems,
@@ -798,6 +799,17 @@ export default function DSAPage() {
               />
             </div>
 
+            {/* Solution / Code Snippet */}
+            <div className="md:col-span-12">
+              <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                Solution / Code Snippet
+              </label>
+              <CodeTextarea
+                value={codeSnippet}
+                onChange={setCodeSnippet}
+              />
+            </div>
+
             {/* Spaced Repetition toggle */}
             <div className="md:col-span-12 flex items-center justify-between bg-background border border-border/60 p-4 rounded-xl">
               <div className="space-y-0.5">
@@ -1066,6 +1078,12 @@ export default function DSAPage() {
                                 placeholder="The Intuition / Approach"
                                 className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-y"
                               />
+                              <CodeTextarea
+                                value={editSnippet}
+                                onChange={setEditSnippet}
+                                placeholder="Solution / Code Snippet"
+                                minHeight="80px"
+                              />
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleSaveEdit(item.id)}
@@ -1280,14 +1298,28 @@ export default function DSAPage() {
                       {isExpanded && (
                         <tr className="bg-secondary/10 transition-all animate-in fade-in duration-200">
                           <td colSpan={5} className="p-6 border-t border-border/40">
-                            <div className="space-y-2">
-                              <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
-                                <BookOpen className="h-4 w-4" />
-                                The Intuition / Approach
-                              </h4>
-                              <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                {item.intuition || "No approach logged for this problem yet. Add one in edit mode."}
-                              </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              {/* Intuition */}
+                              <div className="space-y-2">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                                  <BookOpen className="h-4 w-4" />
+                                  The Intuition / Approach
+                                </h4>
+                                <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                  {item.intuition || "No approach logged for this problem yet. Add one in edit mode."}
+                                </p>
+                              </div>
+
+                              {/* Code Snippet - Syntax Highlighted */}
+                              {item.codeSnippet && (
+                                <div className="space-y-2">
+                                  <h4 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-1.5">
+                                    <Code className="h-4 w-4" />
+                                    Solution
+                                  </h4>
+                                  <CodeBlock code={item.codeSnippet} maxHeight="300px" />
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1401,6 +1433,13 @@ export default function DSAPage() {
                           {dueItems[sessionIndex].intuition || "No intuition stored."}
                         </p>
                       </div>
+
+                      {dueItems[sessionIndex].codeSnippet && (
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Solution:</div>
+                          <CodeBlock code={dueItems[sessionIndex].codeSnippet!} maxHeight="250px" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
