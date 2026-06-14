@@ -5,7 +5,7 @@ import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { useState, createContext, useContext, useCallback } from "react";
 
 interface AuthGuardContextType {
-  requireAuth: (action: () => void) => void;
+  requireAuth: (action: () => void | Promise<void>) => void;
 }
 
 const AuthGuardContext = createContext<AuthGuardContextType | undefined>(undefined);
@@ -15,20 +15,24 @@ export function AuthGuardProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
-  const requireAuth = useCallback((action: () => void) => {
+  const requireAuth = useCallback((action: () => void | Promise<void>) => {
     if (!user) {
       setPendingAction(() => action);
       setIsOpen(true);
     } else {
-      action();
+      void Promise.resolve(action());
     }
   }, [user]);
 
   const handleConfirm = async () => {
     setIsOpen(false);
     await loginWithGoogle();
-    // Note: After login, the page will reload/redirect, so the pending action 
-    // won't automatically execute. This is fine as the user will be logged in now.
+
+    if (pendingAction) {
+      const action = pendingAction;
+      setPendingAction(null);
+      await Promise.resolve(action());
+    }
   };
 
   return (

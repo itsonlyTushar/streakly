@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useMutationWrapper } from "@/hooks/use-mutation-wrapper";
 import {
@@ -34,6 +34,11 @@ export function useMachineCodingItems() {
 
 export function useAddMachineCodingItem() {
   const { user } = useAuth();
+  const userRef = useRef(user);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   return useMutationWrapper({
     mutationFn: (vars: {
@@ -42,24 +47,35 @@ export function useAddMachineCodingItem() {
       solutionCode: string;
       language: "JavaScript" | "React";
     }) => {
-      if (!user) throw new Error("Auth required");
+      const currentUser = userRef.current;
+      if (!currentUser) throw new Error("Auth required");
+
       return machineCodingService.addItem({
-        userId: user.uid,
-        email: user.email,
+        userId: currentUser.uid,
+        email: currentUser.email,
         ...vars,
       });
     },
-    invalidateKeys: [[QUERY_KEY, user?.uid]],
+    invalidateKeys: [[QUERY_KEY]],
     successMessage: "Machine-coding entry saved to your library.",
   });
 }
 
 export function useDeleteMachineCodingItem() {
   const { user } = useAuth();
+  const userRef = useRef(user);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   return useMutationWrapper({
-    mutationFn: (itemId: string) => machineCodingService.deleteItem(itemId),
-    invalidateKeys: [[QUERY_KEY, user?.uid]],
+    mutationFn: (itemId: string) => {
+      const currentUser = userRef.current;
+      if (!currentUser) throw new Error("Auth required");
+      return machineCodingService.deleteItem(itemId);
+    },
+    invalidateKeys: [[QUERY_KEY]],
     successMessage: "Machine-coding entry removed.",
   });
 }
