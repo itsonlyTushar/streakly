@@ -11,6 +11,7 @@ import {
   Brain,
   Book,
   Code,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -44,6 +45,7 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
     { href: "/app", icon: LayoutDashboard, label: "Active Goals" },
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
     { href: "/dsa", icon: Code, label: "DSA Arena" },
+    { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
@@ -82,6 +84,15 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
       onClick: () => router.push("/dsa"),
       className:
         pathname === "/dsa" ? "border-primary bg-secondary shadow-inner" : "",
+    },
+    {
+      icon: <Cpu className="h-5 w-5" />,
+      label: "Machine Coding",
+      onClick: () => router.push("/machine-coding"),
+      className:
+        pathname === "/machine-coding"
+          ? "border-primary bg-secondary shadow-inner"
+          : "",
     },
     {
       icon: <Trophy className="h-5 w-5" />,
