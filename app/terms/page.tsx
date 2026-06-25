@@ -144,11 +144,6 @@ export default function TermsOfService() {
           </section>
         </article>
 
-        <footer className="mt-20 pt-10 border-t border-border/10 text-center">
-          <p className="text-sm text-muted-foreground uppercase tracking-widest font-bold">
-            The finish line is just a series of starts.
-          </p>
-        </footer>
       </motion.div>
     </div>
   );
