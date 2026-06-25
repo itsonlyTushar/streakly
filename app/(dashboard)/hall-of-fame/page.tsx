@@ -10,7 +10,7 @@ export default function HallOfFamePage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="text-muted-foreground animate-pulse font-heading text-2xl flex items-center gap-1">
+        <div className="text-muted-foreground font-heading text-2xl flex items-center gap-1">
           <Logo />...
         </div>
       </div>
@@ -18,10 +18,10 @@ export default function HallOfFamePage() {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       <header className="space-y-4">
-        <h1 className="text-6xl font-v-headings tracking-tighter">Hall of Fame</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl">
+        <h1 className="text-3xl md:text-4xl font-v-headings tracking-tighter">Hall of Fame</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl">
           A permanent record of your consistency. These goals are now part of who you are.
         </p>
       </header>
@@ -34,7 +34,7 @@ export default function HallOfFamePage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {goals.map((goal) => (
             <div key={goal.id} className="opacity-80 transition-opacity hover:opacity-100">
                 <GoalCard goal={goal} />

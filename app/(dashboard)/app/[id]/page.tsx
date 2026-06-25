@@ -167,7 +167,7 @@ export default function GoalDetailPage({
   const canComplete = !isCompleted && allNotesLogged && isPastDueDate;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 md:space-y-16 pb-20 px-4 md:px-0">
+    <div className="max-w-6xl mx-auto space-y-8 md:space-y-10 pb-20 px-4 md:px-0">
       {/* Header */}
       <header className="space-y-8">
         <Link
@@ -190,7 +190,7 @@ export default function GoalDetailPage({
             >
               {isCompleted ? "Hall of Fame" : "Active Goal"}
             </div>
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-v-headings tracking-tighter leading-[0.85] py-2">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-v-headings tracking-tighter leading-[0.85] py-2">
               {goal.goal}
             </h1>
             <div className="flex items-center gap-6 text-muted-foreground/60 pt-2">
@@ -212,9 +212,9 @@ export default function GoalDetailPage({
           {canComplete && (
             <button
               onClick={handleCompleteGoal}
-              className="h-20 px-10 bg-black text-white rounded-[2rem] font-bold text-2xl hover:scale-[1.03] active:scale-95 transition-all shadow-2xl flex items-center gap-3"
+              className="h-16 px-8 bg-black text-white rounded-[2rem] font-bold text-xl hover:scale-[1.03] active:scale-95 transition-all shadow-2xl flex items-center gap-3"
             >
-              <Trophy className="h-7 w-7 text-yellow-500" />
+              <Trophy className="h-6 w-6 text-yellow-500" />
               Enshrine Goal
             </button>
           )}
@@ -222,11 +222,11 @@ export default function GoalDetailPage({
       </header>
 
       {/* Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10 lg:gap-16 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 lg:gap-10 items-start">
         {/* Main Feed */}
         <section className="space-y-10">
           <div className="flex items-center justify-between">
-            <h2 className="text-3xl tracking-tight flex items-center gap-4 font-bold">
+            <h2 className="text-2xl tracking-tight flex items-center gap-4 font-bold">
               Progress
               <span className="px-3 py-1 bg-secondary rounded-xl text-xs text-muted-foreground font-v-body font-bold uppercase tracking-widest">
                 {timelineData.length} Days
@@ -287,7 +287,7 @@ export default function GoalDetailPage({
                       >
                         {format(day.date, "EEEE, MMM d")}
                         {day.isToday && (
-                          <span className="ml-3 animate-pulse">● Today</span>
+                          <span className="ml-3">● Today</span>
                         )}
                       </p>
                     </header>
@@ -297,7 +297,7 @@ export default function GoalDetailPage({
                         {day.dayNotes.map((note: any) => (
                           <div
                             key={note.id}
-                            className="bg-white dark:bg-card rounded-3xl p-8 border border-border/50 shadow-sm hover:shadow-md transition-shadow prose dark:prose-invert max-w-none"
+                            className="bg-white dark:bg-card rounded-3xl p-6 border border-border/50 shadow-sm hover:shadow-md transition-shadow prose dark:prose-invert max-w-none"
                           >
                             {editingNoteId === note.id ? (
                               <div className="space-y-4">
@@ -367,7 +367,7 @@ export default function GoalDetailPage({
                         ))}
                       </div>
                     ) : day.isMissed ? (
-                      <div className="bg-destructive/5 rounded-3xl p-10 border border-destructive/10 flex items-center gap-6 group/missed transition-colors hover:bg-destructive/[0.08]">
+                      <div className="bg-destructive/5 rounded-3xl p-6 border border-destructive/10 flex items-center gap-6 group/missed transition-colors hover:bg-destructive/[0.08]">
                         <div className="text-5xl grayscale opacity-20 font-bold group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">
                           :(
                         </div>
@@ -381,7 +381,7 @@ export default function GoalDetailPage({
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-secondary/10 rounded-3xl p-10 border border-dashed border-border/50 flex items-center gap-4 transition-colors hover:bg-secondary/20">
+                      <div className="bg-secondary/10 rounded-3xl p-6 border border-dashed border-border/50 flex items-center gap-4 transition-colors hover:bg-secondary/20">
                         <p className="text-sm text-muted-foreground/30 font-bold uppercase tracking-[0.15em]">
                           Pending Entry...
                         </p>
@@ -397,7 +397,7 @@ export default function GoalDetailPage({
                 <div
                   key={day.dateStr}
                   className={cn(
-                    "rounded-3xl p-8 transition-all border group relative",
+                    "rounded-3xl p-6 transition-all border group relative",
                     day.dayNotes.length > 0
                       ? "bg-white dark:bg-card border-border/50 shadow-sm"
                       : day.isMissed
@@ -419,7 +419,7 @@ export default function GoalDetailPage({
                         <CheckCircle2 className="h-4 w-4 text-white" />
                       </div>
                     ) : day.isToday ? (
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      <div className="w-2 h-2 rounded-full bg-primary" />
                     ) : day.isMissed ? (
                       <span className="text-2xl opacity-20 font-bold">:(</span>
                     ) : null}
@@ -505,9 +505,9 @@ export default function GoalDetailPage({
 
         {/* Logger */}
         <section className="lg:sticky lg:top-12">
-          <div className="bg-card rounded-[3rem] p-10 border border-border shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] space-y-10 relative overflow-hidden group/card">
+          <div className="bg-card rounded-[3rem] p-6 border border-border shadow-[0_32px_64px_-12px_rgba(0,0,0,0.1)] space-y-8 relative overflow-hidden group/card">
             <div className="space-y-3 relative z-10">
-              <h2 className="text-4xl tracking-tighter font-bold">
+              <h2 className="text-3xl tracking-tighter font-bold">
                 Activity Log
               </h2>
               <p className="text-muted-foreground font-medium text-sm leading-relaxed">
@@ -518,7 +518,7 @@ export default function GoalDetailPage({
             </div>
 
             {isCompleted ? (
-              <div className="bg-black/5 rounded-[2.5rem] p-10 text-center space-y-6 border border-black/5 relative z-10">
+              <div className="bg-black/5 rounded-[2.5rem] p-6 text-center space-y-6 border border-black/5 relative z-10">
                 <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto">
                   <Trophy className="h-10 w-10 text-yellow-600" />
                 </div>
@@ -548,7 +548,7 @@ export default function GoalDetailPage({
                       !newNote ||
                       newNote === "<p></p>"
                     }
-                    className="w-full h-20 bg-black text-white rounded-[2rem] font-bold text-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-20 shadow-2xl flex items-center justify-center gap-4 group"
+                    className="w-full h-16 bg-black text-white rounded-[2rem] font-bold text-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-20 shadow-2xl flex items-center justify-center gap-4 group"
                   >
                     {addNoteMutation.isPending
                       ? "Syncing..."

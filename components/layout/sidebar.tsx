@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Plus,
-  LayoutDashboard,
+  Target,
   Trophy,
   LogOut,
   User,
@@ -42,11 +42,11 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
   }, []);
 
   const navItems = [
-    { href: "/app", icon: LayoutDashboard, label: "Active Goals" },
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
     { href: "/dsa", icon: Code, label: "DSA Arena" },
     { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
+    { href: "/app", icon: Target, label: "Active Goals" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 
@@ -63,13 +63,6 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
       },
       className:
         "bg-primary text-primary-foreground border-primary shadow-lg scale-110",
-    },
-    {
-      icon: <LayoutDashboard className="h-5 w-5" />,
-      label: "Goals",
-      onClick: () => router.push("/app"),
-      className:
-        pathname === "/app" ? "border-primary bg-secondary shadow-inner" : "",
     },
     {
       icon: <Brain className="h-5 w-5" />,
@@ -104,6 +97,13 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
           : "",
     },
     {
+      icon: <Target className="h-5 w-5" />,
+      label: "Goals",
+      onClick: () => router.push("/app"),
+      className:
+        pathname === "/app" ? "border-primary bg-secondary shadow-inner" : "",
+    },
+    {
       icon: <User className="h-5 w-5" />,
       label: "Profile",
       onClick: () => router.push("/profile"),
@@ -134,8 +134,8 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden md:flex w-20 border-r border-border h-screen flex-col items-center py-8 bg-background sticky top-0 z-50">
-        <div className="mb-8">
+      <aside className="hidden md:flex w-16 border-r border-border h-screen flex-col items-center py-6 bg-background sticky top-0 z-50">
+        <div className="mb-6">
           <Tooltip content="Add New Goal" side="right">
             <button
               onClick={() => {
@@ -145,15 +145,15 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
                   onAddGoal();
                 }
               }}
-              className="w-10 h-10 md:w-12 md:h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
+              className="w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
               aria-label="Add New Goal"
             >
-              <Plus className="h-6 w-6" />
+              <Plus className="h-5 w-5" />
             </button>
           </Tooltip>
         </div>
 
-        <nav className="flex-1 flex flex-col gap-6">
+        <nav className="flex-1 flex flex-col gap-5">
           {navItems.map((item) => (
             <Tooltip key={item.href} content={item.label} side="right">
               <Link
@@ -165,13 +165,13 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
                     : "text-muted-foreground hover:text-primary hover:bg-secondary/50",
                 )}
               >
-                <item.icon className="h-6 w-6" />
+                <item.icon className="h-5 w-5" />
               </Link>
             </Tooltip>
           ))}
         </nav>
 
-        <div className="mt-auto flex flex-col items-center gap-6">
+        <div className="mt-auto flex flex-col items-center gap-5">
           <Tooltip content="Toggle Theme" side="right">
             <ThemeToggle />
           </Tooltip>
@@ -181,7 +181,7 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
                 onClick={() => setIsLogoutModalOpen(true)}
                 className="p-2 text-muted-foreground hover:text-destructive transition-colors"
               >
-                <LogOut className="h-6 w-6" />
+                <LogOut className="h-5 w-5" />
               </button>
             </Tooltip>
           )}

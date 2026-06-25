@@ -22,7 +22,6 @@ import {
   Trash2,
   Check,
   RefreshCw,
-  Trophy,
 } from "lucide-react";
 import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
@@ -64,17 +63,6 @@ export default function SRSPage() {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "due" | "in-progress" | "mastered" | "reminders"
   >("all");
-
-  // Focus Session states
-  const [inFocusSession, setInFocusSession] = useState(false);
-  const [sessionIndex, setSessionIndex] = useState(0);
-  const [revealDetails, setRevealDetails] = useState(false);
-
-  const handleStartFocusSession = () => {
-    setInFocusSession(true);
-    setSessionIndex(0);
-    setRevealDetails(false);
-  };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,34 +225,25 @@ export default function SRSPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-20 px-4">
+    <div className="max-w-6xl mx-auto space-y-8 pb-20 px-4">
       {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-8">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-2">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-primary text-sm font-black uppercase tracking-widest">
             <Sparkles className="h-4 w-4" />
             Active Learning
           </div>
-          <h1 className="text-5xl font-black tracking-tighter">
+          <h1 className="text-3xl md:text-4xl font-black tracking-tighter">
             Spaced Repetition
           </h1>
           <p className="text-muted-foreground font-medium max-w-sm">
             Retain mastery through scheduled revision milestones.
           </p>
         </div>
-        {counts.due > 0 && (
-          <button
-            onClick={handleStartFocusSession}
-            className="flex items-center gap-2.5 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-amber-500/25 border border-amber-400/20"
-          >
-            <Sparkles className="h-4 w-4 animate-pulse" />
-            Start Focus Session ({counts.due} Due)
-          </button>
-        )}
       </header>
 
       {/* Add New Learning Form - Refined & Premium */}
-      <section className="bg-gradient-to-br from-card to-secondary/20 border border-border/60 rounded-3xl p-6 md:p-8 shadow-2xl shadow-primary/5 relative group">
+      <section className="bg-gradient-to-br from-card to-secondary/20 border border-border/60 rounded-3xl p-5 md:p-6 shadow-2xl shadow-primary/5 relative group">
         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
           <div className="absolute -top-10 -right-10 p-8 text-primary/5 -rotate-12 transition-transform group-hover:scale-110 duration-700">
             <Brain className="h-64 w-64" />
@@ -400,7 +379,7 @@ export default function SRSPage() {
             }`}
           >
             <div
-              className={`h-2.5 w-2.5 rounded-full bg-amber-500 ${counts.due > 0 ? "animate-pulse" : ""}`}
+              className={`h-2.5 w-2.5 rounded-full bg-amber-500 ${counts.due > 0 ? "" : ""}`}
             />
             Due Now
             <span
@@ -663,7 +642,7 @@ export default function SRSPage() {
                                             isDone
                                               ? "bg-primary border-primary shadow-lg shadow-primary/20"
                                               : isCurrent && isDue
-                                                ? "border-amber-500 animate-pulse bg-amber-500/5"
+                                                ? "border-amber-500 bg-amber-500/5"
                                                 : "border-border/60 bg-secondary/20"
                                           }`}
                                         >
@@ -792,142 +771,6 @@ export default function SRSPage() {
         </div>
       </div>
 
-      {/* Spaced Repetition Focus Session Immersive Overlay */}
-      {inFocusSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-gradient-to-br from-card to-secondary/30 border border-border/80 rounded-3xl p-8 max-w-xl w-full shadow-2xl relative overflow-hidden">
-            {/* Decorative gradient glowing spots */}
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8 relative z-10">
-              <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Review Session ({sessionIndex + 1} of {counts.due})
-                </span>
-              </div>
-              <button
-                onClick={() => setInFocusSession(false)}
-                className="p-2 hover:bg-secondary rounded-full text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden mb-10 relative z-10">
-              <div
-                className="bg-gradient-to-r from-primary to-amber-500 h-full transition-all duration-300"
-                style={{ width: `${(sessionIndex / counts.due) * 100}%` }}
-              />
-            </div>
-
-            {/* Card content */}
-            {sessionIndex < counts.due ? (
-              (() => {
-                const currentDueItems = items.filter(
-                  (item) =>
-                    item.nextReviewDate &&
-                    isPast(item.nextReviewDate.toDate()) &&
-                    item.reviewCount < SRS_INTERVALS.length,
-                );
-                const item = currentDueItems[sessionIndex];
-
-                if (!item) return null;
-
-                return (
-                  <div className="space-y-8 relative z-10 flex flex-col min-h-[250px] justify-between">
-                    <div className="space-y-4">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-primary/60 bg-primary/5 px-2.5 py-1 rounded-full border border-primary/10 w-fit block">
-                        Active Recall Prompt
-                      </span>
-                      <h3 className="text-3xl font-black tracking-tight leading-tight">
-                        {item.topic}
-                      </h3>
-
-                      {revealDetails ? (
-                        <div className="mt-4 p-5 bg-background/50 border border-border/40 rounded-2xl animate-in slide-in-from-bottom-2 fade-in duration-300 text-sm font-medium text-foreground max-h-[150px] overflow-y-auto">
-                          {item.details || (
-                            <span className="italic text-muted-foreground">
-                              No extra details provided.
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setRevealDetails(true)}
-                          className="w-full py-8 border border-dashed border-border/80 rounded-2xl hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all font-bold text-sm flex items-center justify-center gap-2 group mt-4"
-                        >
-                          <Sparkles className="h-4 w-4 group-hover:rotate-12 transition-transform" />
-                          Click to Reveal Answer / Details
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Grading Controls */}
-                    {revealDetails && (
-                      <div className="flex items-center gap-4 mt-6 animate-in fade-in duration-200">
-                        <button
-                          onClick={async () => {
-                            await handleReviewForgot(item);
-                            if (sessionIndex + 1 < counts.due) {
-                              setSessionIndex(sessionIndex + 1);
-                              setRevealDetails(false);
-                            } else {
-                              setSessionIndex(counts.due);
-                            }
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 py-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-2xl hover:bg-destructive hover:text-white transition-all text-xs font-black uppercase tracking-widest active:scale-95"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                          Forgot
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await handleReviewSuccess(item);
-                            if (sessionIndex + 1 < counts.due) {
-                              setSessionIndex(sessionIndex + 1);
-                              setRevealDetails(false);
-                            } else {
-                              setSessionIndex(counts.due);
-                            }
-                          }}
-                          className="flex-1 flex items-center justify-center gap-2 py-4 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-2xl hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest"
-                        >
-                          <Check className="h-4 w-4" />
-                          Got it!
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()
-            ) : (
-              /* Celebration Completion Screen */
-              <div className="text-center py-10 space-y-6 relative z-10 animate-in zoom-in-95 fade-in duration-500">
-                <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 mb-2">
-                  <Trophy className="h-10 w-10 animate-bounce" />
-                </div>
-                <h3 className="text-3xl font-black tracking-tight">
-                  Review Complete!
-                </h3>
-                <p className="text-muted-foreground font-medium max-w-sm mx-auto">
-                  Amazing work! You've reviewed all pending topics for today.
-                  Keep up the active learning streak! 🚀
-                </p>
-                <button
-                  onClick={() => setInFocusSession(false)}
-                  className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-primary/20"
-                >
-                  Back to Topics
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

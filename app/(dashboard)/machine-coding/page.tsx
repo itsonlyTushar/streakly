@@ -4,7 +4,6 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Code2, Eye, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useAuthGuard } from "@/components/auth-guard";
 import { CodeBlock, CodeTextarea } from "@/components/ui/code-block";
-import { Modal } from "@/components/ui/modal";
 import {
   useAddMachineCodingItem,
   useDeleteMachineCodingItem,
@@ -40,7 +39,7 @@ export default function MachineCodingPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse">
+      <div className="space-y-6">
         <div className="h-10 w-60 rounded-2xl bg-secondary" />
         <div className="h-32 rounded-3xl bg-secondary" />
         <div className="h-48 rounded-3xl bg-secondary" />
@@ -92,7 +91,7 @@ export default function MachineCodingPage() {
       <header className="space-y-3 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3 text-primary">
-            <h1 className="text-4xl font-v-headings md:text-5xl">
+            <h1 className="text-3xl md:text-4xl font-v-headings">
               Machine Coding
             </h1>
           </div>
@@ -112,13 +111,24 @@ export default function MachineCodingPage() {
         </button>
       </header>
 
-      <section className="rounded-3xl border border-border bg-card shadow-sm">
-        <Modal
-          isOpen={isFormOpen}
-          onClose={() => setIsFormOpen(false)}
-          className="max-w-3xl rounded-[2rem] p-6 md:p-8"
+      {isFormOpen && (
+        <div
+          className="fixed inset-0 h-screen z-50 flex justify-end bg-background/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsFormOpen(false)}
         >
-          <form onSubmit={handleAddEntry} className="grid gap-5">
+          <aside
+            className="relative h-full w-full max-w-2xl overflow-y-auto border-l border-border bg-card p-6 shadow-2xl animate-in slide-in-from-right duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              className="absolute right-6 top-6 rounded-full border border-border p-2 text-muted-foreground transition-colors hover:bg-secondary"
+              aria-label="Close form"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <form onSubmit={handleAddEntry} className="grid gap-5">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.25em] text-primary">
                 New entry
@@ -207,8 +217,9 @@ export default function MachineCodingPage() {
               </button>
             </div>
           </form>
-        </Modal>
-      </section>
+          </aside>
+        </div>
+      )}
 
       <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -287,7 +298,7 @@ export default function MachineCodingPage() {
 
       {selectedEntry && (
         <div
-          className="fixed inset-0 z-50 flex justify-end bg-background/70 backdrop-blur-sm"
+          className="fixed inset-0 h-screen z-50 flex justify-end bg-background/70 backdrop-blur-sm"
           onClick={() => setSelectedEntry(null)}
         >
           <aside

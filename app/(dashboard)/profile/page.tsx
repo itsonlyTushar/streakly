@@ -19,6 +19,7 @@ import {
   Key,
   Eye,
   EyeOff,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
@@ -27,11 +28,11 @@ import { useSound } from "@/components/sound-provider";
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, loginWithGoogle, logout } = useAuth();
   const { toast } = useToast();
   const { data: profile, isLoading } = useProfile();
   const updateMutation = useUpdateProfile();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [newBio, setNewBio] = useState("");
   const { soundEnabled, setSoundEnabled } = useSound();
@@ -120,8 +121,6 @@ export default function ProfilePage() {
       }
     });
   };
-
-  const { loginWithGoogle } = useAuth();
 
   if (!user) {
     return (
@@ -226,7 +225,7 @@ export default function ProfilePage() {
         ) : (
           <div className="min-h-[100px] p-4 bg-secondary/20 rounded-2xl border border-transparent italic text-muted-foreground font-v-body">
             {isLoading ? (
-              <div className="animate-pulse flex space-y-2 flex-col">
+              <div className="flex space-y-2 flex-col">
                 <div className="h-4 bg-muted rounded w-3/4"></div>
                 <div className="h-4 bg-muted rounded w-1/2"></div>
               </div>
@@ -278,7 +277,7 @@ export default function ProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-violet-500/10 rounded-2xl text-violet-500 shadow-sm border border-violet-500/20">
-                <Sparkles className="w-5 h-5 animate-pulse" />
+                <Sparkles className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-bold text-lg text-foreground flex items-center gap-1.5">
@@ -351,8 +350,8 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="pt-8 border-t border-border/20">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-6 px-2">
+      <div className="pt-8 border-t border-border/20 space-y-4">
+        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground px-2">
           Legal
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -379,6 +378,21 @@ export default function ProfilePage() {
             </div>
           </Link>
         </div>
+
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-4 p-5 bg-destructive/5 hover:bg-destructive/10 rounded-2xl border border-destructive/20 hover:border-destructive/40 transition-all group"
+        >
+          <div className="p-2 bg-destructive/10 rounded-xl text-destructive group-hover:bg-destructive/20 transition-colors">
+            <LogOut className="w-5 h-5" />
+          </div>
+          <div className="text-left">
+            <p className="font-semibold text-destructive">Sign out</p>
+            <p className="text-xs text-muted-foreground">
+              {user.email}
+            </p>
+          </div>
+        </button>
       </div>
     </div>
   );

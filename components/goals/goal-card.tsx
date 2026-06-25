@@ -33,14 +33,14 @@ export function GoalCard({ goal }: GoalCardProps) {
     <Link
       href={`/app/${goal.id}`}
       className={cn(
-        "group rounded-[2.5rem] p-10 flex flex-col justify-between min-h-[320px] shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 relative overflow-hidden",
+        "group rounded-[2.5rem] p-6 md:p-7 flex flex-col justify-between min-h-[240px] shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 relative overflow-hidden",
         cardColor,
         isCompleted && "opacity-90 grayscale-[0.2]",
       )}
     >
       <div className="space-y-4 relative z-10">
         <header className="space-y-2 relative">
-          <h3 className="text-3xl leading-[1.1] text-black/80 tracking-tight font-bold">
+          <h3 className="text-2xl leading-[1.1] text-black/80 tracking-tight font-bold">
             {goal.goal}
           </h3>
           <p className="text-sm font-bold uppercase tracking-widest text-black/30">
@@ -64,7 +64,7 @@ export function GoalCard({ goal }: GoalCardProps) {
         {!isCompleted ? (
           <div className="flex flex-col">
             <span className={cn(
-              "text-5xl font-black leading-none tracking-tighter",
+              "text-4xl font-black leading-none tracking-tighter",
               daysLeft <= 0 ? "text-red-600/60" : "text-black/60"
             )}>
               {daysLeft > 0 ? daysLeft : daysLeft === 0 ? "!" : "!!"}
