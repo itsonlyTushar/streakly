@@ -25,6 +25,7 @@ import {
   Info,
   Kanban,
   List,
+  Play,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { DSAKanbanBoard } from "@/components/dsa/dsa-kanban-board";
@@ -496,7 +497,14 @@ export default function DSAPage() {
           </h1>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
+          <Link
+            href="/compiler"
+            className="flex items-center gap-2 px-5 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border border-border bg-card text-primary hover:border-primary/40 hover:scale-105 active:scale-95 shadow-sm"
+          >
+            <Play className="h-4 w-4" />
+            Python Compiler
+          </Link>
           <button
             onClick={handleToggleAddForm}
             className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border shadow-lg ${
