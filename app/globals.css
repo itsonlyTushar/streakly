@@ -61,12 +61,24 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     @apply font-v-body antialiased;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
   }
-  body::-webkit-scrollbar,
-  html::-webkit-scrollbar {
-    display: none;
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(150,150,150,0.25) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(150,150,150,0.25);
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(150,150,150,0.4);
   }
   h1 {
     @apply font-v-headings tracking-tighter;
@@ -122,6 +134,26 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Minimal thin scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.25);
   }
 }
 

@@ -405,7 +405,7 @@ export default function CompilerPage() {
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
-              className="w-full h-full resize-none outline-none placeholder:text-white/20"
+              className="w-full h-full resize-none outline-none placeholder:text-white/20 scrollbar-thin"
               style={{
                 background: "transparent",
                 color: "#d6deeb",
@@ -503,7 +503,7 @@ export default function CompilerPage() {
                 placeholder={"Enter inputs here, one per line...\ne.g.:\nAlice\n42"}
                 spellCheck={false}
                 rows={3}
-                className="w-full rounded-lg outline-none resize-none placeholder:text-white/15"
+                className="w-full rounded-lg outline-none resize-none placeholder:text-white/15 scrollbar-thin"
                 style={{
                   background: "rgba(255,255,255,0.04)",
                   color: "#d6deeb",
@@ -522,7 +522,7 @@ export default function CompilerPage() {
           {/* Terminal output */}
           <div
             ref={outputRef}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto scrollbar-thin"
             style={{
               background: "#0d1117",
               minHeight: showStdinPanel ? "260px" : "400px",
