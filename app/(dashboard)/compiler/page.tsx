@@ -160,7 +160,7 @@ export default function CompilerPage() {
       // Clean up Python traceback for nicer display
       const cleanError = errorMsg
         .replace(/PythonError: Traceback \(most recent call last\):\n/, "")
-        .replace(/\s+File "<exec>",/g, "\n📍 File "<exec>",");
+        .replace(/\s+File "<exec>",/g, '\n📍 File "<exec>",');
       setOutput((prev) => [...prev, `\n❌ Error:\n${cleanError}`]);
     } finally {
       setIsRunning(false);
