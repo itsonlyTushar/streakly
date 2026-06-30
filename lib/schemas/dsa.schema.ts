@@ -15,6 +15,7 @@ export const DSAItemSchema = z.object({
   difficulty: DSADifficultySchema,
   priority: DSAPrioritySchema.default("Unprioritized"),
   topics: z.array(z.string()).default([]),
+  subPattern: z.string().optional().nullable(),
   timeComplexity: z.string().optional().nullable(),
   spaceComplexity: z.string().optional().nullable(),
   intuition: z.string().optional().nullable(),

@@ -64,6 +64,7 @@ export const dsaService = {
     problemUrl?: string | null;
     difficulty: DSADifficulty;
     topics: string[];
+    subPattern?: string | null;
     timeComplexity?: string | null;
     spaceComplexity?: string | null;
     intuition?: string | null;
@@ -78,6 +79,7 @@ export const dsaService = {
       problemUrl,
       difficulty,
       topics,
+      subPattern,
       timeComplexity,
       spaceComplexity,
       intuition,
@@ -93,6 +95,7 @@ export const dsaService = {
       problemUrl: problemUrl?.trim() || null,
       difficulty,
       topics: topics.map(t => t.trim()).filter(Boolean),
+      subPattern: subPattern?.trim() || null,
       timeComplexity: timeComplexity?.trim() || null,
       spaceComplexity: spaceComplexity?.trim() || null,
       intuition: intuition?.trim() || null,

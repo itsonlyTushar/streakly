@@ -134,7 +134,12 @@ export function DSAKanbanBoard({ items }: DSAKanbanBoardProps) {
                                 {item.difficulty}
                               </span>
                             </div>
-                            <h4 className="font-bold text-sm mb-3 leading-tight">{item.problemName}</h4>
+                            <h4 className={`font-bold text-sm leading-tight ${item.subPattern ? "mb-1" : "mb-3"}`}>{item.problemName}</h4>
+                            {item.subPattern && (
+                              <div className="text-[10px] font-semibold text-violet-500 mb-2.5 truncate" title={item.subPattern}>
+                                ↳ {item.subPattern}
+                              </div>
+                            )}
                             <div className="flex flex-wrap gap-1 mb-3">
                               {item.topics.slice(0, 3).map((t) => (
                                 <span key={t} className="px-1.5 py-0.5 bg-secondary/80 text-muted-foreground rounded text-[8px] font-black uppercase border border-border/40">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Fragment, useEffect } from "react";
+import { useState, Fragment, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Code,
@@ -26,6 +26,28 @@ import {
   Kanban,
   List,
   Play,
+  Layers,
+  UnfoldHorizontal,
+  Columns2,
+  CircleSlash2,
+  Repeat2,
+  SendToBack,
+  SquareFunction,
+  DollarSign,
+  ArrowDownWideNarrow,
+  Binary,
+  SquareMinus,
+  Layers2,
+  LayersPlus,
+  GitPullRequestDraft,
+  TableOfContents,
+  ReplaceAll,
+  DatabaseSearch,
+  MapPlus,
+  TreePalm,
+  Cable,
+  Merge,
+  type LucideIcon,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { DSAKanbanBoard } from "@/components/dsa/dsa-kanban-board";
@@ -48,23 +70,45 @@ import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/
 const PRESET_TOPICS = [
   "Arrays",
   "String",
-  "Two Pointers",
-  "Sliding Window",
-  "Binary Search",
   "Linked List",
   "Stack",
   "Queue",
   "Trees",
   "Graphs",
   "Heap",
+  "Hashmaps",
+  "Matrix",
+  "Trie",
+  "Segment Tree",
+  "Union Find",
+  "Intervals",
+  "Math",
+];
+
+const PRESET_PATTERNS = [
+  "Two Pointers",
+  "Sliding Window",
+  "Binary Search",
   "Recursion",
   "Backtracking",
   "Dynamic Programming",
   "Greedy",
   "Sorting",
-  "Hashmaps",
   "Bit Manipulation",
+  "Divide & Conquer",
+  "BFS",
+  "DFS",
+  "Heaps",
+  "Ques",
+  "Subset Combinational",
+  "Modified Binary Search",
+  "Graph Traversal",
+  "Trie",
+  "Linked List",
+  "Merge Intervals",
 ];
+
+const ALL_TAGS = [...PRESET_TOPICS, ...PRESET_PATTERNS];
 
 const COMPLEXITIES = ["O(1)", "O(log N)", "O(N)", "O(N log N)", "O(N^2)", "O(2^N)", "O(N!)"];
 
@@ -77,6 +121,227 @@ const generateLeetCodeUrl = (name: string) => {
   return `https://leetcode.com/problems/${slug}/`;
 };
 
+/* ─── Pattern Icon Map ─────────────────────────────────────────── */
+
+const PATTERN_ICONS: Record<string, LucideIcon> = {
+  "Two Pointers": UnfoldHorizontal,
+  "Sliding Window": Columns2,
+  "Binary Search": CircleSlash2,
+  "Recursion": Repeat2,
+  "Backtracking": SendToBack,
+  "Dynamic Programming": SquareFunction,
+  "Greedy": DollarSign,
+  "Sorting": ArrowDownWideNarrow,
+  "Bit Manipulation": Binary,
+  "Divide & Conquer": SquareMinus,
+  "BFS": Layers2,
+  "DFS": LayersPlus,
+  "Heaps": GitPullRequestDraft,
+  "Ques": TableOfContents,
+  "Subset Combinational": ReplaceAll,
+  "Modified Binary Search": DatabaseSearch,
+  "Graph Traversal": MapPlus,
+  "Trie": TreePalm,
+  "Linked List": Cable,
+  "Merge Intervals": Merge,
+};
+
+/* ─── Patterns Accordion View ──────────────────────────────────── */
+
+interface PatternsViewProps {
+  items: any[];
+  expandedPatterns: Set<string>;
+  onTogglePattern: (pattern: string) => void;
+}
+
+function PatternsView({ items, expandedPatterns, onTogglePattern }: PatternsViewProps) {
+  // Group items by pattern – a problem can appear under multiple patterns
+  const patternGroups = useMemo(() => {
+    const groups: Record<string, typeof items> = {};
+    for (const pattern of PRESET_PATTERNS) {
+      const matching = items.filter((item) =>
+        item.topics?.some(
+          (t: string) => t.toLowerCase() === pattern.toLowerCase()
+        )
+      );
+      if (matching.length > 0) {
+        groups[pattern] = matching;
+      }
+    }
+    return groups;
+  }, [items]);
+
+  const patternKeys = Object.keys(patternGroups);
+
+  if (patternKeys.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Layers className="h-10 w-10 text-muted-foreground/20 mb-4" />
+        <p className="text-muted-foreground font-medium italic">
+          No problems matched any algorithmic pattern in the current filter.
+        </p>
+        <p className="text-xs text-muted-foreground/50 mt-1">
+          Tag your problems with patterns like Two Pointers, Sliding Window, etc.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {patternKeys.map((pattern) => {
+        const problems = patternGroups[pattern];
+        const isOpen = expandedPatterns.has(pattern);
+
+        return (
+          <div
+            key={pattern}
+            className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden transition-all"
+          >
+            {/* Accordion Header */}
+            <button
+              onClick={() => onTogglePattern(pattern)}
+              className="w-full flex items-center justify-between gap-3 px-5 py-4 hover:bg-secondary/30 transition-colors group/acc"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${
+                  isOpen
+                    ? "bg-violet-500 text-white shadow-md shadow-violet-500/20"
+                    : "bg-violet-500/10 text-violet-500"
+                }`}>
+                {(() => {
+                  const IconComp = PATTERN_ICONS[pattern] || Layers;
+                  return <IconComp className="h-4 w-4" />;
+                })()}
+                </div>
+                <span className="font-black text-sm uppercase tracking-wider">
+                  {pattern}
+                </span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                  isOpen
+                    ? "bg-violet-500/15 text-violet-500"
+                    : "bg-secondary text-muted-foreground"
+                }`}>
+                  {problems.length} {problems.length === 1 ? "problem" : "problems"}
+                </span>
+              </div>
+              <div className={`transition-transform duration-200 text-muted-foreground ${isOpen ? "rotate-180" : ""}`}>
+                <ChevronDown className="h-4 w-4" />
+              </div>
+            </button>
+
+            {/* Accordion Body */}
+            {isOpen && (
+              <div className="border-t border-border/50 divide-y divide-border/30 animate-in fade-in slide-in-from-top-1 duration-200">
+                {problems.map((item) => {
+                  const isCompleted = item.reviewCount >= SRS_INTERVALS.length;
+                  const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate()) && !isCompleted;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-4 px-5 py-3 hover:bg-secondary/10 transition-colors"
+                    >
+                      {/* Difficulty badge */}
+                      <span
+                        className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                          item.difficulty === "Easy"
+                            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+                            : item.difficulty === "Medium"
+                            ? "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                            : "bg-rose-500/10 border border-rose-500/20 text-rose-500"
+                        }`}
+                      >
+                        {item.difficulty}
+                      </span>
+
+                      {/* Problem name + link */}
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm truncate">
+                            {item.problemName}
+                          </span>
+                          {item.problemUrl && (
+                            <a
+                              href={item.problemUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="shrink-0 p-1 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                        {item.subPattern && (
+                          <span className="text-[10px] text-violet-500 font-bold tracking-wide mt-0.5">
+                            ↳ {item.subPattern}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Other topic/pattern tags (excluding current pattern) */}
+                      <div className="hidden md:flex items-center gap-1 shrink-0">
+                        {item.topics
+                          ?.filter((t: string) => t.toLowerCase() !== pattern.toLowerCase())
+                          .slice(0, 3)
+                          .map((t: string) => (
+                            <span
+                              key={t}
+                              className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                PRESET_PATTERNS.some((p) => p.toLowerCase() === t.toLowerCase())
+                                  ? "bg-violet-500/5 text-violet-400 border-violet-500/15"
+                                  : "bg-secondary/50 text-muted-foreground/60 border-border/20"
+                              }`}
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        {(item.topics?.filter((t: string) => t.toLowerCase() !== pattern.toLowerCase()).length ?? 0) > 3 && (
+                          <span className="text-[8px] text-muted-foreground/40 font-bold">
+                            +{(item.topics?.filter((t: string) => t.toLowerCase() !== pattern.toLowerCase()).length ?? 0) - 3}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Complexity */}
+                      <div className="hidden lg:flex items-center gap-3 shrink-0 text-[10px] text-muted-foreground/50 font-mono">
+                        <span>{item.timeComplexity || "O(?)"}</span>
+                        <span className="text-border">|</span>
+                        <span>{item.spaceComplexity || "O(?)"}</span>
+                      </div>
+
+                      {/* Review status */}
+                      <div className="shrink-0 w-20 text-right">
+                        {isCompleted ? (
+                          <span className="text-[9px] font-black uppercase text-emerald-500 flex items-center justify-end gap-1">
+                            <Trophy className="h-3 w-3" />
+                            Mastered
+                          </span>
+                        ) : isDue ? (
+                          <span className="text-[9px] font-black uppercase text-amber-500 flex items-center justify-end gap-1">
+                            <Clock className="h-3 w-3" />
+                            Due
+                          </span>
+                        ) : item.nextReviewDate ? (
+                          <span className="text-[9px] font-black uppercase text-muted-foreground/40">
+                            {format(item.nextReviewDate.toDate(), "MMM d")}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground/20 italic">—</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DSAPage() {
   const { data: items = [], isLoading } = useDSAItems();
   const addMutation = useAddDSAItem();
@@ -86,7 +351,7 @@ export default function DSAPage() {
   const { toast } = useToast();
 
   // View states
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const [viewMode, setViewMode] = useState<"table" | "kanban" | "patterns">("table");
 
   // Form states
   const [isOpenAddForm, setIsOpenAddForm] = useState(false);
@@ -95,6 +360,7 @@ export default function DSAPage() {
   const [isUrlPristine, setIsUrlPristine] = useState(true);
   const [difficulty, setDifficulty] = useState<DSADifficulty>("Medium");
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [subPattern, setSubPattern] = useState("");
   const [timeComplexity, setTimeComplexity] = useState("O(N)");
   const [spaceComplexity, setSpaceComplexity] = useState("O(1)");
   const [intuition, setIntuition] = useState("");
@@ -121,6 +387,9 @@ export default function DSAPage() {
   // Expand states for code snippets
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  // Expand states for pattern accordions
+  const [expandedPatterns, setExpandedPatterns] = useState<Set<string>>(new Set());
+
   // Copy status
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -130,6 +399,7 @@ export default function DSAPage() {
   const [editUrl, setEditUrl] = useState("");
   const [editDifficulty, setEditDifficulty] = useState<DSADifficulty>("Medium");
   const [editTopics, setEditTopics] = useState<string[]>([]);
+  const [editSubPattern, setEditSubPattern] = useState("");
   const [editTime, setEditTime] = useState("");
   const [editSpace, setEditSpace] = useState("");
   const [editIntuition, setEditIntuition] = useState("");
@@ -165,6 +435,7 @@ export default function DSAPage() {
           problemUrl: problemUrl.trim() || null,
           difficulty,
           topics: selectedTopics,
+          subPattern: subPattern.trim() || null,
           timeComplexity: timeComplexity || null,
           spaceComplexity: spaceComplexity || null,
           intuition: intuition.trim() || null,
@@ -178,6 +449,7 @@ export default function DSAPage() {
             setIsUrlPristine(true);
             setDifficulty("Medium");
             setSelectedTopics([]);
+            setSubPattern("");
             setTimeComplexity("O(N)");
             setSpaceComplexity("O(1)");
             setIntuition("");
@@ -218,7 +490,9 @@ export default function DSAPage() {
     const prompt = `You are a DSA expert. Given the problem name "${problemName.trim()}", analyze it and provide standard DSA information. Keep the intuition brief and direct (2-3 sentences max). Keep the code snippet clean, optimal, and without unnecessary comments:
 1. LeetCode URL (standard problem link)
 2. Difficulty (Easy, Medium, Hard)
-3. Topics (Choose relevant topics from this list: ${PRESET_TOPICS.join(", ")})
+3. Topics (Choose relevant data structure topics AND algorithmic patterns from these lists:
+   - Data Structure Topics: ${PRESET_TOPICS.join(", ")}
+   - Algorithmic Patterns: ${PRESET_PATTERNS.join(", ")})
 4. Time Complexity (e.g., O(N), O(N log N), O(1))
 5. Space Complexity (e.g., O(1), O(N))
 6. Intuition (Brief AHA! concept and core algorithmic idea in 2-3 sentences)
@@ -295,12 +569,12 @@ export default function DSAPage() {
         if (parsed.problemUrl) setProblemUrl(parsed.problemUrl);
         if (parsed.difficulty) setDifficulty(parsed.difficulty as DSADifficulty);
         
-        // Filter parsed topics against PRESET_TOPICS
+        // Filter parsed topics against ALL_TAGS (topics + patterns)
         if (Array.isArray(parsed.topics)) {
           const matchedTopics = parsed.topics.filter((topic: string) => {
-            return PRESET_TOPICS.some(t => t.toLowerCase() === topic.toLowerCase());
+            return ALL_TAGS.some(t => t.toLowerCase() === topic.toLowerCase());
           }).map((topic: string) => {
-            const original = PRESET_TOPICS.find(t => t.toLowerCase() === topic.toLowerCase());
+            const original = ALL_TAGS.find(t => t.toLowerCase() === topic.toLowerCase());
             return original || topic;
           });
           setSelectedTopics(matchedTopics);
@@ -382,6 +656,7 @@ export default function DSAPage() {
     setEditUrl(item.problemUrl || "");
     setEditDifficulty(item.difficulty);
     setEditTopics(item.topics || []);
+    setEditSubPattern(item.subPattern || "");
     setEditTime(item.timeComplexity || "");
     setEditSpace(item.spaceComplexity || "");
     setEditIntuition(item.intuition || "");
@@ -404,6 +679,7 @@ export default function DSAPage() {
             problemUrl: editUrl.trim() || null,
             difficulty: editDifficulty,
             topics: editTopics,
+            subPattern: editSubPattern.trim() || null,
             timeComplexity: editTime || null,
             spaceComplexity: editSpace || null,
             intuition: editIntuition.trim() || null,
@@ -734,12 +1010,12 @@ export default function DSAPage() {
               </select>
             </div>
 
-            {/* Preset Topics multi-select */}
+            {/* Data Structure Topics */}
             <div className="md:col-span-12">
               <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-2 block">
-                Core Topics / Patterns
+                📦 Data Structures
               </label>
-              <div className="flex flex-wrap gap-2 p-3 bg-background border border-border/60 rounded-xl max-h-[120px] overflow-y-auto">
+              <div className="flex flex-wrap gap-2 p-3 bg-background border border-border/60 rounded-xl">
                 {PRESET_TOPICS.map((topic) => {
                   const isSelected = selectedTopics.includes(topic);
                   return (
@@ -758,6 +1034,51 @@ export default function DSAPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Algorithmic Patterns */}
+            <div className="md:col-span-12">
+              <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-2 block">
+                🧩 Algorithmic Patterns
+              </label>
+              <div className="flex flex-wrap gap-2 p-3 bg-background border border-border/60 rounded-xl max-h-[140px] overflow-y-auto">
+                {PRESET_PATTERNS.map((pattern) => {
+                  const isSelected = selectedTopics.includes(pattern);
+                  return (
+                    <button
+                      key={pattern}
+                      type="button"
+                      onClick={() => handleTopicToggle(pattern)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all border ${
+                        isSelected
+                          ? "bg-violet-500 text-white border-violet-500"
+                          : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary"
+                      }`}
+                    >
+                      {pattern}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sub-Pattern / Variant */}
+            <div className="md:col-span-12">
+              <div className="flex items-center gap-1.5 ml-1 mb-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  Sub-Pattern / Variant Name (Optional)
+                </label>
+                <Tooltip content="Add a specific variant or sub-pattern (e.g. 'Three Pointers' under Two Pointers, or '0/1 Knapsack' under DP)" side="top">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary cursor-help transition-colors" />
+                </Tooltip>
+              </div>
+              <input
+                type="text"
+                value={subPattern}
+                onChange={(e) => setSubPattern(e.target.value)}
+                placeholder="e.g. Three Pointers, 0/1 Knapsack, Fast & Slow Pointers"
+                className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm font-bold focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all"
+              />
             </div>
 
             {/* Intuition / Explanation */}
@@ -847,6 +1168,17 @@ export default function DSAPage() {
               >
                 <Kanban className="h-4 w-4" />
               </button>
+              <button
+                onClick={() => setViewMode("patterns")}
+                className={`p-2 rounded-lg flex items-center justify-center transition-all ${
+                  viewMode === "patterns"
+                    ? "bg-background text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+                title="Patterns View"
+              >
+                <Layers className="h-4 w-4" />
+              </button>
             </div>
             <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50 uppercase tracking-wider">
               {filteredItems.length} of {items.length} Vaulted
@@ -921,9 +1253,16 @@ export default function DSAPage() {
               }`}
             >
               <option value="" className="text-foreground bg-background">Filter by Topic...</option>
-              {PRESET_TOPICS.map((topic) => (
-                <option key={topic} value={topic} className="text-foreground bg-background">{topic}</option>
-              ))}
+              <optgroup label="📦 Data Structures" className="text-foreground bg-background">
+                {PRESET_TOPICS.map((topic) => (
+                  <option key={topic} value={topic} className="text-foreground bg-background">{topic}</option>
+                ))}
+              </optgroup>
+              <optgroup label="🧩 Patterns" className="text-foreground bg-background">
+                {PRESET_PATTERNS.map((pattern) => (
+                  <option key={pattern} value={pattern} className="text-foreground bg-background">{pattern}</option>
+                ))}
+              </optgroup>
             </select>
           </div>
         </div>
@@ -931,6 +1270,19 @@ export default function DSAPage() {
         {/* Render View */}
         {viewMode === "kanban" ? (
           <DSAKanbanBoard items={filteredItems} />
+        ) : viewMode === "patterns" ? (
+          <PatternsView
+            items={filteredItems}
+            expandedPatterns={expandedPatterns}
+            onTogglePattern={(pattern) => {
+              setExpandedPatterns((prev) => {
+                const next = new Set(prev);
+                if (next.has(pattern)) next.delete(pattern);
+                else next.add(pattern);
+                return next;
+              });
+            }}
+          />
         ) : (
           <div className="overflow-hidden rounded-2xl border border-border shadow-md bg-card">
             <div className="overflow-x-auto">
@@ -1031,22 +1383,49 @@ export default function DSAPage() {
                                   </button>
                                 ))}
                               </div>
-                              <div className="flex flex-wrap gap-1 p-2 bg-background border rounded-lg max-h-[80px] overflow-y-auto">
-                                {PRESET_TOPICS.map((topic) => (
-                                  <button
-                                    key={topic}
-                                    type="button"
-                                    onClick={() => handleEditTopicToggle(topic)}
-                                    className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                      editTopics.includes(topic)
-                                        ? "bg-primary text-primary-foreground"
-                                        : "bg-secondary text-muted-foreground"
-                                    }`}
-                                  >
-                                    {topic}
-                                  </button>
-                                ))}
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-1 p-2 bg-background border rounded-lg">
+                                  <span className="w-full text-[8px] font-black uppercase tracking-wider text-muted-foreground/50 mb-0.5">📦 Data Structures</span>
+                                  {PRESET_TOPICS.map((topic) => (
+                                    <button
+                                      key={topic}
+                                      type="button"
+                                      onClick={() => handleEditTopicToggle(topic)}
+                                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                        editTopics.includes(topic)
+                                          ? "bg-primary text-primary-foreground"
+                                          : "bg-secondary text-muted-foreground"
+                                      }`}
+                                    >
+                                      {topic}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="flex flex-wrap gap-1 p-2 bg-background border rounded-lg max-h-[80px] overflow-y-auto">
+                                  <span className="w-full text-[8px] font-black uppercase tracking-wider text-muted-foreground/50 mb-0.5">🧩 Patterns</span>
+                                  {PRESET_PATTERNS.map((pattern) => (
+                                    <button
+                                      key={pattern}
+                                      type="button"
+                                      onClick={() => handleEditTopicToggle(pattern)}
+                                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                        editTopics.includes(pattern)
+                                          ? "bg-violet-500 text-white"
+                                          : "bg-secondary text-muted-foreground"
+                                      }`}
+                                    >
+                                      {pattern}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
+                              <input
+                                type="text"
+                                value={editSubPattern}
+                                onChange={(e) => setEditSubPattern(e.target.value)}
+                                placeholder="Sub-Pattern / Variant (e.g. 0/1 Knapsack)"
+                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-primary"
+                              />
                               <textarea
                                 value={editIntuition}
                                 onChange={(e) => setEditIntuition(e.target.value)}
@@ -1141,7 +1520,12 @@ export default function DSAPage() {
                                 )}
                               </div>
 
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex flex-wrap gap-1.5 items-center">
+                                {item.subPattern && (
+                                  <span className="px-2 py-0.5 bg-violet-500/10 text-violet-500 rounded-md text-[9px] font-black uppercase tracking-wider border border-violet-500/20" title={`Sub-pattern: ${item.subPattern}`}>
+                                    ↳ {item.subPattern}
+                                  </span>
+                                )}
                                 {item.topics.map((t) => (
                                   <span
                                     key={t}

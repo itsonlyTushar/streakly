@@ -41,6 +41,7 @@ export function useAddDSAItem() {
       problemUrl?: string | null;
       difficulty: DSADifficulty;
       topics: string[];
+      subPattern?: string | null;
       timeComplexity?: string | null;
       spaceComplexity?: string | null;
       intuition?: string | null;
