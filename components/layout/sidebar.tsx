@@ -134,7 +134,7 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden md:flex w-16 border-r border-border h-screen flex-col items-center py-6 bg-background sticky top-0 z-50">
+      <aside className="hidden md:flex w-16 border-r border-border h-screen flex-col items-center py-6 bg-background sticky top-0 z-50 print:hidden">
         <div className="mb-6">
           <Tooltip content="Add New Goal" side="right">
             <button
@@ -189,7 +189,7 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
       </aside>
 
       {/* Mobile Dock */}
-      <div className="md:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+      <div className="md:hidden fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none print:hidden">
         <div className="pointer-events-auto relative">
           <Dock items={dockItems} baseItemSize={38} panelHeight={52} />
         </div>

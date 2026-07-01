@@ -47,6 +47,10 @@ import {
   TreePalm,
   Cable,
   Merge,
+  Dumbbell,
+  Shuffle,
+  Timer,
+  Pause,
   type LucideIcon,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
@@ -274,7 +278,7 @@ function PatternsView({ items, expandedPatterns, onTogglePattern }: PatternsView
                         </div>
                         {item.subPattern && (
                           <span className="text-[10px] text-violet-500 font-bold tracking-wide mt-0.5">
-                            ↳ {item.subPattern}
+                            {item.subPattern}
                           </span>
                         )}
                       </div>
@@ -349,6 +353,145 @@ export default function DSAPage() {
   const deleteMutation = useDeleteDSAItem();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
+
+  // Practice Mode states
+  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
+  const [practiceProblems, setPracticeProblems] = useState<any[]>([]);
+  const [practiceTimeLeft, setPracticeTimeLeft] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [practiceStage, setPracticeStage] = useState<'preview' | 'solving' | 'completed'>('preview');
+  const [practiceResults, setPracticeResults] = useState<{ [id: string]: 'success' | 'failed' | null }>({});
+  const [revealIntuition, setRevealIntuition] = useState<{ [id: string]: boolean }>({});
+  const [revealCode, setRevealCode] = useState<{ [id: string]: boolean }>({});
+
+  // Practice Mode functions
+  const startPracticeSetup = () => {
+    if (items.length < 2) {
+      toast({
+        title: "Not enough problems.",
+        description: "You need at least 2 problems in your tracker to practice.",
+        variant: "error",
+      });
+      return;
+    }
+    const shuffled = [...items].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 2);
+    setPracticeProblems(selected);
+    
+    const getTimeForDiff = (diff: string) => {
+      if (diff === "Easy") return 20 * 60;
+      if (diff === "Hard") return 50 * 60;
+      return 35 * 60; // Medium
+    };
+    const totalTime = getTimeForDiff(selected[0].difficulty) + getTimeForDiff(selected[1].difficulty);
+    setPracticeTimeLeft(totalTime);
+    setPracticeStage('preview');
+    setIsTimerRunning(false);
+    setRevealIntuition({});
+    setRevealCode({});
+    setPracticeResults({
+      [selected[0].id]: null,
+      [selected[1].id]: null,
+    });
+    setIsPracticeOpen(true);
+  };
+
+  const rerollPractice = () => {
+    const shuffled = [...items].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 2);
+    setPracticeProblems(selected);
+    const getTimeForDiff = (diff: string) => {
+      if (diff === "Easy") return 20 * 60;
+      if (diff === "Hard") return 50 * 60;
+      return 35 * 60;
+    };
+    const totalTime = getTimeForDiff(selected[0].difficulty) + getTimeForDiff(selected[1].difficulty);
+    setPracticeTimeLeft(totalTime);
+    setRevealIntuition({});
+    setRevealCode({});
+    setPracticeResults({
+      [selected[0].id]: null,
+      [selected[1].id]: null,
+    });
+  };
+
+  const handleStartSolving = () => {
+    setPracticeStage('solving');
+    setIsTimerRunning(true);
+  };
+
+  const handleGoToComplete = () => {
+    setIsTimerRunning(false);
+    setPracticeStage('completed');
+  };
+
+  const handleFinishPractice = async () => {
+    requireAuth(async () => {
+      // Loop over the 2 selected problems
+      for (const problem of practiceProblems) {
+        const status = practiceResults[problem.id];
+        if (status === 'success') {
+          // Increment spaced repetition level
+          const nextReviewCount = problem.reviewCount + 1;
+          const nextDateValue = calculateNextReviewDate(nextReviewCount);
+          await updateMutation.mutateAsync({
+            itemId: problem.id,
+            data: {
+              reviewCount: nextReviewCount,
+              nextReviewDate: nextDateValue ? Timestamp.fromDate(nextDateValue) : null,
+            },
+          });
+        } else if (status === 'failed') {
+          // Reset spaced repetition path
+          const nextDateValue = calculateNextReviewDate(0);
+          await updateMutation.mutateAsync({
+            itemId: problem.id,
+            data: {
+              reviewCount: 0,
+              nextReviewDate: nextDateValue ? Timestamp.fromDate(nextDateValue) : null,
+            },
+          });
+        }
+      }
+      toast({
+        title: "Practice logged successfully!",
+        description: "Your Spaced Repetition timeline has been updated.",
+        variant: "success",
+      });
+      setIsPracticeOpen(false);
+    });
+  };
+
+  // Timer countdown hook
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isPracticeOpen && isTimerRunning && practiceStage === 'solving' && practiceTimeLeft > 0) {
+      interval = setInterval(() => {
+        setPracticeTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsTimerRunning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPracticeOpen, isTimerRunning, practiceStage, practiceTimeLeft]);
+
+  // Format time remaining
+  const formatPracticeTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const pad = (num: number) => String(num).padStart(2, '0');
+    if (hrs > 0) {
+      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    }
+    return `${pad(mins)}:${pad(secs)}`;
+  };
 
   // View states
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "patterns">("table");
@@ -697,10 +840,8 @@ export default function DSAPage() {
 
   const toggleExpandRow = (id: string) => {
     setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
+      const next = new Set<string>();
+      if (!prev.has(id)) {
         next.add(id);
       }
       return next;
@@ -774,44 +915,56 @@ export default function DSAPage() {
         </div>
 
         <div className="flex gap-3">
-          <Link
-            href="/compiler"
-            className="flex items-center gap-2 px-5 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border border-border bg-card text-primary hover:border-primary/40 hover:scale-105 active:scale-95 shadow-sm"
-          >
-            <Play className="h-4 w-4" />
-            Python Compiler
-          </Link>
-          <button
-            onClick={handleToggleAddForm}
-            className={`flex items-center gap-2 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all border shadow-lg ${
-              isOpenAddForm
-                ? "bg-secondary text-primary border-border"
-                : "bg-primary text-primary-foreground border-primary hover:scale-105 active:scale-95 shadow-primary/10"
-            }`}
-          >
-            {isOpenAddForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {isOpenAddForm ? "Cancel" : "Add Problem"}
-          </button>
+          <Tooltip content="Python Compiler" side="bottom">
+            <Link
+              href="/compiler"
+              className="flex items-center justify-center h-12 w-12 rounded-2xl transition-all border border-border bg-card text-primary hover:border-primary/40 hover:scale-105 active:scale-95 shadow-sm"
+            >
+              <Play className="h-5 w-5" />
+            </Link>
+          </Tooltip>
+
+          <Tooltip content="Practice Mode" side="bottom">
+            <button
+              onClick={startPracticeSetup}
+              className="flex items-center justify-center h-12 w-12 rounded-2xl transition-all border border-border bg-card text-primary hover:border-primary/40 hover:scale-105 active:scale-95 shadow-sm"
+            >
+              <Dumbbell className="h-5 w-5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip content={isOpenAddForm ? "Cancel" : "Add Problem"} side="bottom">
+            <button
+              onClick={handleToggleAddForm}
+              className={`flex items-center justify-center h-12 w-12 rounded-2xl transition-all border shadow-lg ${
+                isOpenAddForm
+                  ? "bg-secondary text-primary border-border"
+                  : "bg-primary text-primary-foreground border-primary hover:scale-105 active:scale-95 shadow-primary/10"
+              }`}
+            >
+              {isOpenAddForm ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+            </button>
+          </Tooltip>
         </div>
       </header>
 
-      {/* Small Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Vaulted</span>
-          <span className="text-2xl font-black">{items.length}</span>
+      {/* Sleek Metrics Bar */}
+      <div className="flex flex-wrap items-center gap-4 bg-secondary/15 backdrop-blur-md px-5 py-3 rounded-2xl border border-border/40 text-xs font-bold divide-x divide-border/30 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground font-black uppercase tracking-widest text-[9px]">Total Vaulted:</span>
+          <span className="text-sm font-black text-foreground">{items.length}</span>
         </div>
-        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Mastered</span>
-          <span className="text-2xl font-black">{items.filter(i => i.reviewCount >= SRS_INTERVALS.length).length}</span>
+        <div className="flex items-center gap-2 pl-4">
+          <span className="text-emerald-500 font-black uppercase tracking-widest text-[9px]">Mastered:</span>
+          <span className="text-sm font-black text-emerald-500">{items.filter(i => i.reviewCount >= SRS_INTERVALS.length).length}</span>
         </div>
-        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Due Review</span>
-          <span className="text-2xl font-black">{dueItems.length}</span>
+        <div className="flex items-center gap-2 pl-4">
+          <span className="text-amber-500 font-black uppercase tracking-widest text-[9px]">Due Review:</span>
+          <span className="text-sm font-black text-amber-500">{dueItems.length}</span>
         </div>
-        <div className="bg-card border border-border/60 p-4 rounded-2xl flex flex-col gap-1 shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Hard Mode</span>
-          <span className="text-2xl font-black">{items.filter(i => i.difficulty === "Hard").length}</span>
+        <div className="flex items-center gap-2 pl-4">
+          <span className="text-rose-500 font-black uppercase tracking-widest text-[9px]">Hard Mode:</span>
+          <span className="text-sm font-black text-rose-500">{items.filter(i => i.difficulty === "Hard").length}</span>
         </div>
       </div>
 
@@ -1013,7 +1166,7 @@ export default function DSAPage() {
             {/* Data Structure Topics */}
             <div className="md:col-span-12">
               <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-2 block">
-                📦 Data Structures
+                Data Structures
               </label>
               <div className="flex flex-wrap gap-2 p-3 bg-background border border-border/60 rounded-xl">
                 {PRESET_TOPICS.map((topic) => {
@@ -1039,7 +1192,7 @@ export default function DSAPage() {
             {/* Algorithmic Patterns */}
             <div className="md:col-span-12">
               <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-2 block">
-                🧩 Algorithmic Patterns
+                Algorithmic Patterns
               </label>
               <div className="flex flex-wrap gap-2 p-3 bg-background border border-border/60 rounded-xl max-h-[140px] overflow-y-auto">
                 {PRESET_PATTERNS.map((pattern) => {
@@ -1129,143 +1282,131 @@ export default function DSAPage() {
         </div>
       )}
 
-      {/* Vault Table & List filters */}
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          {/* Search bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+        {/* Sleek Dashboard Toolbar */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 bg-card border border-border/50 p-3 rounded-2xl shadow-sm">
+        
+        {/* Left Side: Search & Topic Filter */}
+        <div className="flex flex-col sm:flex-row items-stretch gap-2 flex-1 max-w-2xl">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search problems by name, topics, intuition..."
-              className="w-full h-12 pl-12 pr-4 bg-secondary/30 rounded-xl border border-border/50 focus:ring-2 ring-primary/20 outline-none transition-all"
+              placeholder="Search problems..."
+              className="w-full h-10 pl-10 pr-4 bg-secondary/35 rounded-xl border border-border/30 focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all text-sm font-medium"
             />
           </div>
-
-          <div className="flex items-center gap-4 self-end md:self-auto">
-            <div className="flex items-center bg-secondary/30 rounded-xl p-1 border border-border/50">
-              <button
-                onClick={() => setViewMode("table")}
-                className={`p-2 rounded-lg flex items-center justify-center transition-all ${
-                  viewMode === "table"
-                    ? "bg-background text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}
-                title="Table View"
-              >
-                <List className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={`p-2 rounded-lg flex items-center justify-center transition-all ${
-                  viewMode === "kanban"
-                    ? "bg-background text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}
-                title="Kanban View"
-              >
-                <Kanban className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("patterns")}
-                className={`p-2 rounded-lg flex items-center justify-center transition-all ${
-                  viewMode === "patterns"
-                    ? "bg-background text-primary shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}
-                title="Patterns View"
-              >
-                <Layers className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50 uppercase tracking-wider">
-              {filteredItems.length} of {items.length} Vaulted
-            </div>
-          </div>
+          
+          <select
+            value={topicFilter}
+            onChange={(e) => {
+              if (e.target.value) {
+                setStatusFilter("topic");
+                setTopicFilter(e.target.value);
+              } else {
+                setStatusFilter("all");
+                setTopicFilter("");
+              }
+            }}
+            className="h-10 px-3 rounded-xl text-xs font-bold border outline-none bg-secondary/35 border-border/30 text-muted-foreground hover:bg-secondary/50"
+          >
+            <option value="" className="text-foreground bg-background">All Topics</option>
+            <optgroup label="📦 Data Structures" className="text-foreground bg-background">
+              {PRESET_TOPICS.map((topic) => (
+                <option key={topic} value={topic} className="text-foreground bg-background">{topic}</option>
+              ))}
+            </optgroup>
+            <optgroup label="🧩 Patterns" className="text-foreground bg-background">
+              {PRESET_PATTERNS.map((pattern) => (
+                <option key={pattern} value={pattern} className="text-foreground bg-background">{pattern}</option>
+              ))}
+            </optgroup>
+          </select>
         </div>
 
-        {/* Filters pills */}
-        <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border/40">
-          <button
-            onClick={() => { setStatusFilter("all"); setTopicFilter(""); }}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "all"
-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            All
-          </button>
-
-          <button
-            onClick={() => { setStatusFilter("due"); setTopicFilter(""); }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "due"
-                ? "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <div className={`h-2.5 w-2.5 rounded-full bg-amber-500 ${dueItems.length > 0 ? "" : ""}`} />
-            Due for Review
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${statusFilter === "due" ? "bg-white/20 text-white" : "bg-secondary-foreground/10 text-muted-foreground"}`}>
-              {dueItems.length}
-            </span>
-          </button>
-
-          {/* Difficulties */}
-          {(["Easy", "Medium", "Hard"] as DSADifficulty[]).map((diff) => (
-            <button
-              key={diff}
-              onClick={() => { setStatusFilter(diff); setTopicFilter(""); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                statusFilter === diff
-                  ? diff === "Easy"
-                    ? "bg-emerald-500 text-white border-emerald-500 shadow-lg"
-                    : diff === "Medium"
-                    ? "bg-amber-500 text-white border-amber-500 shadow-lg"
-                    : "bg-rose-500 text-white border-rose-500 shadow-lg"
-                  : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary"
-              }`}
-            >
-              {diff}
-            </button>
-          ))}
-
-          {/* Preset topic select dropdown filter */}
-          <div className="relative">
-            <select
-              value={topicFilter}
-              onChange={(e) => {
-                if (e.target.value) {
-                  setStatusFilter("topic");
-                  setTopicFilter(e.target.value);
-                } else {
-                  setStatusFilter("all");
-                  setTopicFilter("");
-                }
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border outline-none bg-transparent ${
-                statusFilter === "topic"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "text-muted-foreground border-border/40 hover:bg-secondary"
-              }`}
-            >
-              <option value="" className="text-foreground bg-background">Filter by Topic...</option>
-              <optgroup label="📦 Data Structures" className="text-foreground bg-background">
-                {PRESET_TOPICS.map((topic) => (
-                  <option key={topic} value={topic} className="text-foreground bg-background">{topic}</option>
-                ))}
-              </optgroup>
-              <optgroup label="🧩 Patterns" className="text-foreground bg-background">
-                {PRESET_PATTERNS.map((pattern) => (
-                  <option key={pattern} value={pattern} className="text-foreground bg-background">{pattern}</option>
-                ))}
-              </optgroup>
-            </select>
+        {/* Right Side: Segmented Difficulty Toggles + View Toggles */}
+        <div className="flex flex-wrap items-center gap-3">
+          
+          {/* Difficulty Segmented Control */}
+          <div className="flex items-center bg-secondary/40 rounded-xl p-0.5 border border-border/35">
+            {[
+              { id: "all", label: "All" },
+              { id: "due", label: "Due", isDue: true },
+              { id: "Easy", label: "Easy" },
+              { id: "Medium", label: "Medium" },
+              { id: "Hard", label: "Hard" }
+            ].map((tab) => {
+              const isActive = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setStatusFilter(tab.id as any);
+                    setTopicFilter("");
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+                    isActive
+                      ? tab.id === "Easy"
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : tab.id === "Medium"
+                        ? "bg-amber-500 text-white shadow-sm"
+                        : tab.id === "Hard"
+                        ? "bg-rose-500 text-white shadow-sm"
+                        : tab.id === "due"
+                        ? "bg-amber-500 text-white shadow-sm"
+                        : "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {tab.isDue && <div className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-white" : "bg-amber-500"}`} />}
+                    {tab.label}
+                    {tab.isDue && (
+                      <span className={`text-[9px] px-1 rounded ${isActive ? "bg-white/20 text-white" : "bg-secondary-foreground/10 text-muted-foreground"}`}>
+                        {dueItems.length}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
+
+          {/* View Toggles & Count */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-secondary/40 rounded-xl p-0.5 border border-border/35">
+              {[
+                { id: "table", icon: List, title: "Table" },
+                { id: "kanban", icon: Kanban, title: "Kanban" },
+                { id: "patterns", icon: Layers, title: "Patterns" }
+              ].map((view) => {
+                const isActive = viewMode === view.id;
+                return (
+                  <button
+                    key={view.id}
+                    onClick={() => setViewMode(view.id as any)}
+                    className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
+                      isActive
+                        ? "bg-background text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/20"
+                    }`}
+                    title={view.title}
+                  >
+                    <view.icon className="h-4 w-4" />
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="hidden sm:block text-[10px] font-black text-muted-foreground bg-secondary/40 px-3 py-2 rounded-xl border border-border/35 uppercase tracking-widest">
+              {filteredItems.length} / {items.length}
+            </div>
+          </div>
+
         </div>
+      </div>
 
         {/* Render View */}
         {viewMode === "kanban" ? (
@@ -1289,17 +1430,17 @@ export default function DSAPage() {
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-secondary/40 border-b border-border">
-                  <th className="p-4 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-r border-border/50 w-[45px]"></th>
-                  <th className="p-4 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-r border-border/50">
+                  <th className="p-4 font-black text-[9px] uppercase tracking-wider text-muted-foreground/60 w-[45px]"></th>
+                  <th className="p-4 font-black text-[9px] uppercase tracking-wider text-muted-foreground/60">
                     Problem & Topics
                   </th>
-                  <th className="p-4 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-r border-border/50 w-[140px]">
+                  <th className="p-4 font-black text-[9px] uppercase tracking-wider text-muted-foreground/60 w-[140px]">
                     Complexity
                   </th>
-                  <th className="p-4 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-r border-border/50 w-[240px]">
+                  <th className="p-4 font-black text-[9px] uppercase tracking-wider text-muted-foreground/60 w-[240px]">
                     Revision Timeline
                   </th>
-                  <th className="p-4 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground w-[120px] text-right px-8">
+                  <th className="p-4 font-black text-[9px] uppercase tracking-wider text-muted-foreground/60 w-[120px] text-right px-8">
                     Actions
                   </th>
                 </tr>
@@ -1323,7 +1464,7 @@ export default function DSAPage() {
                           className="hover:bg-secondary/5 transition-all group/row"
                         >
                         {/* Table layout detail row rendering toggle */}
-                        <td className="p-4 text-center border-r border-border/50 align-middle">
+                        <td className="p-4 text-center align-middle">
                           <button
                             onClick={() => toggleExpandRow(item.id)}
                             className="p-1 hover:bg-secondary rounded-lg transition-colors text-muted-foreground"
@@ -1333,7 +1474,7 @@ export default function DSAPage() {
                         </td>
 
                         {/* Problem info & tags */}
-                        <td className="p-4 align-top border-r border-border/50">
+                        <td className="p-4 align-top">
                           {editingId === item.id ? (
                             <div className="flex flex-col gap-3 max-w-lg">
                               <input
@@ -1540,7 +1681,7 @@ export default function DSAPage() {
                         </td>
 
                         {/* Complexities */}
-                        <td className="p-4 align-top border-r border-border/50 text-sm font-bold text-muted-foreground">
+                        <td className="p-4 align-top text-sm font-bold text-muted-foreground">
                           {editingId === item.id ? (
                             <div className="flex flex-col gap-2">
                               <select
@@ -1577,7 +1718,7 @@ export default function DSAPage() {
                         </td>
 
                         {/* Revision timeline */}
-                        <td className="p-4 align-top border-r border-border/50">
+                        <td className="p-4 align-top">
                           {item.nextReviewDate ? (
                             <div className="space-y-2">
                               <div className="flex items-center gap-4">
@@ -1693,6 +1834,329 @@ export default function DSAPage() {
       </div>
       )}
     </div>
+
+    {/* Practice Arena Modal */}
+    {isPracticeOpen && (
+      <div className="fixed inset-0 h-screen z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+        <div className="bg-card border border-border w-full max-w-4xl max-h-[90vh] flex flex-col rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border/60 bg-secondary/20">
+            <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-xs">
+              <Dumbbell className="h-5 w-5" />
+              Practice Arena
+            </div>
+            <button
+              onClick={() => {
+                if (practiceStage === 'solving') {
+                  if (confirm("Are you sure you want to cancel the practice session? Your progress will not be logged.")) {
+                    setIsPracticeOpen(false);
+                  }
+                } else {
+                  setIsPracticeOpen(false);
+                }
+              }}
+              className="p-2 rounded-full border border-border/80 hover:bg-secondary text-muted-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Modal Content */}
+          <div className="flex-1 p-6 overflow-y-auto space-y-6">
+            
+            {/* --- STAGE 1: PREVIEW --- */}
+            {practiceStage === 'preview' && (
+              <div className="space-y-6">
+                <div className="text-center max-w-lg mx-auto space-y-2">
+                  <h2 className="text-2xl font-black tracking-tight">Your Custom Practice Set</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    We've selected two random problems from your vault. Review them below, then start the timer to begin solving.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {practiceProblems.map((problem, index) => (
+                    <div key={problem.id} className="bg-secondary/20 border border-border/60 p-5 rounded-2xl flex flex-col gap-4 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full pointer-events-none" />
+                      <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Problem {index + 1}</span>
+                        <h3 className="text-lg font-black leading-snug">{problem.problemName}</h3>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            problem.difficulty === "Easy"
+                              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+                              : problem.difficulty === "Medium"
+                              ? "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                              : "bg-rose-500/10 border border-rose-500/20 text-rose-500"
+                          }`}>
+                            {problem.difficulty}
+                          </span>
+                          {problem.topics.slice(0, 2).map((t: string) => (
+                            <span key={t} className="px-2 py-0.5 bg-card text-muted-foreground/80 rounded-md text-[9px] font-black uppercase tracking-wider border border-border/30">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-auto border-t border-border/30 pt-3 flex items-center justify-between text-xs text-muted-foreground/60">
+                        <div className="flex items-center gap-1.5">
+                          <Timer className="h-3.5 w-3.5" />
+                          <span>Allocated: {problem.difficulty === "Easy" ? "20m" : problem.difficulty === "Hard" ? "50m" : "35m"}</span>
+                        </div>
+                        <span>{problem.timeComplexity || "O(?)"} | {problem.spaceComplexity || "O(?)"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-secondary/10 border border-border p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                      <Timer className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-widest text-primary">Cumulative Session Timer</div>
+                      <div className="text-lg font-black tracking-tight">{formatPracticeTime(practiceTimeLeft)}</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={rerollPractice}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-border hover:bg-secondary text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                      Reroll
+                    </button>
+                    <button
+                      onClick={handleStartSolving}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground hover:brightness-110 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20"
+                    >
+                      <Play className="h-4 w-4" />
+                      Start Solving
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- STAGE 2: SOLVING --- */}
+            {practiceStage === 'solving' && (
+              <div className="space-y-6">
+                {/* Timer Banner */}
+                <div className={`p-5 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-300 ${
+                  practiceTimeLeft <= 60
+                    ? "bg-rose-500/10 border-rose-500/40 text-rose-500 animate-pulse"
+                    : "bg-primary/5 border-primary/20 text-primary"
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${
+                      practiceTimeLeft <= 60 ? "bg-rose-500/20" : "bg-primary/10"
+                    }`}>
+                      <Timer className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Practice Session Timer Running</div>
+                      <div className="text-2xl font-black font-mono tracking-tight">
+                        {formatPracticeTime(practiceTimeLeft)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => setIsTimerRunning(!isTimerRunning)}
+                      className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border/80 bg-card hover:bg-secondary/40 text-xs font-black uppercase tracking-widest transition-all ${
+                        !isTimerRunning ? "text-amber-500 border-amber-500/20" : "text-primary"
+                      }`}
+                    >
+                      {isTimerRunning ? (
+                        <>
+                          <Pause className="h-4 w-4" />
+                          Pause
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4" />
+                          Resume
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleGoToComplete}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/10"
+                    >
+                      <Check className="h-4 w-4" />
+                      Done Solving
+                    </button>
+                  </div>
+                </div>
+
+                {/* Selected Problems to practice */}
+                <div className="space-y-4">
+                  {practiceProblems.map((problem, index) => (
+                    <div key={problem.id} className="bg-secondary/15 border border-border/60 p-5 rounded-2xl space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/40">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-primary">Problem {index + 1}</span>
+                          <h3 className="text-lg font-black leading-snug flex items-center gap-2">
+                            {problem.problemName}
+                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                              problem.difficulty === "Easy"
+                                ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+                                : problem.difficulty === "Medium"
+                                ? "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                                : "bg-rose-500/10 border border-rose-500/20 text-rose-500"
+                            }`}>
+                              {problem.difficulty}
+                            </span>
+                          </h3>
+                        </div>
+                        {problem.problemUrl && (
+                          <a
+                            href={problem.problemUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:scale-[1.02] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Open Platform
+                          </a>
+                        )}
+                      </div>
+
+                      {/* Collapsible hints: Intuition & Solution */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                        {/* Intuition Hints */}
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => setRevealIntuition(prev => ({ ...prev, [problem.id]: !prev[problem.id] }))}
+                            className="flex items-center justify-between w-full px-4 py-3 bg-card border border-border/50 rounded-xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:border-primary/20 transition-all text-left"
+                          >
+                            <span className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4" />
+                              {revealIntuition[problem.id] ? "Hide Intuition Hint" : "Reveal Intuition Hint"}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${revealIntuition[problem.id] ? "rotate-180" : ""}`} />
+                          </button>
+                          {revealIntuition[problem.id] && (
+                            <div className="p-4 bg-background border border-border/40 rounded-xl animate-in fade-in duration-200">
+                              <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                {problem.intuition || "No approach logged for this problem yet."}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Code Solutions */}
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => setRevealCode(prev => ({ ...prev, [problem.id]: !prev[problem.id] }))}
+                            className="flex items-center justify-between w-full px-4 py-3 bg-card border border-border/50 rounded-xl text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:border-primary/20 transition-all text-left"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Code className="h-4 w-4" />
+                              {revealCode[problem.id] ? "Hide Solution Code" : "Reveal Solution Code"}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${revealCode[problem.id] ? "rotate-180" : ""}`} />
+                          </button>
+                          {revealCode[problem.id] && (
+                            <div className="animate-in fade-in duration-200">
+                              {problem.codeSnippet ? (
+                                <CodeBlock code={problem.codeSnippet} maxHeight="200px" />
+                              ) : (
+                                <div className="p-4 bg-background border border-border/40 rounded-xl text-xs font-bold text-muted-foreground/60 italic">
+                                  No solution snippet logged for this problem.
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* --- STAGE 3: COMPLETED --- */}
+            {practiceStage === 'completed' && (
+              <div className="space-y-6 max-w-xl mx-auto text-center">
+                <div className="space-y-2">
+                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 mb-2">
+                    <Trophy className="h-8 w-8" />
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tight">Practice Complete!</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Session finished! How did you do? Mark the outcomes below to update their Spaced Repetition paths.
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-3">
+                  {practiceProblems.map((problem) => (
+                    <div key={problem.id} className="bg-secondary/15 border border-border p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-base">{problem.problemName}</h4>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                            problem.difficulty === "Easy"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : problem.difficulty === "Medium"
+                              ? "bg-amber-500/10 text-amber-500"
+                              : "bg-rose-500/10 text-rose-500"
+                          }`}>
+                            {problem.difficulty}
+                          </span>
+                          <span className="text-[10px] font-black text-muted-foreground/50 uppercase">Current Step: D{SRS_INTERVALS[problem.reviewCount] || "Done"}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setPracticeResults(prev => ({ ...prev, [problem.id]: 'failed' }))}
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${
+                            practiceResults[problem.id] === 'failed'
+                              ? "bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-500/20"
+                              : "bg-card border-border/80 text-muted-foreground hover:bg-secondary/50"
+                          }`}
+                        >
+                          Stuck
+                        </button>
+                        <button
+                          onClick={() => setPracticeResults(prev => ({ ...prev, [problem.id]: 'success' }))}
+                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${
+                            practiceResults[problem.id] === 'success'
+                              ? "bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/20"
+                              : "bg-card border-border/80 text-muted-foreground hover:bg-secondary/50"
+                          }`}
+                        >
+                          Got It
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button
+                    onClick={() => setPracticeStage('solving')}
+                    className="flex-1 py-3.5 border border-border hover:bg-secondary text-xs font-black uppercase tracking-widest rounded-xl transition-all"
+                  >
+                    Back to Solving
+                  </button>
+                  <button
+                    disabled={Object.values(practiceResults).some(r => r === null)}
+                    onClick={handleFinishPractice}
+                    className="flex-1 py-3.5 bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 disabled:brightness-100 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-primary/10"
+                  >
+                    Log Results & Finish
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </div>
+    )}
 
     </div>
   );

@@ -3,11 +3,20 @@
 import { useAuth } from "@/components/auth-provider";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Logo } from "@/components/ui/logo";
-import { LogIn, Target, Brain, Code, Cpu, Trophy } from "lucide-react";
+import { LogIn, Target, Brain, Code, Cpu, Trophy, ArrowRight, Zap, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] as any },
+  }),
+};
 
 export default function Home() {
   const { user, loading, loginWithGoogle } = useAuth();
@@ -24,164 +33,300 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-v-body">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-background font-v-body overflow-x-hidden">
+      {/* Subtle dot-grid background */}
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, var(--color-border) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+      />
+
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo className="text-xl" />
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <button
               onClick={loginWithGoogle}
-              className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:scale-[1.02]"
+              className="flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 hover:scale-[1.02] active:scale-95"
             >
-              <LogIn className="h-4 w-4" />
+              <LogIn className="h-3.5 w-3.5" />
               Sign in
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-16 space-y-20">
-        {/* Hero */}
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center space-y-6 py-8"
-        >
-          <Logo className="text-5xl md:text-6xl block" />
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Track goals, study smarter, and prep for interviews all in one
-            clean workspace built for developers.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <main className="mx-auto max-w-6xl px-6">
+
+        {/* ── Hero ── */}
+        <section className="relative pt-24 pb-20 text-center">
+          {/* Radial glow behind heading */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[520px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,var(--color-primary)_0%,transparent_80%)] opacity-[0.06]" />
+
+          <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1 text-xs font-medium text-muted-foreground">
+              <Zap className="h-3 w-3 text-primary" fill="currentColor" />
+              Free · No dashboards · Just clarity
+            </span>
+          </motion.div>
+
+          <motion.h1
+            custom={1}
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="mt-8 text-6xl md:text-8xl lg:text-[7rem] font-v-headings leading-[0.9] tracking-tight text-foreground"
+          >
+            Build habits.
+            <br />
+            <span className="relative inline-block">
+              <span className="relative z-10">Ship skills.</span>
+              <motion.span
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.6, delay: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute bottom-2 left-0 right-0 h-3 md:h-4 bg-primary/10 origin-left -z-10 rounded"
+              />
+            </span>
+          </motion.h1>
+
+          <motion.p
+            custom={2}
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="mx-auto mt-7 max-w-md text-base md:text-lg text-muted-foreground leading-relaxed"
+          >
+            Track goals, study smarter, and prep for interviews — one clean
+            workspace, built for developers.
+          </motion.p>
+
+          <motion.div
+            custom={3}
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3"
+          >
             <button
               onClick={loginWithGoogle}
-              className="flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:scale-[1.02] active:scale-95"
+              className="group flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:scale-[1.02] active:scale-95"
             >
               <LogIn className="h-4 w-4" />
-              Get Started it&apos;s free
+              Get started — it&apos;s free
+              <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
             </button>
             <Link
               href="/srs"
-              className="flex items-center gap-2 rounded-full border border-border bg-secondary px-6 py-3 text-sm font-semibold text-secondary-foreground transition hover:bg-secondary/80"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-transparent px-7 py-3.5 text-sm font-semibold text-foreground transition hover:bg-card"
             >
               Explore without signing in
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
             </Link>
-          </div>
-        </motion.section>
+          </motion.div>
 
-        {/* Features */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="space-y-6"
-        >
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.25em] text-primary font-bold">
+          {/* Feature pills */}
+          <motion.div
+            custom={4}
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            className="mt-10 flex flex-wrap items-center justify-center gap-2"
+          >
+            {[
+              "Goal streaks",
+              "Spaced repetition",
+              "DSA tracker",
+              "Machine coding",
+              "Hall of fame",
+            ].map((f) => (
+              <span
+                key={f}
+                className="rounded-full border border-border bg-card/60 px-3.5 py-1 text-xs font-medium text-muted-foreground"
+              >
+                {f}
+              </span>
+            ))}
+          </motion.div>
+        </section>
+
+        {/* ── Features Bento ── */}
+        <section className="py-16 space-y-8">
+          <motion.div
+            custom={0}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeUp}
+            className="space-y-2"
+          >
+            <p className="text-xs uppercase tracking-[0.3em] text-primary font-bold">
               What&apos;s inside
             </p>
-            <h2 className="text-3xl md:text-4xl font-v-headings">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
               Everything you need to level up.
             </h2>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FeatureCard
-              icon={<Target className="h-5 w-5" />}
-              title="Goal Tracking"
-              desc="Set timed goals with a daily log. Stay consistent, not just motivated."
-            />
-            <FeatureCard
-              icon={<Brain className="h-5 w-5" />}
-              title="Spaced Repetition"
-              desc="Capture what you learn. The app surfaces it again right before you forget."
-            />
-            <FeatureCard
-              icon={<Code className="h-5 w-5" />}
-              title="DSA Practice"
-              desc="Log problems, tag topics, and track your review schedule."
-            />
-            <FeatureCard
-              icon={<Cpu className="h-5 w-5" />}
-              title="Machine Coding"
-              desc="Save questions with your approach and solution for fast recall."
-            />
-            <FeatureCard
-              icon={<Trophy className="h-5 w-5" />}
-              title="Hall of Fame"
-              desc="Goals you've completed live here as a record of what you've built."
-            />
-            <div className="rounded-3xl border border-dashed border-border bg-card/40 p-6 flex items-center justify-center text-center">
+            {/* Featured wide card */}
+            <motion.div
+              custom={1}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-40px" }}
+              variants={fadeUp}
+              className="lg:col-span-2 relative rounded-3xl bg-primary text-primary-foreground p-8 flex flex-col gap-6 overflow-hidden hover:scale-[1.01] transition-transform"
+            >
+              <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary-foreground/10 blur-3xl" />
+              <div className="h-11 w-11 rounded-2xl bg-primary-foreground/15 flex items-center justify-center">
+                <Brain className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary-foreground/50">
+                  Core Feature
+                </p>
+                <h3 className="text-2xl font-bold text-primary-foreground">
+                  Spaced Repetition System
+                </h3>
+                <p className="text-sm text-primary-foreground/70 leading-relaxed max-w-sm">
+                  Capture what you learn. The app surfaces it again right before
+                  you forget — so you actually retain it long-term.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Regular cards */}
+            {[
+              {
+                icon: <Target className="h-5 w-5" />,
+                label: "Goals",
+                title: "Goal Tracking",
+                desc: "Set timed goals with a daily log. Stay consistent, not just motivated.",
+              },
+              {
+                icon: <Code className="h-5 w-5" />,
+                label: "DSA",
+                title: "DSA Practice",
+                desc: "Log problems, tag topics, and track your review schedule.",
+              },
+              {
+                icon: <Cpu className="h-5 w-5" />,
+                label: "Coding",
+                title: "Machine Coding",
+                desc: "Save questions with your approach and solution for fast recall.",
+              },
+              {
+                icon: <Trophy className="h-5 w-5" />,
+                label: "Archive",
+                title: "Hall of Fame",
+                desc: "Goals you've completed live here as a record of what you've built.",
+              },
+            ].map((card, i) => (
+              <motion.div
+                key={card.title}
+                custom={i + 2}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-40px" }}
+                variants={fadeUp}
+                className="rounded-3xl border border-border bg-card p-6 flex flex-col gap-4 hover:border-primary/30 hover:shadow-sm transition-all"
+              >
+                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  {card.icon}
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-[0.25em] font-bold text-primary">
+                    {card.label}
+                  </p>
+                  <h3 className="font-bold text-foreground">{card.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {card.desc}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+
+            {/* Coming soon */}
+            <motion.div
+              custom={6}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-40px" }}
+              variants={fadeUp}
+              className="rounded-3xl border border-dashed border-border bg-card/30 p-6 flex items-center justify-center text-center"
+            >
               <p className="text-sm text-muted-foreground">
                 More features shipping soon.
               </p>
-            </div>
+            </motion.div>
           </div>
-        </motion.section>
+        </section>
 
-        {/* CTA strip */}
+        {/* ── CTA Strip ── */}
         <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          className="rounded-3xl border border-border bg-card p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={fadeUp}
+          custom={0}
+          className="py-16"
         >
-          <div className="space-y-1 text-center md:text-left">
-            <h3 className="text-2xl md:text-3xl font-v-headings">
-              Start your streak today.
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              No setup, no dashboards, just your goals and the notes that shape
-              them.
-            </p>
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-card px-8 md:px-14 py-14 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.05] via-transparent to-transparent" />
+            <div className="relative space-y-3 text-center md:text-left">
+              <p className="text-xs uppercase tracking-[0.25em] font-bold text-primary">
+                Ready?
+              </p>
+              <h3 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+                Start your streak today.
+              </h3>
+              <p className="text-muted-foreground text-sm max-w-xs">
+                No setup, no dashboards, just your goals and the notes that
+                shape them.
+              </p>
+            </div>
+            <button
+              onClick={loginWithGoogle}
+              className="group relative shrink-0 flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:scale-[1.02] active:scale-95"
+            >
+              <LogIn className="h-4 w-4" />
+              Sign in with Google
+              <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+            </button>
           </div>
-          <button
-            onClick={loginWithGoogle}
-            className="shrink-0 flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:scale-[1.02] active:scale-95"
-          >
-            <LogIn className="h-4 w-4" />
-            Sign in with Google
-          </button>
         </motion.section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5 text-xs text-muted-foreground">
-          <Logo className="text-sm" />
+      {/* ── Footer ── */}
+      <footer className="border-t border-border/50 mt-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Logo className="text-sm" />
+            <span className="text-border mx-1">·</span>
+            <span className="hidden sm:inline">Built for developers.</span>
+          </div>
           <div className="flex gap-5">
-            <Link href="/privacy" className="hover:text-primary transition-colors">
+            <Link
+              href="/privacy"
+              className="hover:text-foreground transition-colors"
+            >
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-primary transition-colors">
+            <Link
+              href="/terms"
+              className="hover:text-foreground transition-colors"
+            >
               Terms
             </Link>
           </div>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-border bg-card p-6 space-y-3 hover:border-primary/30 transition-colors">
-      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-        {icon}
-      </div>
-      <h3 className="font-semibold text-foreground">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
     </div>
   );
 }
