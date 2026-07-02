@@ -12,6 +12,8 @@ import {
   Keyboard,
   Download,
   ChevronDown,
+  Timer,
+  Pause,
 } from "lucide-react";
 
 /* ──────────────────────────────────────────────────────────
@@ -76,6 +78,50 @@ export default function CompilerPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
+  /* ── Stopwatch State & Logic ────────────────────────── */
+  const [stopwatchTime, setStopwatchTime] = useState(0);
+  const [isStopwatchRunning, setIsStopwatchRunning] = useState(false);
+  const stopwatchIntervalRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isStopwatchRunning) {
+      stopwatchIntervalRef.current = setInterval(() => {
+        setStopwatchTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (stopwatchIntervalRef.current) {
+        clearInterval(stopwatchIntervalRef.current);
+      }
+    }
+    return () => {
+      if (stopwatchIntervalRef.current) {
+        clearInterval(stopwatchIntervalRef.current);
+      }
+    };
+  }, [isStopwatchRunning]);
+
+  const formatStopwatchTime = (totalSeconds: number) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    const pad = (num: number) => String(num).padStart(2, "0");
+
+    if (hrs > 0) {
+      return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+    }
+    return `${pad(mins)}:${pad(secs)}`;
+  };
+
+  const handleStopwatchStartPause = () => {
+    setIsStopwatchRunning(!isStopwatchRunning);
+  };
+
+  const handleStopwatchReset = () => {
+    setIsStopwatchRunning(false);
+    setStopwatchTime(0);
+  };
+
   /* ── Load Pyodide WASM ───────────────────────────────── */
   const loadPyodide = useCallback(async () => {
     if (pyodideRef.current) return pyodideRef.current;
@@ -103,6 +149,7 @@ export default function CompilerPage() {
   const runCode = useCallback(async () => {
     if (isRunning || !code.trim()) return;
     setIsRunning(true);
+    setIsStopwatchRunning(false);
     setOutput([]);
     setExecutionTime(null);
 
@@ -165,7 +212,7 @@ export default function CompilerPage() {
     } finally {
       setIsRunning(false);
     }
-  }, [code, isRunning, loadPyodide, stdinInputs]);
+  }, [code, isRunning, loadPyodide, stdinInputs, setIsStopwatchRunning]);
 
   /* ── Keyboard shortcut ───────────────────────────────── */
   useEffect(() => {
@@ -235,7 +282,38 @@ export default function CompilerPage() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Mini Stopwatch */}
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-card/25 backdrop-blur-sm text-muted-foreground font-mono text-xs transition-all select-none group">
+            <div className="flex items-center gap-1.5">
+              <Timer className={`h-3.5 w-3.5 transition-all duration-300 ${isStopwatchRunning ? "text-emerald-400 animate-pulse" : "text-muted-foreground group-hover:text-primary"}`} />
+              <span className={`font-bold tabular-nums tracking-wider ${isStopwatchRunning ? "text-primary" : "text-muted-foreground"}`}>
+                {formatStopwatchTime(stopwatchTime)}
+              </span>
+            </div>
+            <div className="h-4 w-px bg-border/60" />
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleStopwatchStartPause}
+                title={isStopwatchRunning ? "Pause" : "Start"}
+                className={`p-0.5 rounded transition-all hover:bg-primary/10 ${isStopwatchRunning ? "text-amber-400 hover:text-amber-300" : "text-emerald-400 hover:text-emerald-300"}`}
+              >
+                {isStopwatchRunning ? (
+                  <Pause className="h-3.5 w-3.5" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                )}
+              </button>
+              <button
+                onClick={handleStopwatchReset}
+                title="Reset"
+                className="p-0.5 rounded text-muted-foreground hover:text-rose-400 hover:bg-primary/10 transition-all"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
           <button
             onClick={() => setShowShortcuts(!showShortcuts)}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
