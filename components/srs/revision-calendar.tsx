@@ -200,7 +200,8 @@ export function RevisionCalendar() {
   const handleDsaReviewSuccess = async (item: any) => {
     requireAuth(() => {
       const nextReviewCount = item.reviewCount + 1;
-      const nextDateValue = calculateNextReviewDate(nextReviewCount);
+      const baseDate = item.dateLearned ? item.dateLearned.toDate() : (item.createdAt ? item.createdAt.toDate() : new Date());
+      const nextDateValue = calculateNextReviewDate(nextReviewCount, baseDate);
 
       updateDsaMutation.mutate({
         itemId: item.id,

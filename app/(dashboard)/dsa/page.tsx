@@ -433,10 +433,11 @@ export default function DSAPage() {
       // Loop over the 2 selected problems
       for (const problem of practiceProblems) {
         const status = practiceResults[problem.id];
+        const baseDate = problem.dateLearned ? problem.dateLearned.toDate() : (problem.createdAt ? problem.createdAt.toDate() : new Date());
         if (status === 'success') {
           // Increment spaced repetition level
           const nextReviewCount = problem.reviewCount + 1;
-          const nextDateValue = calculateNextReviewDate(nextReviewCount);
+          const nextDateValue = calculateNextReviewDate(nextReviewCount, baseDate);
           await updateMutation.mutateAsync({
             itemId: problem.id,
             data: {
@@ -512,6 +513,8 @@ export default function DSAPage() {
   const [intuition, setIntuition] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
   const [hasSrs, setHasSrs] = useState(true);
+  const [nextReviewDateInput, setNextReviewDateInput] = useState("");
+  const [editNextReviewDate, setEditNextReviewDate] = useState("");
 
   // AI Auto-Fill states
   const [geminiApiKey, setGeminiApiKey] = useState("");
@@ -580,6 +583,16 @@ export default function DSAPage() {
     if (!problemName.trim()) return;
 
     requireAuth(() => {
+      const customNextReviewDate = hasSrs
+        ? nextReviewDateInput
+          ? (() => {
+              const d = new Date(nextReviewDateInput);
+              d.setHours(10, 0, 0, 0);
+              return d;
+            })()
+          : getInitialReviewDate()
+        : null;
+
       addMutation.mutate(
         {
           problemName: problemName.trim(),
@@ -591,7 +604,7 @@ export default function DSAPage() {
           spaceComplexity: spaceComplexity || null,
           intuition: intuition.trim() || null,
           codeSnippet: codeSnippet.trim() || null,
-          nextReviewDate: hasSrs ? getInitialReviewDate() : null,
+          nextReviewDate: customNextReviewDate,
         },
         {
           onSuccess: () => {
@@ -606,6 +619,7 @@ export default function DSAPage() {
             setIntuition("");
             setCodeSnippet("");
             setHasSrs(true);
+            setNextReviewDateInput("");
             setIsOpenAddForm(false);
           },
         }
@@ -913,7 +927,8 @@ export default function DSAPage() {
   const handleReviewSuccess = async (item: any) => {
     requireAuth(() => {
       const nextReviewCount = item.reviewCount + 1;
-      const nextDateValue = calculateNextReviewDate(nextReviewCount);
+      const baseDate = item.dateLearned ? item.dateLearned.toDate() : (item.createdAt ? item.createdAt.toDate() : new Date());
+      const nextDateValue = calculateNextReviewDate(nextReviewCount, baseDate);
 
       updateMutation.mutate({
         itemId: item.id,
@@ -960,16 +975,23 @@ export default function DSAPage() {
     setEditSpace(item.spaceComplexity || "");
     setEditIntuition(item.intuition || "");
     setEditSnippet(item.codeSnippet || "");
+    setEditNextReviewDate(item.nextReviewDate ? format(item.nextReviewDate.toDate(), "yyyy-MM-dd") : "");
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
+    setEditNextReviewDate("");
   };
 
   const handleSaveEdit = async (itemId: string) => {
     if (!editName.trim()) return;
 
     requireAuth(() => {
+      const parsedDate = editNextReviewDate ? new Date(editNextReviewDate) : null;
+      if (parsedDate) {
+        parsedDate.setHours(10, 0, 0, 0);
+      }
+
       updateMutation.mutate(
         {
           itemId,
@@ -983,11 +1005,13 @@ export default function DSAPage() {
             spaceComplexity: editSpace || null,
             intuition: editIntuition.trim() || null,
             codeSnippet: editSnippet.trim() || null,
+            nextReviewDate: parsedDate ? Timestamp.fromDate(parsedDate) : null,
           },
         },
         {
           onSuccess: () => {
             setEditingId(null);
+            setEditNextReviewDate("");
           },
         }
       );
@@ -1425,12 +1449,31 @@ export default function DSAPage() {
             </div>
 
             {/* Spaced Repetition toggle */}
-            <div className="md:col-span-12 flex items-center justify-between bg-background border border-border/60 p-4 rounded-xl">
-              <div className="space-y-0.5">
-                <div className="text-xs font-black uppercase tracking-widest text-primary">Enable Spaced Repetition</div>
-                <div className="text-xs text-muted-foreground">Automatically schedule reviews at 1, 3, 7, and 30 day milestones.</div>
+            <div className="md:col-span-12 space-y-4 bg-background border border-border/60 p-4 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-black uppercase tracking-widest text-primary">Enable Spaced Repetition</div>
+                  <div className="text-xs text-muted-foreground">Automatically schedule reviews at 1, 3, 7, and 30 day milestones.</div>
+                </div>
+                <Switch checked={hasSrs} onCheckedChange={setHasSrs} />
               </div>
-              <Switch checked={hasSrs} onCheckedChange={setHasSrs} />
+
+              {hasSrs && (
+                <div className="pt-3 border-t border-border/40 space-y-1.5 animate-in fade-in duration-200">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">
+                    Custom First Review / Reminder Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={nextReviewDateInput}
+                    onChange={(e) => setNextReviewDateInput(e.target.value)}
+                    className="w-full bg-background border border-border/60 rounded-xl px-4 py-3.5 text-sm font-bold focus:border-primary outline-none transition-all"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    If not specified, the first review will be scheduled for tomorrow.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Submit */}
@@ -1745,6 +1788,20 @@ export default function DSAPage() {
                                 placeholder="Solution / Code Snippet"
                                 minHeight="80px"
                               />
+                              <div className="flex flex-col gap-1">
+                                <label className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">
+                                  Custom Reminder / Next Review Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={editNextReviewDate}
+                                  onChange={(e) => setEditNextReviewDate(e.target.value)}
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-primary"
+                                />
+                                <span className="text-[8px] text-muted-foreground/60 leading-tight">
+                                  Set a custom date for the next reminder. The rest of the revision cycle continues from original added date.
+                                </span>
+                              </div>
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => handleSaveEdit(item.id)}

@@ -6,7 +6,7 @@ export async function GET(request: Request) {
 
   if (!username) {
     return NextResponse.json(
-      { error: "Username query parameter is required" },
+      { error:   "Username query parameter is required" },
       { status: 400 }
     );
   }
