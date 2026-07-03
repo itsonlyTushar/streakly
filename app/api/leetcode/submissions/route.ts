@@ -34,7 +34,7 @@ export async function GET(request: Request) {
         `,
         variables: {
           username,
-          limit: 20,
+          limit: 1,
         },
       }),
     });
