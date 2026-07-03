@@ -59,3 +59,13 @@ export function useDeleteNote() {
     successMessage: "Log deleted.",
   });
 }
+
+export function useAllUserNotes() {
+  const { user } = useAuth();
+
+  return useQuery<GoalNote[]>({
+    queryKey: [QUERY_KEY, "all", user?.uid],
+    queryFn: () => (user ? notesService.fetchAllUserNotes(user.uid) : []),
+    enabled: !!user,
+  });
+}

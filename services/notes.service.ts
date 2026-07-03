@@ -53,6 +53,20 @@ export const notesService = {
     });
   },
 
+  // Fetch all notes for a user
+  fetchAllUserNotes: async (userId: string): Promise<GoalNote[]> => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("userId", "==", userId),
+      orderBy("date", "asc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = { id: doc.id, ...doc.data() };
+      return NoteSchema.parse(data);
+    });
+  },
+
   addNote: async (goalId: string, userId: string, content: string) => {
     return await addDoc(collection(db, COLLECTION_NAME), {
       goalId,
