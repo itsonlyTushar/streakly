@@ -4,6 +4,7 @@ export const ProfileSchema = z.object({
   id: z.string(), // maps to UID
   email: z.string().email().optional().nullable(),
   bio: z.string().optional().nullable(),
+  leetcodeUsername: z.string().optional().nullable(),
   emailNotifications: z.boolean().default(true),
   createdAt: z.any().optional(),
   updatedAt: z.any().optional(),

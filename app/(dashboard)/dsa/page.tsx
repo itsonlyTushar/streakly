@@ -51,6 +51,7 @@ import {
   Shuffle,
   Timer,
   Pause,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
@@ -61,6 +62,7 @@ import { useAuthGuard } from "@/components/auth-guard";
 import { useToast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CodeBlock, CodeTextarea } from "@/components/ui/code-block";
+import { cn } from "@/lib/utils";
 
 import {
   useDSAItems,
@@ -68,6 +70,7 @@ import {
   useUpdateDSAItem,
   useDeleteDSAItem,
 } from "@/hooks/use-dsa";
+import { useProfile } from "@/hooks/use-profile";
 import { DSADifficulty } from "@/lib/schemas/dsa.schema";
 import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
 
@@ -514,6 +517,11 @@ export default function DSAPage() {
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
 
+  // LeetCode Sync states
+  const { data: profile } = useProfile();
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatusText, setSyncStatusText] = useState("");
+
   // Load configuration from localStorage on mount and when form toggles
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -605,24 +613,9 @@ export default function DSAPage() {
     });
   };
 
-  const handleAiAutofill = async () => {
-    if (!problemName.trim()) {
-      toast({ title: "Please enter a problem name first.", variant: "error" });
-      return;
-    }
-    if (!geminiApiKey.trim()) {
-      toast({ title: "Please configure your Gemini API key.", variant: "error" });
-      return;
-    }
-
-    setIsAiLoading(true);
-
+  const queryGeminiForProblem = async (name: string, apiKey: string) => {
     const ATTEMPTS_TO_TRY = [
-      // Strictly use 'v1beta' for all attempts because structured JSON responseSchema is natively supported there.
-      // 1. Primary Model: Gemini 2.5 Flash (user tier has active quota!)
       { model: "gemini-2.5-flash", apiVersion: "v1beta" },
-
-      // 2. High Resilience fallbacks (standard free models)
       { model: "gemini-1.5-flash", apiVersion: "v1beta" },
       { model: "gemini-1.5-flash-latest", apiVersion: "v1beta" },
       { model: "gemini-1.5-flash-8b", apiVersion: "v1beta" },
@@ -630,7 +623,7 @@ export default function DSAPage() {
       { model: "gemini-1.5-pro-latest", apiVersion: "v1beta" },
     ];
 
-    const prompt = `You are a DSA expert. Given the problem name "${problemName.trim()}", analyze it and provide standard DSA information. Keep the intuition brief and direct (2-3 sentences max). Keep the code snippet clean, optimal, and without unnecessary comments:
+    const prompt = `You are a DSA expert. Given the problem name "${name.trim()}", analyze it and provide standard DSA information. Keep the intuition brief and direct (2-3 sentences max). Keep the code snippet clean, optimal, and without unnecessary comments:
 1. LeetCode URL (standard problem link)
 2. Difficulty (Easy, Medium, Hard)
 3. Topics (Choose relevant data structure topics AND algorithmic patterns from these lists:
@@ -655,14 +648,12 @@ export default function DSAPage() {
       required: ["problemUrl", "difficulty", "topics", "timeComplexity", "spaceComplexity", "intuition", "codeSnippet"]
     };
 
-    let success = false;
-    let lastError = null;
     const errorsList: string[] = [];
 
     for (const attempt of ATTEMPTS_TO_TRY) {
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/${attempt.apiVersion}/models/${attempt.model}:generateContent?key=${geminiApiKey.trim()}`,
+          `https://generativelanguage.googleapis.com/${attempt.apiVersion}/models/${attempt.model}:generateContent?key=${apiKey.trim()}`,
           {
             method: "POST",
             headers: {
@@ -706,51 +697,216 @@ export default function DSAPage() {
           throw new Error("Empty response from model");
         }
 
-        const parsed = JSON.parse(contentText);
-
-        // Populate fields
-        if (parsed.problemUrl) setProblemUrl(parsed.problemUrl);
-        if (parsed.difficulty) setDifficulty(parsed.difficulty as DSADifficulty);
-        
-        // Filter parsed topics against ALL_TAGS (topics + patterns)
-        if (Array.isArray(parsed.topics)) {
-          const matchedTopics = parsed.topics.filter((topic: string) => {
-            return ALL_TAGS.some(t => t.toLowerCase() === topic.toLowerCase());
-          }).map((topic: string) => {
-            const original = ALL_TAGS.find(t => t.toLowerCase() === topic.toLowerCase());
-            return original || topic;
-          });
-          setSelectedTopics(matchedTopics);
-        }
-
-        if (parsed.timeComplexity) setTimeComplexity(parsed.timeComplexity);
-        if (parsed.spaceComplexity) setSpaceComplexity(parsed.spaceComplexity);
-        if (parsed.intuition) setIntuition(parsed.intuition);
-        if (parsed.codeSnippet) setCodeSnippet(parsed.codeSnippet);
-
-        setIsUrlPristine(false);
-        success = true;
-        toast({ title: `AI successfully generated problem details using ${attempt.model} (${attempt.apiVersion})!`, variant: "success" });
-        break; // Stop fallbacks on success
+        return JSON.parse(contentText);
       } catch (err: any) {
         const errMsg = err?.message || String(err);
         console.warn(`Model ${attempt.model} on ${attempt.apiVersion} failed:`, errMsg);
         errorsList.push(`${attempt.model} (${attempt.apiVersion}): ${errMsg}`);
-        lastError = err;
       }
     }
+    
+    throw new Error(`All attempts failed: ${errorsList[0] || "Unknown error"}`);
+  };
 
-    setIsAiLoading(false);
+  const handleAiAutofill = async () => {
+    if (!problemName.trim()) {
+      toast({ title: "Please enter a problem name first.", variant: "error" });
+      return;
+    }
+    if (!geminiApiKey.trim()) {
+      toast({ title: "Please configure your Gemini API key.", variant: "error" });
+      return;
+    }
 
-    if (!success) {
-      console.error("All AI Auto-Fill attempts failed. Details:", errorsList);
-      // Give a concise breakdown of the first failed model + status, rather than a giant unreadable block
-      const topErrorMsg = errorsList.length > 0 ? errorsList[0] : "Check your API key and network connection.";
+    setIsAiLoading(true);
+
+    try {
+      const parsed = await queryGeminiForProblem(problemName, geminiApiKey);
+
+      // Populate fields
+      if (parsed.problemUrl) setProblemUrl(parsed.problemUrl);
+      if (parsed.difficulty) setDifficulty(parsed.difficulty as DSADifficulty);
+      
+      // Filter parsed topics against ALL_TAGS (topics + patterns)
+      if (Array.isArray(parsed.topics)) {
+        const matchedTopics = parsed.topics.filter((topic: string) => {
+          return ALL_TAGS.some(t => t.toLowerCase() === topic.toLowerCase());
+        }).map((topic: string) => {
+          const original = ALL_TAGS.find(t => t.toLowerCase() === topic.toLowerCase());
+          return original || topic;
+        });
+        setSelectedTopics(matchedTopics);
+      }
+
+      if (parsed.timeComplexity) setTimeComplexity(parsed.timeComplexity);
+      if (parsed.spaceComplexity) setSpaceComplexity(parsed.spaceComplexity);
+      if (parsed.intuition) setIntuition(parsed.intuition);
+      if (parsed.codeSnippet) setCodeSnippet(parsed.codeSnippet);
+
+      setIsUrlPristine(false);
+      toast({ title: "AI successfully generated problem details!", variant: "success" });
+    } catch (err: any) {
+      console.error(err);
       toast({
         title: "AI generation failed.",
-        description: `Top model failure: ${topErrorMsg}. Please check console logs or Profile API configuration.`,
+        description: err.message || "Please check your key or network connection.",
         variant: "error"
       });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleLeetCodeSync = async () => {
+    const leetcodeUsername = profile?.leetcodeUsername?.trim();
+    if (!leetcodeUsername) {
+      toast({
+        title: "LeetCode not configured",
+        description: "Please set your LeetCode username in Profile settings first.",
+        variant: "error",
+      });
+      return;
+    }
+
+    setIsSyncing(true);
+    setSyncStatusText("Connecting to LeetCode...");
+
+    try {
+      // 1. Fetch recent submissions from proxy API
+      const res = await fetch(`/api/leetcode/submissions?username=${leetcodeUsername}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to fetch from LeetCode");
+      }
+
+      const { submissions } = await res.json();
+      
+      // 2. Filter for Accepted submissions
+      const acceptedSubmissions = submissions.filter(
+        (sub: any) => sub.statusDisplay === "Accepted"
+      );
+
+      if (acceptedSubmissions.length === 0) {
+        toast({
+          title: "Sync complete",
+          description: "No recent solved submissions found on LeetCode.",
+          variant: "success",
+        });
+        setIsSyncing(false);
+        return;
+      }
+
+      // Find unique solved submissions (by title)
+      const uniqueSubmissions: any[] = [];
+      const titleMap = new Set<string>();
+      for (const sub of acceptedSubmissions) {
+        const normalizedTitle = sub.title.toLowerCase().trim();
+        if (!titleMap.has(normalizedTitle)) {
+          titleMap.add(normalizedTitle);
+          uniqueSubmissions.push(sub);
+        }
+      }
+
+      // 3. Filter out problems that are already in our dsaItems tracker
+      const existingTitles = new Set(
+        items.map((item) => item.problemName.toLowerCase().trim())
+      );
+
+      const newProblems = uniqueSubmissions.filter(
+        (sub) => !existingTitles.has(sub.title.toLowerCase().trim())
+      );
+
+      if (newProblems.length === 0) {
+        toast({
+          title: "Sync complete",
+          description: "All recent solved LeetCode problems are already in your tracker.",
+          variant: "success",
+        });
+        setIsSyncing(false);
+        return;
+      }
+
+      setSyncStatusText(`Found ${newProblems.length} new solved problems. Importing...`);
+
+      // 4. Load AI status (Gemini API key in localStorage)
+      const geminiKey = typeof window !== "undefined" ? localStorage.getItem("streakly:dsa:gemini_api_key") || "" : "";
+      
+      let importCount = 0;
+
+      // Sync sequentially to preserve rate limits
+      for (let i = 0; i < newProblems.length; i++) {
+        const problem = newProblems[i];
+        setSyncStatusText(`[${i + 1}/${newProblems.length}] Importing "${problem.title}"...`);
+
+        let problemDetails: any = {
+          problemName: problem.title,
+          problemUrl: `https://leetcode.com/problems/${problem.titleSlug}/`,
+          difficulty: "Medium" as const,
+          topics: ["Arrays"],
+          subPattern: "",
+          timeComplexity: "O(N)",
+          spaceComplexity: "O(N)",
+          intuition: "Imported from LeetCode solved submissions.",
+          codeSnippet: `// Solved in ${problem.lang}\n// Trigger AI Auto-Fill to populate solution.`,
+          nextReviewDate: getInitialReviewDate(),
+          priority: "Unprioritized" as const,
+        };
+
+        // If AI is configured, let's run the AI Auto-fill for this problem!
+        if (geminiKey) {
+          setSyncStatusText(`[${i + 1}/${newProblems.length}] AI Auto-Filling "${problem.title}"...`);
+          try {
+            const parsed = await queryGeminiForProblem(problem.title, geminiKey);
+            if (parsed) {
+              const matchedTopics = (parsed.topics || []).filter((topic: string) => {
+                return ALL_TAGS.some(t => t.toLowerCase() === topic.toLowerCase());
+              }).map((topic: string) => {
+                const original = ALL_TAGS.find(t => t.toLowerCase() === topic.toLowerCase());
+                return original || topic;
+              });
+
+              problemDetails = {
+                problemName: problem.title,
+                problemUrl: parsed.problemUrl || problemDetails.problemUrl,
+                difficulty: (parsed.difficulty as DSADifficulty) || "Medium",
+                topics: matchedTopics.length > 0 ? matchedTopics : ["Arrays"],
+                subPattern: parsed.subPattern || "",
+                timeComplexity: parsed.timeComplexity || "O(N)",
+                spaceComplexity: parsed.spaceComplexity || "O(1)",
+                intuition: parsed.intuition || "Imported from LeetCode.",
+                codeSnippet: parsed.codeSnippet || problemDetails.codeSnippet,
+                nextReviewDate: getInitialReviewDate(),
+                priority: "Unprioritized" as const,
+              };
+            }
+          } catch (aiErr) {
+            console.error("AI Auto-fill failed during sync:", aiErr);
+            // Fall back to LeetCode defaults
+          }
+        }
+
+        // Add item using addMutation (mutateAsync)
+        await addMutation.mutateAsync({
+          ...problemDetails,
+        });
+        importCount++;
+      }
+
+      toast({
+        title: "LeetCode Sync Success",
+        description: `Successfully imported ${importCount} new problems.`,
+        variant: "success",
+      });
+
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Sync failed",
+        description: err.message || "An error occurred during LeetCode sync.",
+        variant: "error",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -930,6 +1086,16 @@ export default function DSAPage() {
               className="flex items-center justify-center h-12 w-12 rounded-2xl transition-all border border-border bg-card text-primary hover:border-primary/40 hover:scale-105 active:scale-95 shadow-sm"
             >
               <Dumbbell className="h-5 w-5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip content="Sync LeetCode" side="bottom">
+            <button
+              onClick={handleLeetCodeSync}
+              disabled={isSyncing}
+              className="flex items-center justify-center h-12 w-12 rounded-2xl transition-all border border-border bg-card text-primary hover:border-primary/40 hover:scale-105 active:scale-95 shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={cn("h-5 w-5", isSyncing && "animate-spin")} />
             </button>
           </Tooltip>
 
@@ -2153,6 +2319,23 @@ export default function DSAPage() {
               </div>
             )}
 
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* LeetCode Sync Overlay */}
+    {isSyncing && (
+      <div className="fixed inset-0 bg-background/85 backdrop-blur-sm z-[200] flex items-center justify-center animate-in fade-in duration-300">
+        <div className="bg-card border border-border/80 p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center gap-4 text-center max-w-sm w-full mx-4">
+          <div className="p-4 bg-primary/5 rounded-full border border-primary/10 relative">
+            <RefreshCw className="h-10 w-10 text-primary animate-spin" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold tracking-tight">Syncing LeetCode</h3>
+            <p className="text-sm text-muted-foreground transition-all duration-300 font-medium">
+              {syncStatusText}
+            </p>
           </div>
         </div>
       </div>

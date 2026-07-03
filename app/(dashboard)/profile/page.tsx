@@ -20,6 +20,7 @@ import {
   Eye,
   EyeOff,
   LogOut,
+  Code,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
@@ -76,10 +77,13 @@ export default function ProfilePage() {
     });
   };
 
+  const [newLeetcode, setNewLeetcode] = useState("");
+
   // Sync internal state when profile data loads
   useEffect(() => {
-    if (profile?.bio) {
-      setNewBio(profile.bio);
+    if (profile) {
+      setNewBio(profile.bio || "");
+      setNewLeetcode(profile.leetcodeUsername || "");
     }
   }, [profile]);
 
@@ -269,6 +273,62 @@ export default function ProfilePage() {
             onCheckedChange={handleToggleEmail}
             disabled={updateMutation.isPending}
           />
+        </div>
+
+        {/* LeetCode Integration Section */}
+        <div className="md:col-span-2 flex flex-col p-6 bg-secondary/20 border border-border/40 rounded-3xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-background rounded-2xl text-primary shadow-sm border border-border/20">
+                <Code className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-foreground flex items-center gap-1.5">
+                  LeetCode Integration
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Auto-import solved problems into your DSA Arena
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 relative z-10">
+            <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
+              Enter your public LeetCode username below. Streakly will fetch your recent solved submissions and schedule them in your revision calendar automatically.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+              <input
+                type="text"
+                value={newLeetcode}
+                onChange={(e) => setNewLeetcode(e.target.value)}
+                placeholder="Enter LeetCode username"
+                className="flex-1 bg-background border border-border/60 focus:border-primary focus:ring-4 ring-primary/5 rounded-2xl px-4 py-3 text-sm outline-none transition-all"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  updateMutation.mutate(
+                    { leetcodeUsername: newLeetcode.trim() },
+                    {
+                      onSuccess: () => {
+                        toast({
+                          title: "LeetCode Username Saved",
+                          description: "Your LeetCode integration is ready.",
+                          variant: "success",
+                        });
+                      },
+                    }
+                  );
+                }}
+                disabled={updateMutation.isPending || newLeetcode.trim() === (profile?.leetcodeUsername || "")}
+                className="bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs uppercase tracking-widest px-6 h-12 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:scale-100"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Gemini AI Integration Section */}
