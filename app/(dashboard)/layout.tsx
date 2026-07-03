@@ -16,7 +16,14 @@ export default function AppLayout({
   const router = useRouter();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Guest exploration is allowed, so we don't redirect to "/" if no user is found.
+  // Listen to open-add-goal-modal custom event to trigger opening of the modal
+  useEffect(() => {
+    const handleOpen = () => setIsAddModalOpen(true);
+    window.addEventListener("open-add-goal-modal", handleOpen);
+    return () => {
+      window.removeEventListener("open-add-goal-modal", handleOpen);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -30,7 +37,7 @@ export default function AppLayout({
 
   return (
     <div className="flex h-screen bg-background overflow-hidden font-v-body print:h-auto print:overflow-visible print:block">
-      <Sidebar onAddGoal={() => setIsAddModalOpen(true)} />
+      <Sidebar />
       <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 lg:p-8 relative print:overflow-visible print:h-auto print:p-0">
         <div className="max-w-7xl mx-auto">
           {children}

@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Plus,
   Target,
   Trophy,
   LogOut,
   User,
   Brain,
-  Book,
   Code,
   Cpu,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -24,11 +23,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 
-interface SidebarProps {
-  onAddGoal: () => void;
-}
-
-export function Sidebar({ onAddGoal }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -52,17 +47,14 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
 
   const dockItems = [
     {
-      icon: <Plus className="h-5 w-5" />,
-      label: "Add Goal",
-      onClick: () => {
-        if (!user) {
-          setIsAuthModalOpen(true);
-        } else {
-          onAddGoal();
-        }
-      },
-      className:
-        "bg-primary text-primary-foreground border-primary shadow-lg scale-110",
+      icon: <Calendar className="h-5 w-5" />,
+      label: "Calendar",
+      onClick: () => router.push("/calendar"),
+      className: cn(
+        pathname === "/calendar"
+          ? "border-primary bg-secondary shadow-inner"
+          : ""
+      ),
     },
     {
       icon: <Brain className="h-5 w-5" />,
@@ -136,20 +128,18 @@ export function Sidebar({ onAddGoal }: SidebarProps) {
     <>
       <aside className="hidden md:flex w-16 border-r border-border h-screen flex-col items-center py-6 bg-background sticky top-0 z-50 print:hidden">
         <div className="mb-6">
-          <Tooltip content="Add New Goal" side="right">
-            <button
-              onClick={() => {
-                if (!user) {
-                  setIsAuthModalOpen(true);
-                } else {
-                  onAddGoal();
-                }
-              }}
-              className="w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
-              aria-label="Add New Goal"
+          <Tooltip content="Revision Calendar" side="right">
+            <Link
+              href="/calendar"
+              className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-105 border border-border shadow-md",
+                pathname === "/calendar"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-primary hover:bg-secondary"
+              )}
             >
-              <Plus className="h-5 w-5" />
-            </button>
+              <Calendar className="h-5 w-5" />
+            </Link>
           </Tooltip>
         </div>
 

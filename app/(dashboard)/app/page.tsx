@@ -3,6 +3,7 @@
 import { differenceInDays, startOfDay } from "date-fns";
 import { useActiveGoals } from "@/hooks/use-goals";
 import { GoalCard } from "@/components/goals/goal-card";
+import { Plus } from "lucide-react";
 
 export default function AppPage() {
   const { data: goals = [], isLoading } = useActiveGoals();
@@ -28,11 +29,20 @@ export default function AppPage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl md:text-4xl font-v-headings">Goals</h1>
-        <p className="text-base text-muted-foreground ml-1">
-          Stay consistent, one step at a time.
-        </p>
+      <header className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl md:text-4xl font-v-headings">Goals</h1>
+          <p className="text-sm text-muted-foreground ml-1">
+            Stay consistent, one step at a time.
+          </p>
+        </div>
+        <button
+          onClick={() => window.dispatchEvent(new Event("open-add-goal-modal"))}
+          className="flex items-center gap-2 px-4 h-12 bg-primary text-primary-foreground rounded-2xl hover:scale-105 active:scale-95 transition-all text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/5"
+        >
+          <Plus className="h-4 w-4" />
+          <span>New Goal</span>
+        </button>
       </header>
 
       {visibleGoals.length === 0 ? (

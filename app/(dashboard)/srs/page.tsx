@@ -22,7 +22,6 @@ import {
   Trash2,
   Check,
   RefreshCw,
-  List,
 } from "lucide-react";
 import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
@@ -30,8 +29,6 @@ import { Timestamp } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useAuthGuard } from "@/components/auth-guard";
-import { cn } from "@/lib/utils";
-import { RevisionCalendar } from "@/components/srs/revision-calendar";
 
 import {
   SRS_INTERVALS,
@@ -66,8 +63,6 @@ export default function SRSPage() {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "due" | "in-progress" | "mastered" | "reminders"
   >("all");
-
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,41 +240,9 @@ export default function SRSPage() {
             Retain mastery through scheduled revision milestones.
           </p>
         </div>
-
-        {/* View Mode Switcher */}
-        <div className="bg-secondary/50 p-1.5 rounded-2xl flex items-center gap-1 border border-border/10">
-          <button
-            onClick={() => setViewMode("list")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
-              viewMode === "list"
-                ? "bg-white dark:bg-card shadow-sm text-primary"
-                : "text-muted-foreground hover:text-primary"
-            )}
-          >
-            <List className="h-3.5 w-3.5" />
-            List
-          </button>
-          <button
-            onClick={() => setViewMode("calendar")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all",
-              viewMode === "calendar"
-                ? "bg-white dark:bg-card shadow-sm text-primary"
-                : "text-muted-foreground hover:text-primary"
-            )}
-          >
-            <Calendar className="h-3.5 w-3.5" />
-            Calendar
-          </button>
-        </div>
       </header>
 
-      {viewMode === "calendar" ? (
-        <RevisionCalendar />
-      ) : (
-        <>
-        {/* Add New Learning Form - Refined & Premium */}
+      {/* Add New Learning Form - Refined & Premium */}
       <section className="bg-gradient-to-br from-card to-secondary/20 border border-border/60 rounded-3xl p-5 md:p-6 shadow-2xl shadow-primary/5 relative group">
         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
           <div className="absolute -top-10 -right-10 p-8 text-primary/5 -rotate-12 transition-transform group-hover:scale-110 duration-700">
@@ -807,8 +770,6 @@ export default function SRSPage() {
           </div>
         </div>
       </div>
-      </>
-      )}
 
     </div>
   );
