@@ -23,7 +23,7 @@ function Markdown({ text }: { text: string }) {
   const parts = text.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-2.5 text-[13px] leading-relaxed break-words font-v-body">
+    <div className="space-y-1.5 text-[13px] leading-relaxed break-words font-v-body text-foreground">
       {parts.map((part, index) => {
         if (part.startsWith("```")) {
           const match = part.match(/```(\w*)\n([\s\S]*?)```/);
@@ -35,50 +35,117 @@ function Markdown({ text }: { text: string }) {
             </div>
           );
         } else {
-          const paragraphs = part.split(/\n\n+/);
-          return paragraphs.map((p, pIdx) => {
-            if (!p.trim()) return null;
+          const lines = part.split("\n");
+          const renderedElements: React.ReactNode[] = [];
+          let currentListItems: React.ReactNode[] = [];
+          let listType: "ul" | "ol" | null = null;
 
-            // Simple check for bullet lists
-            if (p.trim().startsWith("- ") || p.trim().startsWith("* ")) {
-              const items = p.split(/\n[-*]\s+/);
-              return (
-                <ul key={`${index}-${pIdx}`} className="list-disc pl-5 space-y-1 my-1.5">
-                  {items.map((item, itemIdx) => {
-                    if (!item.trim() && itemIdx === 0) return null;
-                    return (
-                      <li key={itemIdx} className="text-[13px]">
-                        {renderInlineMarkdown(item.replace(/^[-*]\s+/, ""))}
-                      </li>
-                    );
-                  })}
-                </ul>
-              );
+          const flushList = (key: string) => {
+            if (currentListItems.length > 0) {
+              if (listType === "ul") {
+                renderedElements.push(
+                  <ul key={`ul-${key}`} className="list-disc pl-5 space-y-1 my-1.5">
+                    {currentListItems}
+                  </ul>
+                );
+              } else if (listType === "ol") {
+                renderedElements.push(
+                  <ol key={`ol-${key}`} className="list-decimal pl-5 space-y-1 my-1.5">
+                    {currentListItems}
+                  </ol>
+                );
+              }
+              currentListItems = [];
+              listType = null;
+            }
+          };
+
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            if (!trimmed) {
+              flushList(`empty-${i}`);
+              continue;
             }
 
-            // Simple check for numbered lists
-            if (/^\d+\.\s+/.test(p.trim())) {
-              const items = p.split(/\n\d+\.\s+/);
-              return (
-                <ol key={`${index}-${pIdx}`} className="list-decimal pl-5 space-y-1 my-1.5">
-                  {items.map((item, itemIdx) => {
-                    if (!item.trim() && itemIdx === 0) return null;
-                    return (
-                      <li key={itemIdx} className="text-[13px]">
-                        {renderInlineMarkdown(item.replace(/^\d+\.\s+/, ""))}
-                      </li>
-                    );
-                  })}
-                </ol>
+            // Headers
+            if (trimmed.startsWith("### ")) {
+              flushList(`h3-${i}`);
+              renderedElements.push(
+                <h3 key={`h3-${i}`} className="text-[13px] font-bold text-foreground mt-3 mb-1">
+                  {renderInlineMarkdown(trimmed.slice(4))}
+                </h3>
               );
+              continue;
+            }
+            if (trimmed.startsWith("## ")) {
+              flushList(`h2-${i}`);
+              renderedElements.push(
+                <h2 key={`h2-${i}`} className="text-sm font-bold text-foreground mt-4 mb-1.5 border-b border-border/30 pb-0.5">
+                  {renderInlineMarkdown(trimmed.slice(3))}
+                </h2>
+              );
+              continue;
+            }
+            if (trimmed.startsWith("# ")) {
+              flushList(`h1-${i}`);
+              renderedElements.push(
+                <h1 key={`h1-${i}`} className="text-base font-extrabold text-foreground mt-4 mb-2">
+                  {renderInlineMarkdown(trimmed.slice(2))}
+                </h1>
+              );
+              continue;
             }
 
-            return (
-              <p key={`${index}-${pIdx}`}>
-                {renderInlineMarkdown(p)}
+            // Horizontal Rule
+            if (trimmed === "---") {
+              flushList(`hr-${i}`);
+              renderedElements.push(<hr key={`hr-${i}`} className="my-2.5 border-border/40" />);
+              continue;
+            }
+
+            // Unordered List Items
+            const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)/);
+            if (bulletMatch) {
+              if (listType !== "ul") {
+                flushList(`pre-ul-${i}`);
+                listType = "ul";
+              }
+              currentListItems.push(
+                <li key={`li-${i}`} className="text-[13px] leading-relaxed">
+                  {renderInlineMarkdown(bulletMatch[2])}
+                </li>
+              );
+              continue;
+            }
+
+            // Ordered List Items
+            const numMatch = line.match(/^(\s*)\d+\.\s+(.*)/);
+            if (numMatch) {
+              if (listType !== "ol") {
+                flushList(`pre-ol-${i}`);
+                listType = "ol";
+              }
+              currentListItems.push(
+                <li key={`li-${i}`} className="text-[13px] leading-relaxed">
+                  {renderInlineMarkdown(numMatch[2])}
+                </li>
+              );
+              continue;
+            }
+
+            // Normal text paragraph
+            flushList(`para-${i}`);
+            renderedElements.push(
+              <p key={`p-${i}`} className="my-0.5 text-[13px] leading-relaxed">
+                {renderInlineMarkdown(line)}
               </p>
             );
-          });
+          }
+
+          flushList(`final-${index}`);
+          return <div key={index} className="space-y-0.5">{renderedElements}</div>;
         }
       })}
     </div>
@@ -86,24 +153,58 @@ function Markdown({ text }: { text: string }) {
 }
 
 function renderInlineMarkdown(text: string) {
-  const tokens = text.split(/(\*\*.*?\*\*|`.*?`)/g);
-  return tokens.map((token, idx) => {
-    if (token.startsWith("**") && token.endsWith("**")) {
-      return (
-        <strong key={idx} className="font-bold text-foreground">
-          {token.slice(2, -2)}
-        </strong>
-      );
-    }
-    if (token.startsWith("`") && token.endsWith("`")) {
-      return (
-        <code key={idx} className="px-1.5 py-0.5 rounded bg-muted font-mono text-[11px] text-foreground/90 border border-border/20">
-          {token.slice(1, -1)}
-        </code>
-      );
-    }
-    return token;
+  let tokens: (string | React.ReactNode)[] = [text];
+
+  // 1. Process Code snippets: `code`
+  tokens = tokens.flatMap((token) => {
+    if (typeof token !== "string") return token;
+    const parts = token.split(/(`.*?`)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith("`") && part.endsWith("`")) {
+        return (
+          <code key={`code-${idx}`} className="px-1.5 py-0.5 rounded bg-muted font-mono text-[11px] text-foreground/90 border border-border/20">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      return part;
+    });
   });
+
+  // 2. Process Bold text: **bold**
+  tokens = tokens.flatMap((token) => {
+    if (typeof token !== "string") return token;
+    const parts = token.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong key={`bold-${idx}`} className="font-semibold text-foreground">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return part;
+    });
+  });
+
+  // 3. Process Italic text: *italic* or _italic_
+  tokens = tokens.flatMap((token) => {
+    if (typeof token !== "string") return token;
+    const parts = token.split(/(\*.*?\*|__.*?__|_.*?_)/g);
+    return parts.map((part, idx) => {
+      if ((part.startsWith("*") && part.endsWith("*")) || (part.startsWith("_") && part.endsWith("_"))) {
+        const content = part.startsWith("__") || part.startsWith("**") ? part.slice(2, -2) : part.slice(1, -1);
+        return (
+          <em key={`italic-${idx}`} className="italic text-foreground/80">
+            {content}
+          </em>
+        );
+      }
+      return part;
+    });
+  });
+
+  return tokens;
 }
 
 // ----------------------------------------------------------------------
