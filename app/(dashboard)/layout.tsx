@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AddGoalModal } from "@/components/goals/add-goal-modal";
 import { Logo } from "@/components/ui/logo";
+import { ChatFAB } from "@/components/ai-assistant/chat-fab";
 
 export default function AppLayout({
   children,
@@ -44,6 +45,7 @@ export default function AppLayout({
         </div>
       </main>
 
+      <ChatFAB />
       <AddGoalModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
