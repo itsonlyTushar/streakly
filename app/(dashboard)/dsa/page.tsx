@@ -1085,9 +1085,19 @@ export default function DSAPage() {
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-2">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-primary text-sm font-black uppercase tracking-widest">
-            <Terminal className="h-4 w-4" />
-            Active Revision Vault
+          <div className="flex items-center gap-2 text-primary text-sm font-black uppercase tracking-widest flex-wrap">
+            <div className="flex items-center gap-2">
+              <Terminal className="h-4 w-4" />
+              Active Revision Vault
+            </div>
+            <span className="text-muted-foreground/30 font-normal hidden sm:inline">|</span>
+            <Link
+              href="/patterns"
+              className="inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-all hover:translate-x-0.5"
+            >
+              Pattern Library
+              <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tighter">
             DSA Tracker

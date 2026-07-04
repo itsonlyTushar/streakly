@@ -11,7 +11,6 @@ import {
   Save,
   X,
   Volume2,
-  Bell,
   ShieldCheck,
   FileText,
   Sparkles,
@@ -107,24 +106,6 @@ export default function ProfilePage() {
     });
   };
 
-  const handleToggleEmail = async (checked: boolean) => {
-    updateMutation.mutate({ emailNotifications: checked }, {
-      onSuccess: () => {
-        toast({
-          title: "Settings Updated",
-          description: `Email reminders ${checked ? "enabled" : "disabled"}.`,
-          variant: "success",
-        });
-      },
-      onError: () => {
-        toast({
-          title: "Error",
-          description: "Failed to update settings. Please try again.",
-          variant: "error",
-        });
-      }
-    });
-  };
 
   if (!user) {
     return (
@@ -256,24 +237,6 @@ export default function ProfilePage() {
           <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
         </div>
 
-        <div className="md:col-span-2 flex items-center justify-between p-6 bg-secondary/20 rounded-3xl border border-border/40">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-background rounded-2xl text-primary shadow-sm border border-border/20">
-              <Bell className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">Email Reminders</h3>
-              <p className="text-sm text-muted-foreground">
-                Daily revision notifications
-              </p>
-            </div>
-          </div>
-          <Switch
-            checked={profile?.emailNotifications ?? true}
-            onCheckedChange={handleToggleEmail}
-            disabled={updateMutation.isPending}
-          />
-        </div>
 
         {/* LeetCode Integration Section */}
         <div className="md:col-span-2 flex flex-col p-6 bg-secondary/20 border border-border/40 rounded-3xl relative overflow-hidden">

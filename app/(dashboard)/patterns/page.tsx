@@ -24,13 +24,19 @@ import {
   Network,
   CalendarRange,
   FileDown,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
+
+interface Problem {
+  id: number;
+  title: string;
+}
 
 interface Pattern {
   id: number;
   name: string;
-  description: string;
+  problems: Problem[];
   recipe?: string;
 }
 
@@ -52,81 +58,213 @@ const CATEGORIES: Category[] = [
       {
         id: 1,
         name: "Two Pointers",
-        description:
-          "Converging/parallel indices. Pair sums, palindromes, move zeroes, remove duplicates.",
+        problems: [
+          { id: 167, title: "Two Sum II - Input Array Is Sorted" },
+          { id: 125, title: "Valid Palindrome" },
+          { id: 283, title: "Move Zeroes" },
+          { id: 26, title: "Remove Duplicates from Sorted Array" },
+          { id: 15, title: "3Sum" },
+          { id: 11, title: "Container With Most Water" },
+          { id: 977, title: "Squares of a Sorted Array" },
+          { id: 42, title: "Trapping Rain Water" },
+          { id: 18, title: "4Sum" },
+          { id: 844, title: "Backspace String Compare" },
+          { id: 75, title: "Sort Colors" },
+          { id: 16, title: "3Sum Closest" },
+          { id: 925, title: "Long Press Name" },
+          { id: 392, title: "Is Subsequence" },
+          { id: 344, title: "Reverse String" },
+          { id: 345, title: "Reverse Vowels of a String" },
+          { id: 680, title: "Valid Palindrome II" },
+          { id: 88, title: "Merge Sorted Array" }
+        ],
       },
       {
         id: 2,
         name: "Sliding Window (Fixed + Variable)",
-        description:
-          "Contiguous subarray/substring tracking. Max sum of size k, longest substring with constraint.",
+        problems: [
+          { id: 643, title: "Maximum Average Subarray I" },
+          { id: 3, title: "Longest Substring Without Repeating Characters" },
+          { id: 209, title: "Minimum Size Subarray Sum" },
+          { id: 424, title: "Longest Repeating Character Replacement" },
+          { id: 567, title: "Permutation in String" },
+          { id: 76, title: "Minimum Window Substring" },
+          { id: 239, title: "Sliding Window Maximum" },
+          { id: 1004, title: "Max Consecutive Ones III" },
+          { id: 904, title: "Fruit Into Baskets" },
+          { id: 438, title: "Find All Anagrams in a String" },
+          { id: 992, title: "Subarrays with K Different Integers" },
+          { id: 1208, title: "Get Equal Substrings Within Budget" },
+          { id: 1423, title: "Maximum Points You Can Obtain from Cards" },
+          { id: 1438, title: "Longest Continuous Subarray With Absolute Diff Less Than or Equal to Limit" },
+          { id: 1838, title: "Frequency of the Most Frequent Element" }
+        ],
       },
       {
         id: 3,
         name: "Prefix Sum",
-        description:
-          "Precomputed cumulative sums for O(1) range queries. Subarray sum = K, running sum.",
+        problems: [
+          { id: 560, title: "Subarray Sum Equals K" },
+          { id: 1480, title: "Running Sum of 1d Array" },
+          { id: 303, title: "Range Sum Query - Immutable" },
+          { id: 974, title: "Subarray Sums Divisible by K" },
+          { id: 724, title: "Find Pivot Index" },
+          { id: 525, title: "Contiguous Array" },
+          { id: 238, title: "Product of Array Except Self" },
+          { id: 523, title: "Continuous Subarray Sum" },
+          { id: 304, title: "Range Sum Query 2D - Immutable" },
+          { id: 1109, title: "Corporate Flight Bookings" },
+          { id: 528, title: "Random Pick with Weight" },
+          { id: 930, title: "Binary Subarrays With Sum" },
+          { id: 1248, title: "Count Number of Nice Subarrays" },
+          { id: 1732, title: "Find the Highest Altitude" }
+        ],
       },
       {
         id: 4,
         name: "Prefix + Suffix Products",
-        description:
-          "Two passes, one left-to-right one right-to-left, combined. Product of Array Except Self is the canonical problem.",
+        problems: [
+          { id: 238, title: "Product of Array Except Self" },
+          { id: 1991, title: "Find the Middle Index in Array" },
+          { id: 152, title: "Maximum Product Subarray" },
+          { id: 135, title: "Candy" },
+          { id: 42, title: "Trapping Rain Water" },
+          { id: 2906, title: "Construct Product Matrix" },
+          { id: 2256, title: "Minimum Average Difference" },
+          { id: 724, title: "Find Pivot Index" }
+        ],
         recipe:
           "prefix[i] = prefix[i-1] * arr[i-1]\nsuffix[i] = suffix[i+1] * arr[i+1]\nanswer[i] = prefix[i] * suffix[i]",
       },
       {
         id: 5,
         name: "Kadane's Algorithm",
-        description: "Max/min subarray sum via running comparison.",
+        problems: [
+          { id: 53, title: "Maximum Subarray" },
+          { id: 152, title: "Maximum Product Subarray" },
+          { id: 918, title: "Maximum Sum Circular Subarray" },
+          { id: 198, title: "House Robber" },
+          { id: 1191, title: "K-Concatenation Maximum Sum" },
+          { id: 1749, title: "Maximum Absolute Sum of Any Subarray" },
+          { id: 2321, title: "Maximum Score Of Spliced Array" },
+          { id: 121, title: "Best Time to Buy and Sell Stock" },
+          { id: 1186, title: "Maximum Subarray Sum with One Deletion" }
+        ],
       },
       {
         id: 6,
         name: "Hashing / Frequency Map",
-        description:
-          "O(1) lookups via dict/set. Anagrams, two-sum, duplicates.",
+        problems: [
+          { id: 1, title: "Two Sum" },
+          { id: 242, title: "Valid Anagram" },
+          { id: 217, title: "Contains Duplicate" },
+          { id: 49, title: "Group Anagrams" },
+          { id: 349, title: "Intersection of Two Arrays" },
+          { id: 347, title: "Top K Frequent Elements" },
+          { id: 387, title: "First Unique Character in a String" },
+          { id: 128, title: "Longest Consecutive Sequence" },
+          { id: 205, title: "Isomorphic Strings" },
+          { id: 454, title: "4Sum II" },
+          { id: 350, title: "Intersection of Two Arrays II" },
+          { id: 447, title: "Number of Boomerangs" },
+          { id: 554, title: "Brick Wall" }
+        ],
       },
       {
         id: 7,
         name: "Sorting-based Greedy",
-        description: "Sort then single pass. Merge intervals, meeting rooms.",
+        problems: [
+          { id: 56, title: "Merge Intervals" },
+          { id: 252, title: "Meeting Rooms" },
+          { id: 253, title: "Meeting Rooms II" },
+          { id: 435, title: "Non-overlapping Intervals" },
+          { id: 406, title: "Queue Reconstruction by Height" },
+          { id: 452, title: "Minimum Number of Arrows to Burst Balloons" },
+          { id: 621, title: "Task Scheduler" },
+          { id: 1353, title: "Maximum Number of Events That Can Be Attended" },
+          { id: 455, title: "Assign Cookies" },
+          { id: 1029, title: "Two City Scheduling" },
+          { id: 1710, title: "Maximum Units on a Truck" }
+        ],
       },
       {
         id: 8,
         name: "Cyclic Sort",
-        description:
-          "For arrays with values in range 1..n, place each at its index. Missing/duplicate number problems in O(1) space.",
+        problems: [
+          { id: 268, title: "Missing Number" },
+          { id: 448, title: "Find All Numbers Disappeared in an Array" },
+          { id: 287, title: "Find the Duplicate Number" },
+          { id: 41, title: "First Missing Positive" },
+          { id: 442, title: "Find All Duplicates in an Array" },
+          { id: 645, title: "Set Mismatch" },
+          { id: 1528, title: "Shuffle String" },
+          { id: 765, title: "Couples Holding Hands" }
+        ],
       },
       {
         id: 9,
         name: "Floyd's Cycle Detection (Tortoise and Hare)",
-        description:
-          "Treat array values as pointers to next index, detect a cycle like a linked list. Find the Duplicate Number is the classic use: slow/fast pointers meet inside the cycle, then a second phase finds the entry point (the duplicate).",
+        problems: [
+          { id: 141, title: "Linked List Cycle" },
+          { id: 287, title: "Find the Duplicate Number" },
+          { id: 142, title: "Linked List Cycle II" },
+          { id: 202, title: "Happy Number" },
+          { id: 457, title: "Circular Array Loop" },
+          { id: 160, title: "Intersection of Two Linked Lists" }
+        ],
       },
       {
         id: 10,
         name: "In-place Reversal/Rotation",
-        description: "Reverse segments to rotate. Rotate array by k.",
+        problems: [
+          { id: 189, title: "Rotate Array" },
+          { id: 48, title: "Rotate Image" },
+          { id: 151, title: "Reverse Words in a String" },
+          { id: 344, title: "Reverse String" },
+          { id: 61, title: "Rotate List" },
+          { id: 541, title: "Reverse String II" },
+          { id: 917, title: "Reverse Only Letters" },
+          { id: 557, title: "Reverse Words in a String III" }
+        ],
       },
       {
         id: 11,
         name: "Array Index Shifting",
-        description:
-          "Manually shifting elements right/left to make room or close gaps. Insert Element at Index, Delete from Static Array. Not glamorous, but a distinct mechanical skill — looping from the end backward to avoid overwriting data you haven't moved yet.",
+        problems: [
+          { id: 27, title: "Remove Element" },
+          { id: 26, title: "Remove Duplicates from Sorted Array" },
+          { id: 283, title: "Move Zeroes" },
+          { id: 80, title: "Remove Duplicates from Sorted Array II" },
+          { id: 88, title: "Merge Sorted Array" },
+          { id: 1089, title: "Duplicate Zeros" },
+          { id: 905, title: "Sort Array By Parity" },
+          { id: 922, title: "Sort Array By Parity II" },
+          { id: 941, title: "Valid Mountain Array" }
+        ],
       },
       {
         id: 12,
         name: "String Matching (Brute Force / Naive Pattern Search)",
-        description:
-          "For strStr() and substring search: slide a window of haystack, compare to needle char by char.",
+        problems: [
+          { id: 28, title: "Find the Index of the First Occurrence in a String" },
+          { id: 459, title: "Repeated Substring Pattern" },
+          { id: 438, title: "Find All Anagrams in a String" },
+          { id: 686, title: "Repeated String Match" },
+          { id: 214, title: "Shortest Palindrome" },
+          { id: 1392, title: "Longest Happy Prefix" }
+        ],
         recipe:
           "KMP is the optimized O(n+m) version — exists, not expected of you yet at fresher level.",
       },
       {
         id: 13,
         name: "Vertical/Horizontal Scanning",
-        description:
-          "For Longest Common Prefix: either compare character-by-character across all strings at each position (vertical), or shrink one candidate prefix against each string in turn (horizontal).",
+        problems: [
+          { id: 14, title: "Longest Common Prefix" },
+          { id: 28, title: "Find the Index of the First Occurrence in a String" },
+          { id: 925, title: "Long Press Name" },
+          { id: 392, title: "Is Subsequence" }
+        ],
       },
     ],
   },
@@ -139,37 +277,69 @@ const CATEGORIES: Category[] = [
       {
         id: 14,
         name: "Binary Search (Standard)",
-        description: "Classic divide-in-half search over a sorted array.",
+        problems: [
+          { id: 704, title: "Binary Search" },
+          { id: 74, title: "Search a 2D Matrix" },
+          { id: 374, title: "Guess Number Higher or Lower" },
+          { id: 278, title: "First Bad Version" },
+          { id: 35, title: "Search Insert Position" },
+          { id: 367, title: "Valid Perfect Square" },
+          { id: 34, title: "Find First and Last Position of Element in Sorted Array" }
+        ],
       },
       {
         id: 15,
         name: "Modified Binary Search (Rotated Array)",
-        description:
-          "Determine which half is sorted, check if target lies in it.",
+        problems: [
+          { id: 33, title: "Search in Rotated Sorted Array" },
+          { id: 81, title: "Search in Rotated Sorted Array II" },
+          { id: 153, title: "Find Minimum in Rotated Sorted Array" },
+          { id: 154, title: "Find Minimum in Rotated Sorted Array II" }
+        ],
       },
       {
         id: 16,
         name: "Boundary Binary Search (\"don't return early\")",
-        description:
-          "First/last occurrence, count occurrences, ceiling/floor of a number, insert position.",
+        problems: [
+          { id: 34, title: "Find First and Last Position of Element in Sorted Array" },
+          { id: 35, title: "Search Insert Position" },
+          { id: 1150, title: "Check If a Number Is Majority Element in a Sorted Array" },
+          { id: 278, title: "First Bad Version" },
+          { id: 658, title: "Find K Closest Elements" },
+          { id: 162, title: "Find Peak Element" }
+        ],
       },
       {
         id: 17,
         name: "Binary Search on Answer",
-        description:
-          "Search space is a range of possible answers, not the array. Koko Eating Bananas, Aggressive Cows — literally the same template: minimize the maximum / maximize the minimum via a feasibility check.",
+        problems: [
+          { id: 875, title: "Koko Eating Bananas" },
+          { id: 1552, title: "Magnetic Force Between Two Balls" },
+          { id: 1011, title: "Capacity To Ship Packages Within D Days" },
+          { id: 410, title: "Split Array Largest Sum" },
+          { id: 1283, title: "Find the Smallest Divisor Given a Threshold" },
+          { id: 1482, title: "Minimum Number of Days to Make m Bouquets" },
+          { id: 2187, title: "Minimum Time to Complete Trips" },
+          { id: 887, title: "Super Egg Drop" }
+        ],
       },
       {
         id: 18,
         name: "Exponential / Unbounded Binary Search",
-        description:
-          "For searching in an array of unknown size: start with bound = 1, double it until you overshoot the target, then binary search within that range.",
+        problems: [
+          { id: 702, title: "Search in a Sorted Array of Unknown Size" },
+          { id: 658, title: "Find K Closest Elements" }
+        ],
       },
       {
         id: 19,
         name: "Peak Finding (Slope-based Binary Search)",
-        description:
-          "Compare arr[mid] to arr[mid+1] to decide which direction the peak lies.",
+        problems: [
+          { id: 162, title: "Find Peak Element" },
+          { id: 852, title: "Peak Index in a Mountain Array" },
+          { id: 1901, title: "Find a Peak Element II" },
+          { id: 1095, title: "Find in Mountain Array" }
+        ],
       },
     ],
   },
@@ -182,34 +352,57 @@ const CATEGORIES: Category[] = [
       {
         id: 20,
         name: "Comparison Sorts",
-        description:
-          "Bubble, Selection, Insertion — the O(n²) family.",
+        problems: [
+          { id: 912, title: "Sort an Array" },
+          { id: 147, title: "Insertion Sort List" },
+          { id: 75, title: "Sort Colors" },
+          { id: 148, title: "Sort List" },
+          { id: 274, title: "H-Index" }
+        ],
       },
       {
         id: 21,
         name: "Divide and Conquer Sorts",
-        description:
-          "Merge Sort, Quick Sort — the O(n log n) family.",
+        problems: [
+          { id: 912, title: "Sort an Array" },
+          { id: 148, title: "Sort List" },
+          { id: 169, title: "Majority Element" },
+          { id: 215, title: "Kth Largest Element in an Array" },
+          { id: 973, title: "K Closest Points to Origin" }
+        ],
       },
       {
         id: 22,
         name: "Modified Merge Sort (Inversion Counting)",
-        description:
-          "Count Elements Smaller Than Current on Right and the classic \"count inversions\" problem both use a modified merge step: while merging two sorted halves, every time you take an element from the right half before the left half is exhausted, it's smaller than all remaining left elements — count those.",
+        problems: [
+          { id: 315, title: "Count of Smaller Numbers After Self" },
+          { id: 493, title: "Reverse Pairs" },
+          { id: 775, title: "Global and Local Inversions" },
+          { id: 327, title: "Count of Range Sum" }
+        ],
       },
       {
         id: 23,
         name: "Heap Sort",
-        description:
-          "Build a max-heap, repeatedly extract the max and place at the end.",
+        problems: [
+          { id: 912, title: "Sort an Array" },
+          { id: 215, title: "Kth Largest Element in an Array" },
+          { id: 973, title: "K Closest Points to Origin" }
+        ],
         recipe:
           "Heap primer: a complete binary tree stored in an array. Max-heap → every parent ≥ its children. For index i: children at 2i+1, 2i+2, parent at (i-1)/2.",
       },
       {
         id: 24,
         name: "Bucket Sort / Counting by Frequency",
-        description:
-          "Group elements by a property (frequency, range bucket) then collect. Used for Top K Frequent Elements as an O(n) alternative to heaps.",
+        problems: [
+          { id: 347, title: "Top K Frequent Elements" },
+          { id: 451, title: "Sort Characters By Frequency" },
+          { id: 692, title: "Top K Frequent Words" },
+          { id: 274, title: "H-Index" },
+          { id: 220, title: "Contains Duplicate III" },
+          { id: 164, title: "Maximum Gap" }
+        ],
       },
     ],
   },
@@ -222,32 +415,60 @@ const CATEGORIES: Category[] = [
       {
         id: 25,
         name: "Fast & Slow Pointers (Floyd's, on real nodes)",
-        description:
-          "Slow moves 1 step, fast moves 2. Detect cycle, find the middle node, check palindrome by reaching the midpoint.",
+        problems: [
+          { id: 141, title: "Linked List Cycle" },
+          { id: 876, title: "Middle of the Linked List" },
+          { id: 234, title: "Palindrome Linked List" },
+          { id: 142, title: "Linked List Cycle II" },
+          { id: 143, title: "Reorder List" },
+          { id: 160, title: "Intersection of Two Linked Lists" },
+          { id: 202, title: "Happy Number" }
+        ],
       },
       {
         id: 26,
         name: "In-place Reversal",
-        description:
-          "Rewire next pointers with prev/curr/next trackers. Reverse the whole list, reverse in groups of k, reverse a sublist between positions m and n.",
+        problems: [
+          { id: 206, title: "Reverse Linked List" },
+          { id: 25, title: "Reverse Nodes in k-Group" },
+          { id: 92, title: "Reverse Linked List II" },
+          { id: 2074, title: "Reverse Nodes in Even Groups" },
+          { id: 24, title: "Swap Nodes in Pairs" },
+          { id: 1721, title: "Swapping Nodes in a Linked List" },
+          { id: 328, title: "Odd Even Linked List" }
+        ],
       },
       {
         id: 27,
         name: "Dummy Node Technique",
-        description:
-          "Prepend a placeholder node before head so deletions/insertions at the head don't need special-case code. Remove Nth From End, Merge Two Sorted Lists.",
+        problems: [
+          { id: 19, title: "Remove Nth Node From End of List" },
+          { id: 21, title: "Merge Two Sorted Lists" },
+          { id: 23, title: "Merge k Sorted Lists" },
+          { id: 82, title: "Remove Duplicates from Sorted List II" },
+          { id: 86, title: "Partition List" },
+          { id: 2, title: "Add Two Numbers" },
+          { id: 203, title: "Remove Linked List Elements" }
+        ],
       },
       {
         id: 28,
         name: "Merge Two Sorted Lists",
-        description:
-          "Walk both lists with two pointers, splice the smaller head onto the result each step. The building block for Merge K Sorted Lists (pair them up or use a heap).",
+        problems: [
+          { id: 21, title: "Merge Two Sorted Lists" },
+          { id: 23, title: "Merge k Sorted Lists" },
+          { id: 88, title: "Merge Sorted Array" },
+          { id: 148, title: "Sort List" }
+        ],
       },
       {
         id: 29,
         name: "Two Pointers with a Gap",
-        description:
-          "Advance one pointer n steps ahead first, then move both together — when the lead pointer hits the end, the trailing pointer is at the target. Nth Node From End.",
+        problems: [
+          { id: 19, title: "Remove Nth Node From End of List" },
+          { id: 61, title: "Rotate List" },
+          { id: 1721, title: "Swapping Nodes in a Linked List" }
+        ],
       },
     ],
   },
@@ -260,26 +481,59 @@ const CATEGORIES: Category[] = [
       {
         id: 30,
         name: "Monotonic Stack",
-        description:
-          "Keep the stack strictly increasing or decreasing; pop while the incoming element breaks the order. Next Greater Element, Daily Temperatures, Stock Span.",
+        problems: [
+          { id: 496, title: "Next Greater Element I" },
+          { id: 739, title: "Daily Temperatures" },
+          { id: 901, title: "Online Stock Span" },
+          { id: 503, title: "Next Greater Element II" },
+          { id: 84, title: "Largest Rectangle in Histogram" },
+          { id: 42, title: "Trapping Rain Water" },
+          { id: 402, title: "Remove K Digits" },
+          { id: 316, title: "Remove Duplicate Letters" },
+          { id: 85, title: "Maximal Rectangle" },
+          { id: 907, title: "Sum of Subarray Minimums" },
+          { id: 1475, title: "Final Prices With a Special Discount in a Shop" },
+          { id: 456, title: "132 Pattern" },
+          { id: 581, title: "Shortest Unsorted Continuous Subarray" },
+          { id: 1944, title: "Number of Visible People in a Queue" }
+        ],
       },
       {
         id: 31,
         name: "Parentheses / Bracket Matching",
-        description:
-          "Push opening brackets, pop and compare on closing brackets — mismatch or leftover stack means invalid. Valid Parentheses, Minimum Add to Make Valid.",
+        problems: [
+          { id: 20, title: "Valid Parentheses" },
+          { id: 921, title: "Minimum Add to Make Parentheses Valid" },
+          { id: 22, title: "Generate Parentheses" },
+          { id: 32, title: "Longest Valid Parentheses" },
+          { id: 1249, title: "Minimum Remove to Make Valid Parentheses" },
+          { id: 856, title: "Score of Parentheses" },
+          { id: 1190, title: "Reverse Substrings Between Each Pair of Parentheses" },
+          { id: 301, title: "Remove Invalid Parentheses" },
+          { id: 678, title: "Valid Parenthesis String" },
+          { id: 1541, title: "Minimum Insertions to Balance a Parentheses String" }
+        ],
       },
       {
         id: 32,
         name: "Min/Max Auxiliary Stack",
-        description:
-          "Maintain a second stack tracking the running min (or max) alongside the main stack for O(1) getMin(). Min Stack.",
+        problems: [
+          { id: 155, title: "Min Stack" },
+          { id: 716, title: "Max Stack" },
+          { id: 394, title: "Decode String" }
+        ],
       },
       {
         id: 33,
         name: "Expression Evaluation (Infix/Postfix)",
-        description:
-          "Use a stack to hold operands/operators and resolve precedence on the fly. Basic Calculator, Evaluate Reverse Polish Notation.",
+        problems: [
+          { id: 224, title: "Basic Calculator" },
+          { id: 150, title: "Evaluate Reverse Polish Notation" },
+          { id: 227, title: "Basic Calculator II" },
+          { id: 772, title: "Basic Calculator III" },
+          { id: 770, title: "Basic Calculator IV" },
+          { id: 1006, title: "Clumsy Factorial" }
+        ],
       },
     ],
   },
@@ -292,20 +546,34 @@ const CATEGORIES: Category[] = [
       {
         id: 34,
         name: "Monotonic Deque",
-        description:
-          "Double-ended queue kept in increasing/decreasing order; evict from the back when order breaks, evict from the front when out of window range. Sliding Window Maximum/Minimum in O(n).",
+        problems: [
+          { id: 239, title: "Sliding Window Maximum" },
+          { id: 1425, title: "Constrained Subsequence Sum" },
+          { id: 862, title: "Shortest Subarray with Sum at Least K" },
+          { id: 1499, title: "Max Value of Equation" },
+          { id: 918, title: "Maximum Sum Circular Subarray" }
+        ],
       },
       {
         id: 35,
         name: "Queue via Two Stacks",
-        description:
-          "Push onto stack A; for dequeue, drain A into stack B (reversing order) if B is empty, then pop from B. Amortized O(1) per operation.",
+        problems: [
+          { id: 232, title: "Implement Queue using Stacks" },
+          { id: 225, title: "Implement Stack using Queues" },
+          { id: 641, title: "Design Circular Deque" }
+        ],
       },
       {
         id: 36,
         name: "Level-Order Processing (BFS via Queue)",
-        description:
-          "Enqueue a start set, then process level-by-level by snapshotting the queue's current size before draining it. Binary Tree Level Order, Rotting Oranges.",
+        problems: [
+          { id: 102, title: "Binary Tree Level Order Traversal" },
+          { id: 994, title: "Rotting Oranges" },
+          { id: 103, title: "Binary Tree Zigzag Level Order Traversal" },
+          { id: 117, title: "Populating Next Right Pointers in Each Node II" },
+          { id: 199, title: "Binary Tree Right Side View" },
+          { id: 513, title: "Find Bottom Left Tree Value" }
+        ],
       },
     ],
   },
@@ -318,44 +586,89 @@ const CATEGORIES: Category[] = [
       {
         id: 37,
         name: "DFS Traversals (Pre/In/Post-order)",
-        description:
-          "Recurse left, process, recurse right (in whatever order the traversal name implies). Also doable iteratively with an explicit stack.",
+        problems: [
+          { id: 144, title: "Binary Tree Preorder Traversal" },
+          { id: 94, title: "Binary Tree Inorder Traversal" },
+          { id: 145, title: "Binary Tree Postorder Traversal" },
+          { id: 105, title: "Construct Binary Tree from Preorder and Inorder Traversal" },
+          { id: 106, title: "Construct Binary Tree from Inorder and Postorder Traversal" },
+          { id: 114, title: "Flatten Binary Tree to Linked List" },
+          { id: 98, title: "Validate Binary Search Tree" }
+        ],
       },
       {
         id: 38,
         name: "BFS / Level Order Traversal",
-        description:
-          "Queue-based, one level at a time. Zigzag Level Order, Right Side View, Level Averages.",
+        problems: [
+          { id: 102, title: "Binary Tree Level Order Traversal" },
+          { id: 103, title: "Binary Tree Zigzag Level Order Traversal" },
+          { id: 199, title: "Binary Tree Right Side View" },
+          { id: 637, title: "Average of Levels in Binary Tree" },
+          { id: 107, title: "Binary Tree Level Order Traversal II" },
+          { id: 116, title: "Populating Next Right Pointers in Each Node" },
+          { id: 314, title: "Binary Tree Vertical Order Traversal" },
+          { id: 987, title: "Vertical Order Traversal of a Binary Tree" }
+        ],
       },
       {
         id: 39,
         name: "Post-order Aggregation (Tree DP)",
-        description:
-          "Compute each child's result first, then combine at the parent on the way back up. Max Depth, Diameter of Binary Tree, Max Path Sum.",
+        problems: [
+          { id: 104, title: "Maximum Depth of Binary Tree" },
+          { id: 543, title: "Diameter of Binary Tree" },
+          { id: 124, title: "Binary Tree Maximum Path Sum" },
+          { id: 110, title: "Balanced Binary Tree" },
+          { id: 250, title: "Count Univalue Subtrees" },
+          { id: 337, title: "House Robber III" },
+          { id: 863, title: "All Nodes Distance K in Binary Tree" },
+          { id: 298, title: "Binary Tree Longest Consecutive Sequence" }
+        ],
       },
       {
         id: 40,
         name: "BST Property Exploitation",
-        description:
-          "Inorder traversal of a BST yields sorted order; use min/max bounds passed down recursion to validate a BST, or compare against node.val to search in O(h).",
+        problems: [
+          { id: 98, title: "Validate Binary Search Tree" },
+          { id: 700, title: "Search in a Binary Search Tree" },
+          { id: 530, title: "Minimum Absolute Difference in BST" },
+          { id: 230, title: "Kth Smallest Element in a BST" },
+          { id: 108, title: "Convert Sorted Array to Binary Search Tree" },
+          { id: 99, title: "Recover Binary Search Tree" },
+          { id: 450, title: "Delete Node in a BST" },
+          { id: 235, title: "Lowest Common Ancestor of a Binary Search Tree" }
+        ],
       },
       {
         id: 41,
         name: "Root-to-Leaf Backtracking",
-        description:
-          "Carry the running path/sum down the recursion, add the current node before recursing, remove it after — the classic backtrack-on-return shape. Path Sum, All Root-to-Leaf Paths.",
+        problems: [
+          { id: 113, title: "Path Sum II" },
+          { id: 257, title: "Binary Tree Paths" },
+          { id: 112, title: "Path Sum" },
+          { id: 129, title: "Sum Root to Leaf Numbers" },
+          { id: 437, title: "Path Sum III" }
+        ],
       },
       {
         id: 42,
         name: "Lowest Common Ancestor (Return-Up Recursion)",
-        description:
-          "Recurse into both children; if a node finds one of the two targets, it returns itself upward. The parent where both sides return non-null is the LCA.",
+        problems: [
+          { id: 236, title: "Lowest Common Ancestor of a Binary Tree" },
+          { id: 235, title: "Lowest Common Ancestor of a Binary Search Tree" },
+          { id: 1644, title: "Lowest Common Ancestor of a Binary Tree II" },
+          { id: 1650, title: "Lowest Common Ancestor of a Binary Tree III" },
+          { id: 1123, title: "Lowest Common Ancestor of Deepest Leaves" }
+        ],
       },
       {
         id: 43,
         name: "Serialize / Deserialize via Traversal Order",
-        description:
-          "Encode with a preorder DFS using explicit null markers for missing children; decode by consuming the same token stream in the same traversal order.",
+        problems: [
+          { id: 297, title: "Serialize and Deserialize Binary Tree" },
+          { id: 449, title: "Serialize and Deserialize BST" },
+          { id: 536, title: "Construct Binary Tree from String" },
+          { id: 652, title: "Find Duplicate Subtrees" }
+        ],
       },
     ],
   },
@@ -368,50 +681,96 @@ const CATEGORIES: Category[] = [
       {
         id: 44,
         name: "Graph Representation (Adjacency List/Matrix)",
-        description:
-          "Build the adjacency list/matrix from edges first — nearly every graph problem starts here before any traversal logic.",
+        problems: [
+          { id: 133, title: "Clone Graph" },
+          { id: 1791, title: "Find Center of Star Graph" },
+          { id: 1557, title: "Minimum Number of Vertices to Reach All Nodes" },
+          { id: 997, title: "Find the Town Judge" }
+        ],
       },
       {
         id: 45,
         name: "BFS Shortest Path (Unweighted)",
-        description:
-          "Level-by-level BFS guarantees the first time you reach a node is via the shortest path, since all edges have equal weight.",
+        problems: [
+          { id: 1091, title: "Shortest Path in Binary Matrix" },
+          { id: 127, title: "Word Ladder" },
+          { id: 752, title: "Open the Lock" },
+          { id: 542, title: "01 Matrix" },
+          { id: 815, title: "Bus Routes" },
+          { id: 864, title: "Shortest Path to Get All Keys" }
+        ],
       },
       {
         id: 46,
         name: "DFS + Visited Set",
-        description:
-          "Recurse into neighbors, marking visited to avoid revisiting. Number of Islands, Flood Fill, Connected Components.",
+        problems: [
+          { id: 200, title: "Number of Islands" },
+          { id: 733, title: "Flood Fill" },
+          { id: 323, title: "Number of Connected Components in an Undirected Graph" },
+          { id: 695, title: "Max Area of Island" },
+          { id: 841, title: "Keys and Rooms" },
+          { id: 332, title: "Reconstruct Itinerary" },
+          { id: 130, title: "Surrounded Regions" },
+          { id: 417, title: "Pacific Atlantic Water Flow" },
+          { id: 797, title: "All Paths From Source to Target" }
+        ],
       },
       {
         id: 47,
         name: "Topological Sort (Kahn's / DFS-based)",
-        description:
-          "Kahn's: repeatedly remove zero in-degree nodes with a queue. DFS-based: postorder-append nodes, then reverse. Course Schedule, Build Order.",
+        problems: [
+          { id: 207, title: "Course Schedule" },
+          { id: 210, title: "Course Schedule II" },
+          { id: 269, title: "Alien Dictionary" },
+          { id: 444, title: "Sequence Reconstruction" },
+          { id: 851, title: "Loud and Rich" },
+          { id: 310, title: "Minimum Height Trees" }
+        ],
       },
       {
         id: 48,
         name: "Union-Find (Disjoint Set Union)",
-        description:
-          "Path compression + union by rank/size to answer \"are these connected?\" near O(1) amortized. Cycle detection in undirected graphs, Number of Provinces, Kruskal's MST.",
+        problems: [
+          { id: 547, title: "Number of Provinces" },
+          { id: 684, title: "Redundant Connection" },
+          { id: 1319, title: "Number of Operations to Make Network Connected" },
+          { id: 261, title: "Graph Valid Tree" },
+          { id: 721, title: "Accounts Merge" },
+          { id: 128, title: "Longest Consecutive Sequence" },
+          { id: 952, title: "Largest Component Size by Common Factor" },
+          { id: 778, title: "Swim in Rising Water" }
+        ],
       },
       {
         id: 49,
         name: "Dijkstra's Algorithm",
-        description:
-          "Min-heap of (distance, node), always expand the closest unvisited node next, relax neighbor distances. Shortest path with non-negative weights.",
+        problems: [
+          { id: 743, title: "Network Delay Time" },
+          { id: 1631, title: "Path With Minimum Effort" },
+          { id: 1514, title: "Path with Maximum Probability" },
+          { id: 778, title: "Swim in Rising Water" },
+          { id: 1928, title: "Minimum Cost to Reach Destination in Time" },
+          { id: 2092, title: "Find All People With Secret" }
+        ],
       },
       {
         id: 50,
         name: "Multi-source BFS",
-        description:
-          "Seed the BFS queue with every source node at distance 0 simultaneously instead of just one. Rotting Oranges, Walls and Gates.",
+        problems: [
+          { id: 994, title: "Rotting Oranges" },
+          { id: 286, title: "Walls and Gates" },
+          { id: 1162, title: "As Far from Land as Possible" },
+          { id: 317, title: "Shortest Distance from All Buildings" },
+          { id: 934, title: "Shortest Bridge" }
+        ],
       },
       {
         id: 51,
         name: "Bipartite Check (Graph Coloring)",
-        description:
-          "BFS/DFS while assigning alternating colors (0/1) to neighbors; a conflict (neighbor already same color) means the graph isn't bipartite.",
+        problems: [
+          { id: 785, title: "Is Graph Bipartite?" },
+          { id: 886, title: "Possible Bipartition" }
+        ],
       },
     ],
   },
@@ -424,20 +783,35 @@ const CATEGORIES: Category[] = [
       {
         id: 52,
         name: "Top K Elements (Fixed-size Heap)",
-        description:
-          "Maintain a heap capped at size k, pushing and popping to keep only the k largest/smallest seen so far. Kth Largest Element, Top K Frequent Elements.",
+        problems: [
+          { id: 215, title: "Kth Largest Element in an Array" },
+          { id: 347, title: "Top K Frequent Elements" },
+          { id: 703, title: "Kth Largest Element in a Stream" },
+          { id: 373, title: "Find K Pairs with Smallest Sums" },
+          { id: 658, title: "Find K Closest Elements" },
+          { id: 973, title: "K Closest Points to Origin" },
+          { id: 451, title: "Sort Characters By Frequency" }
+        ],
       },
       {
         id: 53,
         name: "Two Heaps (Running Median)",
-        description:
-          "Max-heap holds the lower half, min-heap holds the upper half; rebalance sizes after every insert so the median is always at one/both tops. Find Median from Data Stream.",
+        problems: [
+          { id: 295, title: "Find Median from Data Stream" },
+          { id: 480, title: "Sliding Window Median" },
+          { id: 502, title: "IPO" }
+        ],
       },
       {
         id: 54,
         name: "K-way Merge",
-        description:
-          "Push the head element of each of the k sorted lists into a min-heap; pop the smallest, push its successor. Merge K Sorted Lists, Smallest Range Covering K Lists.",
+        problems: [
+          { id: 23, title: "Merge k Sorted Lists" },
+          { id: 632, title: "Smallest Range Covering Elements from K Lists" },
+          { id: 88, title: "Merge Sorted Array" },
+          { id: 373, title: "Find K Pairs with Smallest Sums" },
+          { id: 378, title: "Kth Smallest Element in a Sorted Matrix" }
+        ],
       },
     ],
   },
@@ -450,32 +824,59 @@ const CATEGORIES: Category[] = [
       {
         id: 55,
         name: "Subsets / Power Set (Include-Exclude)",
-        description:
-          "At each element, recurse once including it and once excluding it — a binary choice tree producing all 2^n subsets.",
+        problems: [
+          { id: 78, title: "Subsets" },
+          { id: 90, title: "Subsets II" },
+          { id: 17, title: "Letter Combinations of a Phone Number" },
+          { id: 320, title: "Generalized Abbreviation" },
+          { id: 131, title: "Palindrome Partitioning" },
+          { id: 22, title: "Generate Parentheses" }
+        ],
       },
       {
         id: 56,
         name: "Permutations (Swap or Used-array)",
-        description:
-          "Build every ordering by either swapping elements into place per recursion depth, or tracking a used[] set and picking unused elements each step.",
+        problems: [
+          { id: 46, title: "Permutations" },
+          { id: 47, title: "Permutations II" },
+          { id: 31, title: "Next Permutation" },
+          { id: 784, title: "Letter Case Permutation" },
+          { id: 60, title: "Permutation Sequence" },
+          { id: 267, title: "Palindrome Permutation II" }
+        ],
       },
       {
         id: 57,
         name: "Combination Sum (Choose with/without Repetition)",
-        description:
-          "Recurse with a running target and a start index; passing the same index allows reuse (unbounded), passing index+1 forbids it (bounded, dedupe with sorting + skip-equal).",
+        problems: [
+          { id: 39, title: "Combination Sum" },
+          { id: 40, title: "Combination Sum II" },
+          { id: 216, title: "Combination Sum III" },
+          { id: 77, title: "Combinations" },
+          { id: 377, title: "Combination Sum IV" }
+        ],
       },
       {
         id: 58,
         name: "Constraint Satisfaction Backtracking",
-        description:
-          "Place a candidate, recurse, undo the placement if the recursive branch fails — the core place/recurse/unplace loop. N-Queens, Sudoku Solver.",
+        problems: [
+          { id: 51, title: "N-Queens" },
+          { id: 37, title: "Sudoku Solver" },
+          { id: 212, title: "Word Search II" },
+          { id: 52, title: "N-Queens II" },
+          { id: 1239, title: "Maximum Length of a Concatenated String with Unique Characters" }
+        ],
       },
       {
         id: 59,
         name: "Grid Backtracking (Word Search)",
-        description:
-          "DFS from each cell, temporarily marking the current cell visited (e.g. overwrite then restore) so the same path can't reuse a cell, restoring it when backtracking out.",
+        problems: [
+          { id: 79, title: "Word Search" },
+          { id: 212, title: "Word Search II" },
+          { id: 980, title: "Unique Paths III" },
+          { id: 1219, title: "Path with Maximum Gold" },
+          { id: 1254, title: "Number of Closed Islands" }
+        ],
       },
     ],
   },
@@ -488,62 +889,124 @@ const CATEGORIES: Category[] = [
       {
         id: 60,
         name: "1D DP (Fibonacci-style)",
-        description:
-          "dp[i] is built from a small window of previous states like dp[i-1] and dp[i-2]. Climbing Stairs, House Robber.",
+        problems: [
+          { id: 70, title: "Climbing Stairs" },
+          { id: 198, title: "House Robber" },
+          { id: 746, title: "Min Cost Climbing Stairs" },
+          { id: 213, title: "House Robber II" },
+          { id: 1137, title: "N-th Tribonacci Number" },
+          { id: 91, title: "Decode Ways" },
+          { id: 139, title: "Word Break" }
+        ],
       },
       {
         id: 61,
         name: "0/1 Knapsack",
-        description:
-          "For each item, choose to take it or skip it: dp[i][w] = max(dp[i-1][w], dp[i-1][w-wt[i]] + val[i]). Each item usable at most once.",
+        problems: [
+          { id: 416, title: "Partition Equal Subset Sum" },
+          { id: 494, title: "Target Sum" },
+          { id: 474, title: "Ones and Zeroes" },
+          { id: 1049, title: "Last Stone Weight II" },
+          { id: 805, title: "Split Array With Same Average" },
+          { id: 956, title: "Tallest Billboard" }
+        ],
       },
       {
         id: 62,
         name: "Unbounded Knapsack",
-        description:
-          "Same take-or-skip shape as 0/1 Knapsack, but items can be reused, so the \"take\" transition stays on row i instead of moving to i-1. Coin Change, Rod Cutting.",
+        problems: [
+          { id: 322, title: "Coin Change" },
+          { id: 518, title: "Coin Change II" },
+          { id: 377, title: "Combination Sum IV" },
+          { id: 279, title: "Perfect Squares" },
+          { id: 1449, title: "Form Largest Integer With Digits That Add up to Target" }
+        ],
       },
       {
         id: 63,
         name: "Longest Common Subsequence (2D Grid DP)",
-        description:
-          "dp[i][j] compares two sequences — match extends the diagonal, mismatch takes the best of dropping one character from either side. LCS, Edit Distance, Distinct Subsequences.",
+        problems: [
+          { id: 1143, title: "Longest Common Subsequence" },
+          { id: 72, title: "Edit Distance" },
+          { id: 115, title: "Distinct Subsequences" },
+          { id: 583, title: "Delete Operation for Two Strings" },
+          { id: 712, title: "Minimum ASCII Delete Sum for Two Strings" },
+          { id: 97, title: "Interleaving String" },
+          { id: 1092, title: "Shortest Common Supersequence" }
+        ],
       },
       {
         id: 64,
         name: "Longest Increasing Subsequence",
-        description:
-          "O(n²): dp[i] = 1 + max(dp[j]) for all j<i with arr[j]<arr[i]. O(n log n): maintain a \"tails\" array and binary-search each element's insertion point (patience sorting).",
+        problems: [
+          { id: 300, title: "Longest Increasing Subsequence" },
+          { id: 354, title: "Russian Doll Envelopes" },
+          { id: 673, title: "Number of Longest Increasing Subsequence" },
+          { id: 368, title: "Largest Divisible Subset" },
+          { id: 1671, title: "Minimum Number of Removals to Make Mountain Array" },
+          { id: 1964, title: "Find the Longest Valid Obstacle Course at Each Position" }
+        ],
       },
       {
         id: 65,
         name: "Palindromic DP",
-        description:
-          "dp[i][j] = true if substring i..j is a palindrome, built from dp[i+1][j-1]. Alternative: expand around every center in O(n²) without the table. Longest Palindromic Substring.",
+        problems: [
+          { id: 5, title: "Longest Palindromic Substring" },
+          { id: 516, title: "Longest Palindromic Subsequence" },
+          { id: 647, title: "Palindromic Substrings" },
+          { id: 1312, title: "Minimum Insertion Steps to Make a String Palindrome" },
+          { id: 730, title: "Count Different Palindromic Subsequences" },
+          { id: 132, title: "Palindrome Partitioning II" }
+        ],
       },
       {
         id: 66,
         name: "State Machine DP (Buy/Sell Stock)",
-        description:
-          "Track parallel states across days — e.g. \"holding a stock\" vs \"not holding\" — and transition between them each day. Best Time to Buy/Sell Stock with Cooldown/Fee.",
+        problems: [
+          { id: 309, title: "Best Time to Buy and Sell Stock with Cooldown" },
+          { id: 714, title: "Best Time to Buy and Sell Stock with Transaction Fee" },
+          { id: 122, title: "Best Time to Buy and Sell Stock II" },
+          { id: 123, title: "Best Time to Buy and Sell Stock III" },
+          { id: 188, title: "Best Time to Buy and Sell Stock IV" },
+          { id: 121, title: "Best Time to Buy and Sell Stock" }
+        ],
       },
       {
         id: 67,
         name: "Bitmask DP (DP on Subsets)",
-        description:
-          "dp[mask][i] where mask encodes which items/cities are already used. Travelling Salesman, Assignment problems — exponential but tractable for small n.",
+        problems: [
+          { id: 847, title: "Find Shortest Path Visiting All Nodes" },
+          { id: 294, title: "Can I Win" },
+          { id: 473, title: "Matchsticks to Square" },
+          { id: 526, title: "Beautiful Arrangement" },
+          { id: 698, title: "Partition to K Equal Sum Subsets" },
+          { id: 1125, title: "Smallest Sufficient Team" },
+          { id: 1681, title: "Minimum Incompatibility" }
+        ],
       },
       {
         id: 68,
         name: "Interval DP (Matrix Chain style)",
-        description:
-          "dp[i][j] over a subrange, trying every split point k between i and j and combining the two halves' results. Matrix Chain Multiplication, Burst Balloons.",
+        problems: [
+          { id: 312, title: "Burst Balloons" },
+          { id: 1547, title: "Minimum Cost to Cut a Stick" },
+          { id: 664, title: "Strange Printer" },
+          { id: 546, title: "Remove Boxes" },
+          { id: 1039, title: "Minimum Score Triangulation of Polygon" },
+          { id: 375, title: "Guess Number Higher or Lower II" }
+        ],
       },
       {
         id: 69,
         name: "Top-Down Memoized Recursion",
-        description:
-          "Write the brute-force recursive solution first, then cache (memoize) results by the recursion's changing parameters — the general technique underlying every pattern above.",
+        problems: [
+          { id: 509, title: "Fibonacci Number" },
+          { id: 139, title: "Word Break" },
+          { id: 91, title: "Decode Ways" },
+          { id: 62, title: "Unique Paths" },
+          { id: 329, title: "Longest Increasing Path in a Matrix" },
+          { id: 403, title: "Frog Jump" }
+        ],
       },
     ],
   },
@@ -556,20 +1019,36 @@ const CATEGORIES: Category[] = [
       {
         id: 70,
         name: "Interval Scheduling Maximization",
-        description:
-          "Sort intervals by end time, greedily keep an interval if it starts after the last kept one ends. Maximum Non-overlapping Intervals, Activity Selection.",
+        problems: [
+          { id: 435, title: "Non-overlapping Intervals" },
+          { id: 1024, title: "Video Stitching" },
+          { id: 452, title: "Minimum Number of Arrows to Burst Balloons" },
+          { id: 646, title: "Maximum Length of Pair Chain" },
+          { id: 1235, title: "Maximum Profit in Job Scheduling" }
+        ],
       },
       {
         id: 71,
         name: "Sort + Two-Pointer Greedy Assignment",
-        description:
-          "Sort one or both arrays, then walk with two pointers making the locally best pairing at each step. Gas Station, Job Sequencing, Assign Cookies.",
+        problems: [
+          { id: 134, title: "Gas Station" },
+          { id: 455, title: "Assign Cookies" },
+          { id: 881, title: "Boats to Save People" },
+          { id: 948, title: "Bag of Tokens" },
+          { id: 826, title: "Most Profit Assigning Work" },
+          { id: 1029, title: "Two City Scheduling" }
+        ],
       },
       {
         id: 72,
         name: "Heap-based Greedy Merging",
-        description:
-          "Repeatedly combine the two cheapest/smallest items via a min-heap. Huffman Encoding style problems, Minimum Cost to Connect Ropes.",
+        problems: [
+          { id: 1046, title: "Last Stone Weight" },
+          { id: 1167, title: "Minimum Cost to Connect Ropes" },
+          { id: 1049, title: "Last Stone Weight II" },
+          { id: 1834, title: "Single-Threaded CPU" },
+          { id: 1882, title: "Process Tasks Using Servers" }
+        ],
       },
     ],
   },
@@ -582,20 +1061,33 @@ const CATEGORIES: Category[] = [
       {
         id: 73,
         name: "XOR Tricks",
-        description:
-          "a ^ a = 0 and a ^ 0 = a, so XOR-ing a list cancels every paired value, leaving the odd one out. Single Number, Missing Number, swap without a temp variable.",
+        problems: [
+          { id: 136, title: "Single Number" },
+          { id: 268, title: "Missing Number" },
+          { id: 137, title: "Single Number II" },
+          { id: 260, title: "Single Number III" },
+          { id: 389, title: "Find the Difference" },
+          { id: 421, title: "Maximum XOR of Two Numbers in an Array" }
+        ],
       },
       {
         id: 74,
         name: "Bitmasking for Subsets/State",
-        description:
-          "Represent a set's membership as bits of an integer: set a bit with mask | (1<<i), clear with mask & ~(1<<i), check with mask & (1<<i).",
+        problems: [
+          { id: 78, title: "Subsets" },
+          { id: 90, title: "Subsets II" },
+          { id: 784, title: "Letter Case Permutation" },
+          { id: 187, title: "Repeated DNA Sequences" }
+        ],
       },
       {
         id: 75,
         name: "Counting Set Bits (Brian Kernighan's)",
-        description:
-          "n & (n-1) clears the lowest set bit — loop until n becomes 0 and count iterations to get the popcount in O(set bits) instead of O(bit width).",
+        problems: [
+          { id: 191, title: "Number of 1 Bits" },
+          { id: 338, title: "Counting Bits" },
+          { id: 1356, title: "Sort Integers by The Number of 1 Bits" }
+        ],
       },
     ],
   },
@@ -608,14 +1100,21 @@ const CATEGORIES: Category[] = [
       {
         id: 76,
         name: "Trie Construction & Search",
-        description:
-          "Each node holds children keyed by character plus an end-of-word flag. Insert/search/startsWith all walk one character at a time from the root.",
+        problems: [
+          { id: 208, title: "Implement Trie (Prefix Tree)" },
+          { id: 211, title: "Design Add and Search Words Data Structure" },
+          { id: 648, title: "Replace Words" },
+          { id: 421, title: "Maximum XOR of Two Numbers in an Array" },
+          { id: 677, title: "Map Sum Pairs" }
+        ],
       },
       {
         id: 77,
         name: "Trie + DFS for Word Search",
-        description:
-          "Build a trie of the target words, then DFS the grid while simultaneously walking the trie — prune a branch the moment the trie has no matching child. Word Search II.",
+        problems: [
+          { id: 212, title: "Word Search II" },
+          { id: 140, title: "Word Break II" }
+        ],
       },
     ],
   },
@@ -628,26 +1127,40 @@ const CATEGORIES: Category[] = [
       {
         id: 78,
         name: "GCD / LCM (Euclidean Algorithm)",
-        description:
-          "gcd(a, b) = gcd(b, a % b), base case gcd(a, 0) = a. lcm(a, b) = a * b / gcd(a, b).",
+        problems: [
+          { id: 1979, title: "Find Greatest Common Divisor of Array" },
+          { id: 365, title: "Water and Jug Problem" },
+          { id: 1447, title: "Simplified Fractions" },
+          { id: 914, title: "X of a Kind in a Deck of Cards" },
+          { id: 1819, title: "Number of Different Subsequences GCDs" }
+        ],
       },
       {
         id: 79,
         name: "Sieve of Eratosthenes",
-        description:
-          "Mark multiples of each prime starting from 2 as composite, up to N, in O(N log log N) — precompute all primes up to N in one pass instead of checking each number individually.",
+        problems: [
+          { id: 204, title: "Count Primes" },
+          { id: 2523, title: "Closest Prime Numbers in Range" },
+          { id: 2761, title: "Prime Pairs With Target Sum" }
+        ],
       },
       {
         id: 80,
         name: "Fast Exponentiation (Binary Exponentiation)",
-        description:
-          "Compute a^b in O(log b) by squaring the base and halving the exponent each step, multiplying into the result only when the current exponent bit is 1.",
+        problems: [
+          { id: 50, title: "Pow(x, n)" },
+          { id: 372, title: "Super Pow" }
+        ],
       },
       {
         id: 81,
         name: "Modular Arithmetic",
-        description:
-          "Take % mod after every multiplication/addition to avoid overflow in large-number problems; (a*b) % m = ((a % m) * (b % m)) % m.",
+        problems: [
+          { id: 1497, title: "Check If Array Pairs Are Divisible by k" },
+          { id: 974, title: "Subarray Sums Divisible by K" },
+          { id: 532, title: "K-diff Pairs in an Array" },
+          { id: 1015, title: "Smallest Integer Divisible by K" }
+        ],
       },
     ],
   },
@@ -660,20 +1173,30 @@ const CATEGORIES: Category[] = [
       {
         id: 82,
         name: "Matrix Traversal Patterns",
-        description:
-          "Spiral order (shrink boundaries after each side), diagonal traversal, boundary traversal — all just disciplined index bookkeeping over rows/cols.",
+        problems: [
+          { id: 54, title: "Spiral Matrix" },
+          { id: 59, title: "Spiral Matrix II" },
+          { id: 498, title: "Diagonal Traverse" },
+          { id: 885, title: "Spiral Matrix III" },
+          { id: 1329, title: "Sort the Matrix Diagonally" }
+        ],
       },
       {
         id: 83,
         name: "In-place Matrix Rotation",
-        description:
-          "Rotate 90° by transposing the matrix (swap arr[i][j] with arr[j][i]) then reversing each row (or column, depending on direction).",
+        problems: [
+          { id: 48, title: "Rotate Image" },
+          { id: 1886, title: "Determine Whether Matrix Can Be Obtained By Rotation" }
+        ],
       },
       {
         id: 84,
         name: "Search in a Sorted Matrix",
-        description:
-          "If rows and columns are both sorted, start from the top-right (or bottom-left) corner: move left if too big, down if too small — O(m+n) staircase search.",
+        problems: [
+          { id: 240, title: "Search a 2D Matrix II" },
+          { id: 74, title: "Search a 2D Matrix" },
+          { id: 378, title: "Kth Smallest Element in a Sorted Matrix" }
+        ],
       },
     ],
   },
@@ -686,26 +1209,42 @@ const CATEGORIES: Category[] = [
       {
         id: 85,
         name: "Segment Tree (Range Query + Point Update)",
-        description:
-          "A recursive binary tree over the array where each node stores an aggregate (sum/min/max) of its range. Both query and update run in O(log n), unlike a static Prefix Sum which can't handle updates efficiently.",
+        problems: [
+          { id: 307, title: "Range Sum Query - Mutable" },
+          { id: 308, title: "Range Sum Query 2D - Mutable" },
+          { id: 1649, title: "Create Sorted Array through Instructions" },
+          { id: 315, title: "Count of Smaller Numbers After Self" },
+          { id: 699, title: "Falling Squares" }
+        ],
       },
       {
         id: 86,
         name: "Fenwick Tree (Binary Indexed Tree)",
-        description:
-          "An array-based structure that uses the lowbit trick i & (-i) to jump between the indices responsible for a range, giving O(log n) prefix-sum updates and queries with far less code/overhead than a segment tree.",
+        problems: [
+          { id: 307, title: "Range Sum Query - Mutable" },
+          { id: 315, title: "Count of Smaller Numbers After Self" },
+          { id: 493, title: "Reverse Pairs" },
+          { id: 327, title: "Count of Range Sum" }
+        ],
       },
       {
         id: 87,
         name: "Lazy Propagation",
-        description:
-          "For range updates (not just point updates): mark a node with a pending update instead of immediately recursing into children, and only push the pending update down when that subtree is actually visited later.",
+        problems: [
+          { id: 850, title: "Rectangle Area II" },
+          { id: 715, title: "Range Module" },
+          { id: 699, title: "Falling Squares" },
+          { id: 2276, title: "Count Integers in Intervals" }
+        ],
       },
       {
         id: 88,
         name: "Sparse Table (Static Range Queries)",
-        description:
-          "For immutable arrays with no updates: precompute overlapping-range answers for power-of-2 lengths in O(n log n), then answer any range-min/max query in O(1) by combining two overlapping precomputed ranges.",
+        problems: [
+          { id: 303, title: "Range Sum Query - Immutable" },
+          { id: 424, title: "Longest Repeating Character Replacement" },
+          { id: 239, title: "Sliding Window Maximum" }
+        ],
       },
     ],
   },
@@ -718,32 +1257,48 @@ const CATEGORIES: Category[] = [
       {
         id: 89,
         name: "Merge Overlapping Intervals",
-        description:
-          "Sort intervals by start time, then walk through merging the current interval into the last kept one whenever they overlap (current.start <= last.end).",
+        problems: [
+          { id: 56, title: "Merge Intervals" },
+          { id: 252, title: "Meeting Rooms" },
+          { id: 253, title: "Meeting Rooms II" },
+          { id: 435, title: "Non-overlapping Intervals" }
+        ],
       },
       {
         id: 90,
         name: "Insert Interval",
-        description:
-          "Walk the sorted list: append everything that ends before the new interval starts, merge everything that overlaps the new interval into it, then append the rest untouched.",
+        problems: [
+          { id: 57, title: "Insert Interval" },
+          { id: 56, title: "Merge Intervals" }
+        ],
       },
       {
         id: 91,
         name: "Meeting Rooms II (Min-Heap Overlap Count)",
-        description:
-          "Sort by start time, push end times onto a min-heap. For each meeting, if the earliest-ending room already freed up (heap top <= current start) pop it, then push the current end time — final heap size is rooms needed.",
+        problems: [
+          { id: 253, title: "Meeting Rooms II" },
+          { id: 732, title: "My Calendar Three" },
+          { id: 1094, title: "Car Pooling" }
+        ],
       },
       {
         id: 92,
         name: "Interval Intersection (Two Pointers)",
-        description:
-          "Walk two sorted interval lists with two pointers; the overlap of the current pair is [max(starts), min(ends)] when that range is valid, then advance whichever interval ends first.",
+        problems: [
+          { id: 986, title: "Interval List Intersections" },
+          { id: 56, title: "Merge Intervals" }
+        ],
       },
       {
         id: 93,
         name: "Sweep Line (Boundary Events)",
-        description:
-          "Convert each interval into a +1 event at its start and a -1 event at its end, sort all events by position, then sweep left to right accumulating a running counter to find max overlap count or free gaps. Employee Free Time, Car Pooling.",
+        problems: [
+          { id: 759, title: "Employee Free Time" },
+          { id: 1094, title: "Car Pooling" },
+          { id: 218, title: "The Skyline Problem" },
+          { id: 1851, title: "Minimum Interval to Include Each Query" },
+          { id: 850, title: "Rectangle Area II" }
+        ],
       },
     ],
   },
@@ -1085,9 +1640,28 @@ export default function PatternsPage() {
                             >
                               {pattern.name}
                             </h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              {pattern.description}
-                            </p>
+                            <div className="flex flex-wrap gap-2 pt-1">
+                              {pattern.problems.map((problem) => {
+                                const slug = problem.title
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9\s-]/g, "")
+                                  .trim()
+                                  .replace(/\s+/g, "-");
+                                return (
+                                  <a
+                                    key={problem.id}
+                                    href={`https://leetcode.com/problems/${slug}/`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-secondary/30 hover:bg-primary/5 hover:border-primary/30 transition-all text-xs font-bold text-muted-foreground hover:text-primary active:scale-95 shadow-sm"
+                                  >
+                                    <span className="text-primary font-black">#{problem.id}</span>
+                                    <span>{problem.title}</span>
+                                    <ExternalLink className="h-3 w-3 opacity-50" />
+                                  </a>
+                                );
+                              })}
+                            </div>
                             {pattern.recipe && (
                               <pre className="text-[11px] font-mono bg-secondary/40 border border-border/40 rounded-lg px-3 py-2 whitespace-pre-wrap text-muted-foreground/90">
                                 {pattern.recipe}
