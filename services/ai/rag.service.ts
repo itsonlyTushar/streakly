@@ -13,9 +13,42 @@ export interface UserProgressContext {
     intuition?: string;
     timeComplexity?: string;
     spaceComplexity?: string;
+    dateLearned?: string;
+    nextReviewDate?: string;
   }[];
   machineCoding: { questionName: string; approach: string; language: string }[];
 }
+
+// Helper function to format any date input into DD-MM-YYYY format
+const formatDateToDDMMYYYY = (val: any): string => {
+  if (!val) return "";
+  
+  // If it is a Firebase Timestamp
+  if (typeof val === "object" && val.toMillis) {
+    return format(new Date(val.toMillis()), "dd-MM-yyyy");
+  }
+  
+  if (val instanceof Date) {
+    return format(val, "dd-MM-yyyy");
+  }
+  
+  if (typeof val === "string") {
+    // If yyyy-MM-dd format (e.g. "2026-07-05")
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+      const [y, m, d] = val.split("-");
+      return `${d}-${m}-${y}`;
+    }
+    // Otherwise try parsing as standard date string
+    try {
+      const parsed = new Date(val);
+      if (!isNaN(parsed.getTime())) {
+        return format(parsed, "dd-MM-yyyy");
+      }
+    } catch (_) {}
+  }
+  
+  return String(val);
+};
 
 export const ragService = {
   // Fetch user data from Firestore and structure it
@@ -36,16 +69,12 @@ export const ragService = {
         if (data.status === "active") {
           activeGoals.push({
             goal: data.goal || "",
-            dueDate: data.dueDate || "",
+            dueDate: formatDateToDDMMYYYY(data.dueDate),
           });
         } else if (data.status === "completed") {
-          let compDateStr = "recently";
-          if (data.completedAt?.toMillis) {
-            compDateStr = format(new Date(data.completedAt.toMillis()), "yyyy-MM-dd");
-          }
           completedGoals.push({
             goal: data.goal || "",
-            completedAt: compDateStr,
+            completedAt: formatDateToDDMMYYYY(data.completedAt || data.completedDate),
           });
         }
       });
@@ -60,7 +89,7 @@ export const ragService = {
         const goalText = data.goalId ? goalMap.get(data.goalId) : undefined;
         return {
           content: data.content || "",
-          date: data.dateString || "unknown date",
+          date: formatDateToDDMMYYYY(data.dateString || data.date),
           goalText,
         };
       });
@@ -79,6 +108,8 @@ export const ragService = {
           intuition: data.intuition || undefined,
           timeComplexity: data.timeComplexity || undefined,
           spaceComplexity: data.spaceComplexity || undefined,
+          dateLearned: data.dateLearned ? formatDateToDDMMYYYY(data.dateLearned) : undefined,
+          nextReviewDate: data.nextReviewDate ? formatDateToDDMMYYYY(data.nextReviewDate) : undefined,
         };
       });
 
@@ -160,6 +191,12 @@ export const ragService = {
         if (p.timeComplexity || p.spaceComplexity) {
           str += `  Complexity: Time ${p.timeComplexity || "N/A"}, Space ${p.spaceComplexity || "N/A"}\n`;
         }
+        if (p.dateLearned) {
+          str += `  Learned Date: ${p.dateLearned}\n`;
+        }
+        if (p.nextReviewDate) {
+          str += `  Next Review Date: ${p.nextReviewDate}\n`;
+        }
         if (p.intuition) {
           str += `  Intuition: "${p.intuition}"\n`;
         }
@@ -191,10 +228,15 @@ You have access to the user's real-time workspace data. Here is their current da
 ${contextString}
 
 Guidelines:
-1. REFER TO THE USER'S SPECIFIC DATA: Always use the goals, problems, and notes above to make your answers deeply personalized. (e.g. "I see you're currently working on sliding window problems like..." or "Based on your active goal of...")
-2. DO NOT MAKE UP DATA: If the context says the user has no goals or problems, acknowledge that and invite them to add some.
-3. DSA & CODING ADVICE: When asked about a DSA topic or problem, check if they have solved something similar and connect it. Suggest optimal complexities (Time/Space) and coding intuition. Keep code snippets standard, clean, and in standard programming languages.
-4. TONE: Be supportive, structured, clear, and professional. Write in a motivating, coaching style.
+1. ANSWER ONLY WHAT IS ASKED: Be precise, direct, and address only the specific question asked. Avoid fluff, long preambles, or unrelated summaries.
+2. STRICT DATE-LOOKUP RESTRICTION:
+   - If the user asks about what they did, notes logged, goals due, or problems solved on a specific date (e.g. "what are my notes for 05-07-2026?" or "show notes of 05-07-2026"):
+   - Inspect the context. If you DO NOT find any goals, notes, DSA problems, or tasks logged or due on that specific date (in DD-MM-YYYY format), you MUST respond with EXACTLY and ONLY this phrase:
+     "nothing for that day i found"
+     Do not say "Sorry", do not explain, do not add greetings. Output ONLY that single sentence.
+   - If you DO find matching data for that specific day, display that data directly and answer the question concisely.
+3. REFER TO THE USER'S SPECIFIC DATA: Always use the goals, problems, and notes above to make your answers deeply personalized when relevant data is found.
+4. DSA & CODING ADVICE: When asked about a DSA topic or problem, check if they have solved something similar and connect it. Suggest optimal complexities (Time/Space) and coding intuition. Keep code snippets standard, clean, and in standard programming languages.
 5. FORMATTING: Use Markdown formatting (bolding, lists, tables, headers, and code blocks) to make your output visually readable. Keep responses relatively concise so they fit well in a chat window.
 `;
   },
