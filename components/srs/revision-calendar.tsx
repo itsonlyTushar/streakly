@@ -21,9 +21,6 @@ import {
   ChevronRight,
   Brain,
   Code,
-  Trophy,
-  Clock,
-  Sparkles,
   CheckCircle2,
   Check,
   RefreshCw,
@@ -37,6 +34,7 @@ import { useSRSItems, useUpdateSRSItem } from "@/hooks/use-srs";
 import { useDSAItems, useUpdateDSAItem } from "@/hooks/use-dsa";
 import { useAllUserNotes } from "@/hooks/use-notes";
 import { SRS_INTERVALS, calculateNextReviewDate } from "@/lib/srs-utils";
+import { Sheet } from "@/components/ui/sheet";
 
 export function RevisionCalendar() {
   const { data: srsItems = [], isLoading: isSrsLoading } = useSRSItems();
@@ -51,48 +49,13 @@ export function RevisionCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
   const [filterType, setFilterType] = useState<"all" | "srs" | "dsa">("all");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const today = startOfToday();
 
   // Navigation handlers
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-
-  // Streak tracker calculation (honest streak based on notes dateString)
-  const consistencyStreak = useMemo(() => {
-    if (!allNotes || allNotes.length === 0) return 0;
-
-    const logDates = new Set(
-      allNotes.map((n) => n.dateString).filter(Boolean)
-    );
-
-    let currentStreak = 0;
-    let checkDate = new Date();
-    const getFormatted = (d: Date) => format(d, "yyyy-MM-dd");
-
-    // Check today first
-    if (logDates.has(getFormatted(checkDate))) {
-      currentStreak++;
-      checkDate = addDays(checkDate, -1);
-      while (logDates.has(getFormatted(checkDate))) {
-        currentStreak++;
-        checkDate = addDays(checkDate, -1);
-      }
-    } else {
-      // If no check-in today, check if yesterday was logged to preserve streak
-      checkDate = addDays(checkDate, -1);
-      if (logDates.has(getFormatted(checkDate))) {
-        currentStreak++;
-        checkDate = addDays(checkDate, -1);
-        while (logDates.has(getFormatted(checkDate))) {
-          currentStreak++;
-          checkDate = addDays(checkDate, -1);
-        }
-      }
-    }
-
-    return currentStreak;
-  }, [allNotes]);
 
   // Aggregate items mapped by date for calendar display
   const itemsByDate = useMemo(() => {
@@ -119,28 +82,6 @@ export function RevisionCalendar() {
     });
 
     return map;
-  }, [srsItems, dsaItems]);
-
-  // Filtered stats
-  const stats = useMemo(() => {
-    const totalDueSrs = srsItems.filter(
-      (item) => item.nextReviewDate && isPast(item.nextReviewDate.toDate())
-    ).length;
-    const totalDueDsa = dsaItems.filter(
-      (item) => item.nextReviewDate && isPast(item.nextReviewDate.toDate())
-    ).length;
-
-    const masteredSrs = srsItems.filter(
-      (item) => item.reviewCount >= SRS_INTERVALS.length
-    ).length;
-    const masteredDsa = dsaItems.filter(
-      (item) => item.reviewCount >= SRS_INTERVALS.length
-    ).length;
-
-    return {
-      dueCount: totalDueSrs + totalDueDsa,
-      masteredCount: masteredSrs + masteredDsa,
-    };
   }, [srsItems, dsaItems]);
 
   // Get items for selected day
@@ -250,456 +191,402 @@ export function RevisionCalendar() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-28 rounded-3xl bg-secondary animate-pulse" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 h-[500px] rounded-3xl bg-secondary animate-pulse" />
-          <div className="h-[500px] rounded-3xl bg-secondary animate-pulse" />
-        </div>
+      <div className="space-y-8 animate-pulse">
+        <div className="h-[600px] rounded-3xl bg-secondary/50" />
+        <div className="h-[250px] rounded-3xl bg-secondary/50" />
       </div>
     );
   }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Analytics Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Streak Counter Card */}
-        <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
-          <div className="space-y-1 relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              Consistency Streak
-            </p>
-            <h4 className="text-3xl font-black tracking-tighter flex items-baseline gap-1">
-              {consistencyStreak}
-              <span className="text-xs font-bold text-muted-foreground">days</span>
-            </h4>
-          </div>
-          <div className="p-4 bg-orange-500/10 rounded-2xl relative z-10 group-hover:scale-110 transition-transform">
-            <Trophy className="h-6 w-6 text-orange-500" />
-          </div>
-          <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-orange-500/[0.02] rounded-full blur-2xl group-hover:bg-orange-500/[0.04] transition-colors" />
-        </div>
+      {/* Monthly Calendar Grid Card */}
+      <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+        <div className="space-y-4">
+          {/* Header / Month Navigator */}
+          <div className="flex items-center justify-between border-b border-border/50 pb-4">
+            <div className="space-y-1">
+              <h3 className="text-2xl font-black tracking-tighter">
+                {format(currentMonth, "MMMM yyyy")}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Visualize your active retention paths.
+              </p>
+            </div>
 
-        {/* Due Card */}
-        <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
-          <div className="space-y-1 relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              Total Reviews Due
-            </p>
-            <h4 className="text-3xl font-black tracking-tighter flex items-baseline gap-1">
-              {stats.dueCount}
-              <span className="text-xs font-bold text-muted-foreground">items</span>
-            </h4>
-          </div>
-          <div className="p-4 bg-amber-500/10 rounded-2xl relative z-10 group-hover:scale-110 transition-transform">
-            <Clock className="h-6 w-6 text-amber-500" />
-          </div>
-          <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-amber-500/[0.02] rounded-full blur-2xl group-hover:bg-amber-500/[0.04] transition-colors" />
-        </div>
+            <div className="flex items-center gap-1">
+              {/* Type Filters */}
+              <div className="bg-secondary/60 p-1 rounded-xl flex items-center gap-1 border border-border/10 mr-2">
+                <button
+                  onClick={() => setFilterType("all")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    filterType === "all"
+                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-primary"
+                  )}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilterType("srs")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    filterType === "srs"
+                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-primary"
+                  )}
+                >
+                  SRS
+                </button>
+                <button
+                  onClick={() => setFilterType("dsa")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    filterType === "dsa"
+                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-primary"
+                  )}
+                >
+                  DSA
+                </button>
+              </div>
 
-        {/* Mastered Card */}
-        <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 flex items-center justify-between shadow-sm relative overflow-hidden group">
-          <div className="space-y-1 relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              Retention Milestones Met
-            </p>
-            <h4 className="text-3xl font-black tracking-tighter flex items-baseline gap-1">
-              {stats.masteredCount}
-              <span className="text-xs font-bold text-muted-foreground">cleared</span>
-            </h4>
+              <button
+                onClick={prevMonth}
+                className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={nextMonth}
+                className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          <div className="p-4 bg-emerald-500/10 rounded-2xl relative z-10 group-hover:scale-110 transition-transform">
-            <Sparkles className="h-6 w-6 text-emerald-500" />
+
+          {/* Weekdays Labels */}
+          <div className="grid grid-cols-7 text-center">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 py-2"
+              >
+                {day}
+              </div>
+            ))}
           </div>
-          <div className="absolute -bottom-10 -right-10 w-28 h-28 bg-emerald-500/[0.02] rounded-full blur-2xl group-hover:bg-emerald-500/[0.04] transition-colors" />
+
+          {/* Day Cells Grid */}
+          <div className="grid grid-cols-7 gap-1.5">
+            {calendarCells.map((day) => {
+              const dayKey = format(day, "yyyy-MM-dd");
+              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [] };
+
+              const srsFiltered = filterType !== "dsa" ? dayData.srs : [];
+              const dsaFiltered = filterType !== "srs" ? dayData.dsa : [];
+
+              const totalItemsCount = srsFiltered.length + dsaFiltered.length;
+
+              const isCurrentMonth = isSameMonth(day, currentMonth);
+              const isDayToday = isSameDay(day, today);
+              const isDaySelected = isSameDay(day, selectedDate);
+
+              // Highlight status: color cell outline if tasks due
+              const hasDueTasks = totalItemsCount > 0 && (isPast(day) || isSameDay(day, today));
+
+              return (
+                <button
+                  key={day.toString()}
+                  onClick={() => {
+                    setSelectedDate(day);
+                    setIsSheetOpen(true);
+                  }}
+                  className={cn(
+                    "min-h-[110px] p-1.5 rounded-2xl flex flex-col items-stretch justify-between border transition-all text-left group overflow-hidden relative",
+                    isCurrentMonth ? "bg-background/20" : "bg-secondary/[0.05] border-transparent opacity-30",
+                    isDaySelected
+                      ? "border-primary ring-2 ring-primary/10 shadow-sm"
+                      : "border-border/35 hover:border-border-foreground/50 hover:bg-secondary/20",
+                    isDayToday && "bg-secondary/40 font-bold",
+                    hasDueTasks && !isDaySelected && "border-amber-500/30 bg-amber-500/[0.02]"
+                  )}
+                >
+                  <header className="flex justify-between items-center w-full px-0.5">
+                    <span
+                      className={cn(
+                        "text-xs font-bold leading-none",
+                        isDayToday ? "text-primary bg-secondary p-1 rounded-md" : "text-muted-foreground/80"
+                      )}
+                    >
+                      {format(day, "d")}
+                    </span>
+
+                    {/* Display Total Count Badge if item count is large */}
+                    {totalItemsCount > 0 && (
+                      <span className="text-[9px] font-black leading-none bg-secondary/80 px-1 py-0.5 rounded-full text-muted-foreground scale-90">
+                        {totalItemsCount}
+                      </span>
+                    )}
+                  </header>
+
+                  {/* Small pills/indicators representation */}
+                  <div className="mt-2 space-y-1 overflow-hidden pointer-events-none flex-1 flex flex-col justify-end">
+                    {srsFiltered.slice(0, 2).map((item) => (
+                      <div
+                        key={item.id}
+                        className="text-[9px] truncate bg-blue-500/10 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1"
+                      >
+                        <Brain className="h-2.5 w-2.5 flex-shrink-0" />
+                        <span>{item.topic}</span>
+                      </div>
+                    ))}
+
+                    {dsaFiltered.slice(0, 2).map((item) => {
+                      const isHard = item.difficulty === "Hard";
+                      const isEasy = item.difficulty === "Easy";
+                      return (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            "text-[9px] truncate px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border",
+                            isHard
+                              ? "bg-red-500/10 text-red-600 border-red-500/10 dark:bg-red-900/20 dark:text-red-400"
+                              : isEasy
+                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/10 dark:bg-emerald-900/20 dark:text-emerald-400"
+                              : "bg-yellow-500/10 text-yellow-600 border-yellow-500/10 dark:bg-yellow-900/20 dark:text-yellow-400"
+                          )}
+                        >
+                          <Code className="h-2.5 w-2.5 flex-shrink-0" />
+                          <span>{item.problemName}</span>
+                        </div>
+                      );
+                    })}
+
+                    {totalItemsCount > 4 && (
+                      <div className="text-[8px] font-black text-muted-foreground/50 text-right leading-none pr-1">
+                        +{totalItemsCount - 4} more
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Monthly Calendar Grid Card */}
-        <div className="lg:col-span-2 bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="space-y-4">
-            {/* Header / Month Navigator */}
-            <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <div className="space-y-1">
-                <h3 className="text-2xl font-black tracking-tighter">
-                  {format(currentMonth, "MMMM yyyy")}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Visualize your active retention paths.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-1">
-                {/* Type Filters */}
-                <div className="bg-secondary/60 p-1 rounded-xl flex items-center gap-1 border border-border/10 mr-2">
-                  <button
-                    onClick={() => setFilterType("all")}
-                    className={cn(
-                      "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
-                      filterType === "all"
-                        ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                        : "text-muted-foreground hover:text-primary"
-                    )}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setFilterType("srs")}
-                    className={cn(
-                      "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
-                      filterType === "srs"
-                        ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                        : "text-muted-foreground hover:text-primary"
-                    )}
-                  >
-                    SRS
-                  </button>
-                  <button
-                    onClick={() => setFilterType("dsa")}
-                    className={cn(
-                      "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
-                      filterType === "dsa"
-                        ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                        : "text-muted-foreground hover:text-primary"
-                    )}
-                  >
-                    DSA
-                  </button>
-                </div>
-
-                <button
-                  onClick={prevMonth}
-                  className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={nextMonth}
-                  className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Weekdays Labels */}
-            <div className="grid grid-cols-7 text-center">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div
-                  key={day}
-                  className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 py-2"
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Day Cells Grid */}
-            <div className="grid grid-cols-7 gap-1.5">
-              {calendarCells.map((day) => {
-                const dayKey = format(day, "yyyy-MM-dd");
-                const dayData = itemsByDate[dayKey] || { srs: [], dsa: [] };
-
-                const srsFiltered = filterType !== "dsa" ? dayData.srs : [];
-                const dsaFiltered = filterType !== "srs" ? dayData.dsa : [];
-
-                const totalItemsCount = srsFiltered.length + dsaFiltered.length;
-
-                const isCurrentMonth = isSameMonth(day, currentMonth);
-                const isDayToday = isSameDay(day, today);
-                const isDaySelected = isSameDay(day, selectedDate);
-
-                // Highlight status: color cell outline if tasks due
-                const hasDueTasks = totalItemsCount > 0 && (isPast(day) || isSameDay(day, today));
-
-                return (
-                  <button
-                    key={day.toString()}
-                    onClick={() => setSelectedDate(day)}
-                    className={cn(
-                      "min-h-[72px] p-1.5 rounded-2xl flex flex-col items-stretch justify-between border transition-all text-left group overflow-hidden relative",
-                      isCurrentMonth ? "bg-background/20" : "bg-secondary/[0.05] border-transparent opacity-30",
-                      isDaySelected
-                        ? "border-primary ring-2 ring-primary/10 shadow-sm"
-                        : "border-border/35 hover:border-border-foreground/50 hover:bg-secondary/20",
-                      isDayToday && "bg-secondary/40 font-bold",
-                      hasDueTasks && !isDaySelected && "border-amber-500/30 bg-amber-500/[0.02]"
-                    )}
-                  >
-                    <header className="flex justify-between items-center w-full px-0.5">
-                      <span
-                        className={cn(
-                          "text-xs font-bold leading-none",
-                          isDayToday ? "text-primary bg-secondary p-1 rounded-md" : "text-muted-foreground/80"
-                        )}
-                      >
-                        {format(day, "d")}
-                      </span>
-
-                      {/* Display Total Count Badge if item count is large */}
-                      {totalItemsCount > 0 && (
-                        <span className="text-[9px] font-black leading-none bg-secondary/80 px-1 py-0.5 rounded-full text-muted-foreground scale-90">
-                          {totalItemsCount}
-                        </span>
-                      )}
-                    </header>
-
-                    {/* Small pills/indicators representation */}
-                    <div className="mt-2 space-y-1 overflow-hidden pointer-events-none flex-1 flex flex-col justify-end">
-                      {srsFiltered.slice(0, 2).map((item) => (
-                        <div
-                          key={item.id}
-                          className="text-[9px] truncate bg-blue-500/10 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1"
-                        >
-                          <Brain className="h-2.5 w-2.5 flex-shrink-0" />
-                          <span>{item.topic}</span>
-                        </div>
-                      ))}
-
-                      {dsaFiltered.slice(0, 2).map((item) => {
-                        const isHard = item.difficulty === "Hard";
-                        const isEasy = item.difficulty === "Easy";
-                        return (
-                          <div
-                            key={item.id}
-                            className={cn(
-                              "text-[9px] truncate px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border",
-                              isHard
-                                ? "bg-red-500/10 text-red-600 border-red-500/10 dark:bg-red-900/20 dark:text-red-400"
-                                : isEasy
-                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/10 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                : "bg-yellow-500/10 text-yellow-600 border-yellow-500/10 dark:bg-yellow-900/20 dark:text-yellow-400"
-                            )}
-                          >
-                            <Code className="h-2.5 w-2.5 flex-shrink-0" />
-                            <span>{item.problemName}</span>
-                          </div>
-                        );
-                      })}
-
-                      {totalItemsCount > 4 && (
-                        <div className="text-[8px] font-black text-muted-foreground/50 text-right leading-none pr-1">
-                          +{totalItemsCount - 4} more
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Drawer/Selected Day Details Side Panel */}
-        <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm h-fit space-y-6 flex flex-col">
-          <header className="border-b border-border/50 pb-4 space-y-2">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-              <CalendarDays className="h-3.5 w-3.5" />
-              Day View
-            </div>
+      {/* Day Details Sheet */}
+      <Sheet
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        title={
+          <div className="flex items-center gap-3">
             <h3 className="text-2xl font-black tracking-tighter">
               {format(selectedDate, "EEEE, MMMM d")}
             </h3>
             {isSameDay(selectedDate, today) && (
-              <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+              <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-primary text-primary-foreground px-2.5 py-1 rounded-full">
                 Today
               </span>
             )}
-          </header>
-
-          {/* List of items scheduled for the day */}
-          <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-            {selectedDayItems.total === 0 ? (
-              <div className="text-center py-10 space-y-2 border border-dashed border-border/50 rounded-2xl bg-secondary/[0.04]">
-                <CheckCircle2 className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                <p className="text-muted-foreground text-sm font-medium">
-                  Zero tasks scheduled
-                </p>
-                <p className="text-xs text-muted-foreground/60 italic">
-                  Enjoy your day or add new goals!
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* General SRS list */}
-                {selectedDayItems.srs.map((item) => {
-                  const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
-                  return (
-                    <div
-                      key={item.id}
-                      className="border border-border/40 bg-secondary/[0.08] hover:bg-secondary/[0.12] transition-colors rounded-2xl p-4 space-y-4 relative overflow-hidden"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md">
-                            <Brain className="h-3 w-3" />
-                            General SRS
-                          </span>
-                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                            Milestone {item.reviewCount + 1}
-                          </span>
-                        </div>
-                        <h4 className="font-bold text-sm text-foreground">
-                          {item.topic}
-                        </h4>
-                        {item.details && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 italic leading-relaxed">
-                            {item.details}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Milestones Progress Dots */}
-                      <div className="flex gap-1.5 pt-1 border-t border-border/20">
-                        {SRS_INTERVALS.map((day, idx) => {
-                          const isDone = item.reviewCount > idx;
-                          const isCurrent = item.reviewCount === idx;
-                          return (
-                            <div
-                              key={day}
-                              className={cn(
-                                "h-2 flex-1 rounded-full",
-                                isDone
-                                  ? "bg-blue-500 shadow-sm"
-                                  : isCurrent && isDue
-                                  ? "bg-amber-500"
-                                  : "bg-secondary"
-                              )}
-                              title={`Milestone ${idx + 1} (${day}d)`}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2 justify-end pt-1">
-                        <button
-                          onClick={() => handleSrsReviewForgot(item)}
-                          disabled={updateSrsMutation.isPending}
-                          className="p-1 px-2.5 bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
-                          title="Forgot this topic? Reset study cycle to Day 1."
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          Forgot
-                        </button>
-                        <button
-                          onClick={() => handleSrsReviewSuccess(item)}
-                          disabled={updateSrsMutation.isPending}
-                          className="p-1 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
-                          title="Remembered this topic! Move to next milestone."
-                        >
-                          <Check className="h-3 w-3" />
-                          Got it
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* DSA Problems list */}
-                {selectedDayItems.dsa.map((item) => {
-                  const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
-                  const isHard = item.difficulty === "Hard";
-                  const isEasy = item.difficulty === "Easy";
-
-                  return (
-                    <div
-                      key={item.id}
-                      className="border border-border/40 bg-secondary/[0.08] hover:bg-secondary/[0.12] transition-colors rounded-2xl p-4 space-y-4 relative overflow-hidden"
-                    >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span
-                            className={cn(
-                              "flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider bg-secondary border px-2 py-0.5 rounded-md",
-                              isHard
-                                ? "text-red-600 border-red-500/10 bg-red-500/5"
-                                : isEasy
-                                ? "text-emerald-600 border-emerald-500/10 bg-emerald-500/5"
-                                : "text-yellow-600 border-yellow-500/10 bg-yellow-500/5"
-                            )}
-                          >
-                            <Code className="h-3 w-3" />
-                            DSA • {item.difficulty}
-                          </span>
-                          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
-                            Milestone {item.reviewCount + 1}
-                          </span>
-                        </div>
-                        <h4 className="font-bold text-sm text-foreground">
-                          {item.problemName}
-                        </h4>
-                        {item.topics && item.topics.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {item.topics.slice(0, 3).map((topic: string) => (
-                              <span
-                                key={topic}
-                                className="text-[8px] font-black uppercase bg-secondary/80 text-muted-foreground px-1.5 py-0.5 rounded-md"
-                              >
-                                {topic}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Milestones Progress Dots */}
-                      <div className="flex gap-1.5 pt-1 border-t border-border/20">
-                        {SRS_INTERVALS.map((day, idx) => {
-                          const isDone = item.reviewCount > idx;
-                          const isCurrent = item.reviewCount === idx;
-                          return (
-                            <div
-                              key={day}
-                              className={cn(
-                                "h-2 flex-1 rounded-full",
-                                isDone
-                                  ? "bg-primary shadow-sm"
-                                  : isCurrent && isDue
-                                  ? "bg-amber-500"
-                                  : "bg-secondary"
-                              )}
-                              title={`Milestone ${idx + 1} (${day}d)`}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2 justify-end pt-1">
-                        <button
-                          onClick={() => handleDsaReviewForgot(item)}
-                          disabled={updateDsaMutation.isPending}
-                          className="p-1 px-2.5 bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
-                          title="Reset review cycle."
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          Forgot
-                        </button>
-                        <button
-                          onClick={() => handleDsaReviewSuccess(item)}
-                          disabled={updateDsaMutation.isPending}
-                          className="p-1 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
-                          title="Mark problem as solved and advance milestone."
-                        >
-                          <Check className="h-3 w-3" />
-                          Solved
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </>
-            )}
           </div>
+        }
+        description={
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+            <CalendarDays className="h-3.5 w-3.5" />
+            Day View
+          </div>
+        }
+      >
+        {/* List of items scheduled for the day */}
+        <div>
+          {selectedDayItems.total === 0 ? (
+            <div className="text-center py-10 space-y-2 border border-dashed border-border/50 rounded-2xl bg-secondary/[0.04]">
+              <CheckCircle2 className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+              <p className="text-muted-foreground text-sm font-medium">
+                Zero tasks scheduled
+              </p>
+              <p className="text-xs text-muted-foreground/60 italic">
+                Enjoy your day or add new goals!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {/* General SRS list */}
+              {selectedDayItems.srs.map((item) => {
+                const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
+                return (
+                  <div
+                    key={item.id}
+                    className="border border-border/40 bg-secondary/[0.08] hover:bg-secondary/[0.12] transition-colors rounded-2xl p-4 space-y-4 relative overflow-hidden"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-md">
+                          <Brain className="h-3 w-3" />
+                          General SRS
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                          Milestone {item.reviewCount + 1}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm text-foreground">
+                        {item.topic}
+                      </h4>
+                      {item.details && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic leading-relaxed">
+                          {item.details}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Milestones Progress Dots */}
+                    <div className="flex gap-1.5 pt-1 border-t border-border/20">
+                      {SRS_INTERVALS.map((day, idx) => {
+                        const isDone = item.reviewCount > idx;
+                        const isCurrent = item.reviewCount === idx;
+                        return (
+                          <div
+                            key={day}
+                            className={cn(
+                              "h-2 flex-1 rounded-full",
+                              isDone
+                                ? "bg-blue-500 shadow-sm"
+                                : isCurrent && isDue
+                                ? "bg-amber-500"
+                                : "bg-secondary"
+                            )}
+                            title={`Milestone ${idx + 1} (${day}d)`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        onClick={() => handleSrsReviewForgot(item)}
+                        disabled={updateSrsMutation.isPending}
+                        className="p-1 px-2.5 bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        title="Forgot this topic? Reset study cycle to Day 1."
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Forgot
+                      </button>
+                      <button
+                        onClick={() => handleSrsReviewSuccess(item)}
+                        disabled={updateSrsMutation.isPending}
+                        className="p-1 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        title="Remembered this topic! Move to next milestone."
+                      >
+                        <Check className="h-3 w-3" />
+                        Got it
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* DSA Problems list */}
+              {selectedDayItems.dsa.map((item) => {
+                const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
+                const isHard = item.difficulty === "Hard";
+                const isEasy = item.difficulty === "Easy";
+
+                return (
+                  <div
+                    key={item.id}
+                    className="border border-border/40 bg-secondary/[0.08] hover:bg-secondary/[0.12] transition-colors rounded-2xl p-4 space-y-4 relative overflow-hidden"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={cn(
+                            "flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider bg-secondary border px-2 py-0.5 rounded-md",
+                            isHard
+                              ? "text-red-600 border-red-500/10 bg-red-500/5"
+                              : isEasy
+                              ? "text-emerald-600 border-emerald-500/10 bg-emerald-500/5"
+                              : "text-yellow-600 border-yellow-500/10 bg-yellow-500/5"
+                          )}
+                        >
+                          <Code className="h-3 w-3" />
+                          DSA • {item.difficulty}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                          Milestone {item.reviewCount + 1}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm text-foreground">
+                        {item.problemName}
+                      </h4>
+                      {item.topics && item.topics.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {item.topics.slice(0, 3).map((topic: string) => (
+                            <span
+                              key={topic}
+                              className="text-[8px] font-black uppercase bg-secondary/80 text-muted-foreground px-1.5 py-0.5 rounded-md"
+                            >
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Milestones Progress Dots */}
+                    <div className="flex gap-1.5 pt-1 border-t border-border/20">
+                      {SRS_INTERVALS.map((day, idx) => {
+                        const isDone = item.reviewCount > idx;
+                        const isCurrent = item.reviewCount === idx;
+                        return (
+                          <div
+                            key={day}
+                            className={cn(
+                              "h-2 flex-1 rounded-full",
+                              isDone
+                                ? "bg-primary shadow-sm"
+                                : isCurrent && isDue
+                                ? "bg-amber-500"
+                                : "bg-secondary"
+                            )}
+                            title={`Milestone ${idx + 1} (${day}d)`}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 justify-end pt-1">
+                      <button
+                        onClick={() => handleDsaReviewForgot(item)}
+                        disabled={updateDsaMutation.isPending}
+                        className="p-1 px-2.5 bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive hover:text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        title="Reset review cycle."
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Forgot
+                      </button>
+                      <button
+                        onClick={() => handleDsaReviewSuccess(item)}
+                        disabled={updateDsaMutation.isPending}
+                        className="p-1 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        title="Mark problem as solved and advance milestone."
+                      >
+                        <Check className="h-3 w-3" />
+                        Solved
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      </Sheet>
     </div>
   );
 }
