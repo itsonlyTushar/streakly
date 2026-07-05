@@ -30,10 +30,10 @@ export function ChatFAB() {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="ai-chat-fab-button fixed bottom-24 md:bottom-6 right-6 md:right-8 z-50 h-12 w-12 rounded-full flex items-center justify-center bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.5)] hover:shadow-[0_0_20px_rgba(99,102,241,0.8)] transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer print:hidden"
+        className="ai-chat-fab-button fixed bottom-24 md:bottom-6 right-6 md:right-8 z-50 h-12 w-12 rounded-full flex items-center justify-center bg-card text-card-foreground border border-border/80 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 group cursor-pointer print:hidden hover:bg-secondary/50"
         title="Toggle AI Coach Chat"
       >
-        <div className="absolute inset-0 rounded-full bg-indigo-500 animate-pulse opacity-20 group-hover:opacity-40 transition-opacity" />
+        <div className="absolute inset-0 rounded-full bg-primary opacity-5 group-hover:opacity-10 transition-opacity" />
         <AnimatePresence mode="wait">
           {isOpen ? (
             <motion.div
@@ -54,7 +54,7 @@ export function ChatFAB() {
               transition={{ duration: 0.15 }}
               className="relative"
             >
-              <Sparkles className="h-5 w-5 animate-pulse" />
+              <img src="/apple-touch-icon.png" alt="Streakly Logo" className="h-5 w-5 object-contain" />
               {/* Pulsing indicator */}
               <span className="absolute -top-1 -right-1 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

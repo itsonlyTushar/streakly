@@ -40,7 +40,7 @@ export function ContextStatus({ context, loading }: ContextStatusProps) {
       <div className="flex items-center gap-1">
         <Database className="h-3 w-3 text-muted-foreground/75" />
         <span>
-          RAG Active: {totalItems} items synced
+          Workspace Synced: {totalItems} items
         </span>
       </div>
 

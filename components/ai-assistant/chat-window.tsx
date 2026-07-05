@@ -381,12 +381,12 @@ export function ChatWindow() {
           </div>
           <div>
             <h3 className="font-bold text-base">Gemini API Configuration</h3>
-            <p className="text-xs text-muted-foreground">Personalized RAG Coach</p>
+            <p className="text-xs text-muted-foreground">Personalized AI Coach</p>
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Streakly uses your own Gemini API key to run a zero-cost local RAG system. Your keys and workspace data are stored locally in your browser.
+          Streakly uses your own Gemini API key to run a zero-cost local AI assistant. Your keys and workspace data are stored locally in your browser.
         </p>
 
         <div className="space-y-3 pt-2">
@@ -475,7 +475,7 @@ export function ChatWindow() {
               </div>
               <div className="p-3.5 rounded-2xl rounded-tl-none bg-card border border-border/40 shadow-sm text-xs leading-relaxed text-foreground">
                 <p className="font-bold mb-1 flex items-center gap-1.5">
-                  Welcome to RAG Assistant! <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
+                  Welcome to Streakly AI Coach! <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
                 </p>
                 I am connected to your active goals, study notes, DSA problems, and machine coding tasks. Ask me questions about your studies, request a weekly schedule, or check if you have practiced a pattern!
               </div>
