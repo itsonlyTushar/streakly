@@ -77,14 +77,51 @@ export default function ProfilePage() {
   };
 
   const [newLeetcode, setNewLeetcode] = useState("");
+  const [newLeetcodeSession, setNewLeetcodeSession] = useState("");
+  const [newLeetcodeCsrf, setNewLeetcodeCsrf] = useState("");
+  const [showSession, setShowSession] = useState(false);
+  const [showCsrf, setShowCsrf] = useState(false);
+
+  // LeetCode Stats states
+  const [leetcodeStats, setLeetcodeStats] = useState<any>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // Sync internal state when profile data loads
   useEffect(() => {
     if (profile) {
       setNewBio(profile.bio || "");
       setNewLeetcode(profile.leetcodeUsername || "");
+      setNewLeetcodeSession(profile.leetcodeSession || "");
+      setNewLeetcodeCsrf(profile.leetcodeCsrf || "");
     }
   }, [profile]);
+
+  // Fetch LeetCode statistics in real-time when username is configured
+  useEffect(() => {
+    if (profile?.leetcodeUsername) {
+      const fetchLeetcodeStats = async () => {
+        setIsLoadingStats(true);
+        setStatsError(null);
+        try {
+          const res = await fetch(`/api/leetcode/profile?username=${profile.leetcodeUsername}`);
+          if (!res.ok) {
+            throw new Error("Failed to load LeetCode profile details");
+          }
+          const data = await res.json();
+          setLeetcodeStats(data);
+        } catch (err: any) {
+          console.error(err);
+          setStatsError(err.message || "Failed to load LeetCode statistics");
+        } finally {
+          setIsLoadingStats(false);
+        }
+      };
+      fetchLeetcodeStats();
+    } else {
+      setLeetcodeStats(null);
+    }
+  }, [profile?.leetcodeUsername]);
 
   const handleSaveBio = async () => {
     updateMutation.mutate({ bio: newBio }, {
@@ -250,47 +287,202 @@ export default function ProfilePage() {
                   LeetCode Integration
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Auto-import solved problems into your DSA Arena
+                  Auto-import solved problems and actual solutions into your DSA Arena
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 relative z-10">
+          <div className="space-y-4 relative z-10">
             <p className="text-xs text-muted-foreground max-w-2xl leading-relaxed">
-              Enter your public LeetCode username below. Streakly will fetch your recent solved submissions and schedule them in your revision calendar automatically.
+              Enter your public LeetCode username below to fetch recent solved submissions. To fetch your <strong>actual solved solution code</strong> (rather than generic AI fallbacks), optionally provide your session cookies from your browser's Developer Tools.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-              <input
-                type="text"
-                value={newLeetcode}
-                onChange={(e) => setNewLeetcode(e.target.value)}
-                placeholder="Enter LeetCode username"
-                className="flex-1 bg-background border border-border/60 focus:border-primary focus:ring-4 ring-primary/5 rounded-2xl px-4 py-3 text-sm outline-none transition-all"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-xs font-bold text-foreground/80">LeetCode Username</label>
+                <input
+                  type="text"
+                  value={newLeetcode}
+                  onChange={(e) => setNewLeetcode(e.target.value)}
+                  placeholder="Enter LeetCode username"
+                  className="w-full bg-background border border-border/60 focus:border-primary focus:ring-4 ring-primary/5 rounded-2xl px-4 py-3 text-sm outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-foreground/80 flex items-center gap-1">
+                  Session Cookie <span className="font-mono text-[10px] text-muted-foreground">(LEETCODE_SESSION)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showSession ? "text" : "password"}
+                    value={newLeetcodeSession}
+                    onChange={(e) => setNewLeetcodeSession(e.target.value)}
+                    placeholder="Paste LEETCODE_SESSION value"
+                    className="w-full bg-background border border-border/60 focus:border-primary focus:ring-4 ring-primary/5 rounded-2xl pl-4 pr-11 py-3 text-sm outline-none transition-all font-mono"
+                  />
+                  {newLeetcodeSession && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSession(!showSession)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                    >
+                      {showSession ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-foreground/80 flex items-center gap-1">
+                  CSRF Token <span className="font-mono text-[10px] text-muted-foreground">(csrftoken)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCsrf ? "text" : "password"}
+                    value={newLeetcodeCsrf}
+                    onChange={(e) => setNewLeetcodeCsrf(e.target.value)}
+                    placeholder="Paste csrftoken value"
+                    className="w-full bg-background border border-border/60 focus:border-primary focus:ring-4 ring-primary/5 rounded-2xl pl-4 pr-11 py-3 text-sm outline-none transition-all font-mono"
+                  />
+                  {newLeetcodeCsrf && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCsrf(!showCsrf)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
+                    >
+                      {showCsrf ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-background/40 border border-border/30 rounded-2xl text-xs text-muted-foreground leading-relaxed space-y-1.5">
+              <span className="font-bold text-foreground block">How to get these values:</span>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Log in to <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">leetcode.com <ExternalLink className="h-3 w-3 inline" /></a> in your browser.</li>
+                <li>Press <kbd className="px-1.5 py-0.5 bg-background border border-border/60 rounded text-[10px]">F12</kbd> (or right-click and choose <strong>Inspect</strong>) to open Developer Tools.</li>
+                <li>Go to the <strong>Application</strong> tab (on Chrome/Edge) or <strong>Storage</strong> tab (on Firefox).</li>
+                <li>In the sidebar, expand <strong>Cookies</strong> and select <code className="text-primary">https://leetcode.com</code>.</li>
+                <li>Copy the values for <code className="text-foreground font-semibold">LEETCODE_SESSION</code> and <code className="text-foreground font-semibold">csrftoken</code> and paste them above.</li>
+              </ol>
+            </div>
+
+            <div className="flex justify-end mt-2">
               <button
                 type="button"
                 onClick={async () => {
                   updateMutation.mutate(
-                    { leetcodeUsername: newLeetcode.trim() },
+                    { 
+                      leetcodeUsername: newLeetcode.trim(),
+                      leetcodeSession: newLeetcodeSession.trim() || null,
+                      leetcodeCsrf: newLeetcodeCsrf.trim() || null
+                    },
                     {
                       onSuccess: () => {
                         toast({
-                          title: "LeetCode Username Saved",
-                          description: "Your LeetCode integration is ready.",
+                          title: "LeetCode Integration Saved",
+                          description: "Your LeetCode credentials and preferences have been updated.",
                           variant: "success",
                         });
                       },
                     }
                   );
                 }}
-                disabled={updateMutation.isPending || newLeetcode.trim() === (profile?.leetcodeUsername || "")}
+                disabled={
+                  updateMutation.isPending || 
+                  (
+                    newLeetcode.trim() === (profile?.leetcodeUsername || "") &&
+                    newLeetcodeSession.trim() === (profile?.leetcodeSession || "") &&
+                    newLeetcodeCsrf.trim() === (profile?.leetcodeCsrf || "")
+                  )
+                }
                 className="bg-primary text-primary-foreground hover:bg-primary/95 font-bold text-xs uppercase tracking-widest px-6 h-12 rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-md disabled:opacity-50 disabled:scale-100"
               >
-                {updateMutation.isPending ? "Saving..." : "Save"}
+                {updateMutation.isPending ? "Saving..." : "Save Integration"}
               </button>
             </div>
+
+            {profile?.leetcodeUsername && (
+              <div className="mt-6 border border-border/40 bg-background/50 rounded-2xl p-5 relative overflow-hidden">
+                {isLoadingStats ? (
+                  <div className="flex items-center justify-center py-6 gap-2 text-sm text-muted-foreground">
+                    <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    Fetching LeetCode profile details...
+                  </div>
+                ) : statsError ? (
+                  <div className="text-xs text-red-500 py-2 text-center">
+                    Unable to load real-time LeetCode stats. Please verify your username.
+                  </div>
+                ) : leetcodeStats ? (
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                    {leetcodeStats.userAvatar && (
+                      <img
+                        src={leetcodeStats.userAvatar}
+                        alt="LeetCode Avatar"
+                        className="w-16 h-16 rounded-2xl object-cover border border-border/60 shadow-sm"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${leetcodeStats.username}`;
+                        }}
+                      />
+                    )}
+                    <div className="flex-1 text-center md:text-left space-y-1">
+                      <h4 className="font-bold text-foreground">
+                        {leetcodeStats.realName || leetcodeStats.username}
+                      </h4>
+                      <p className="text-xs text-muted-foreground flex items-center justify-center md:justify-start gap-1">
+                        @{leetcodeStats.username}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1 mt-2">
+                        <span className="text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-lg flex items-center gap-1">
+                          Rank: #{leetcodeStats.ranking?.toLocaleString() || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto text-center border-t md:border-t-0 md:border-l border-border/40 pt-4 md:pt-0 md:pl-6">
+                      {leetcodeStats.submitStats.map((stat: any) => {
+                        if (stat.difficulty === "All") return null;
+                        const colorMap: Record<string, string> = {
+                          Easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/25",
+                          Medium: "text-amber-500 bg-amber-500/10 border-amber-500/25",
+                          Hard: "text-rose-500 bg-rose-500/10 border-rose-500/25"
+                        };
+                        const color = colorMap[stat.difficulty] || "text-foreground bg-secondary/15";
+                        return (
+                          <div key={stat.difficulty} className={`px-4 py-2 border rounded-xl ${color}`}>
+                            <span className="block text-[10px] font-black uppercase tracking-wider opacity-80">
+                              {stat.difficulty}
+                            </span>
+                            <span className="text-lg font-bold">
+                              {stat.count}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Total count */}
+                      {(() => {
+                        const allStat = leetcodeStats.submitStats.find((s: any) => s.difficulty === "All");
+                        if (!allStat) return null;
+                        return (
+                          <div className="px-4 py-2 border border-primary/20 bg-primary/5 text-primary rounded-xl">
+                            <span className="block text-[10px] font-black uppercase tracking-wider opacity-80">
+                              Total
+                            </span>
+                            <span className="text-lg font-bold">
+                              {allStat.count}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
 

@@ -786,8 +786,18 @@ export default function DSAPage() {
     setSyncStatusText("Connecting to LeetCode...");
 
     try {
-      // 1. Fetch recent submissions from proxy API
-      const res = await fetch(`/api/leetcode/submissions?username=${leetcodeUsername}`);
+      // 1. Fetch recent submissions from proxy API with auth headers if configured
+      const headers: Record<string, string> = {};
+      if (profile?.leetcodeSession) {
+        headers["x-leetcode-session"] = profile.leetcodeSession;
+      }
+      if (profile?.leetcodeCsrf) {
+        headers["x-leetcode-csrf"] = profile.leetcodeCsrf;
+      }
+
+      const res = await fetch(`/api/leetcode/submissions?username=${leetcodeUsername}`, {
+        headers,
+      });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Failed to fetch from LeetCode");
@@ -861,7 +871,7 @@ export default function DSAPage() {
           timeComplexity: "O(N)",
           spaceComplexity: "O(N)",
           intuition: "Imported from LeetCode solved submissions.",
-          codeSnippet: `// Solved in ${problem.lang}\n// Trigger AI Auto-Fill to populate solution.`,
+          codeSnippet: problem.code || `// Solved in ${problem.lang}\n// Trigger AI Auto-Fill to populate solution.`,
           nextReviewDate: getInitialReviewDate(),
           priority: "Unprioritized" as const,
         };
@@ -888,7 +898,7 @@ export default function DSAPage() {
                 timeComplexity: parsed.timeComplexity || "O(N)",
                 spaceComplexity: parsed.spaceComplexity || "O(1)",
                 intuition: parsed.intuition || "Imported from LeetCode.",
-                codeSnippet: parsed.codeSnippet || problemDetails.codeSnippet,
+                codeSnippet: problem.code || parsed.codeSnippet || problemDetails.codeSnippet,
                 nextReviewDate: getInitialReviewDate(),
                 priority: "Unprioritized" as const,
               };

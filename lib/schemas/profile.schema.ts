@@ -5,6 +5,8 @@ export const ProfileSchema = z.object({
   email: z.string().email().optional().nullable(),
   bio: z.string().optional().nullable(),
   leetcodeUsername: z.string().optional().nullable(),
+  leetcodeSession: z.string().optional().nullable(),
+  leetcodeCsrf: z.string().optional().nullable(),
   emailNotifications: z.boolean().default(true),
   createdAt: z.any().optional(),
   updatedAt: z.any().optional(),
