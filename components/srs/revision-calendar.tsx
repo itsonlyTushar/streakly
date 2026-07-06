@@ -25,6 +25,7 @@ import {
   Check,
   RefreshCw,
   CalendarDays,
+  ListTodo,
 } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,8 @@ import { useAuthGuard } from "@/components/auth-guard";
 import { useToast } from "@/components/ui/toast";
 import { useSRSItems, useUpdateSRSItem } from "@/hooks/use-srs";
 import { useDSAItems, useUpdateDSAItem } from "@/hooks/use-dsa";
+import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { PRIORITY_META } from "@/components/tasks/task-ui";
 import { useAllUserNotes } from "@/hooks/use-notes";
 import { SRS_INTERVALS, calculateNextReviewDate } from "@/lib/srs-utils";
 import { Sheet } from "@/components/ui/sheet";
@@ -39,16 +42,18 @@ import { Sheet } from "@/components/ui/sheet";
 export function RevisionCalendar() {
   const { data: srsItems = [], isLoading: isSrsLoading } = useSRSItems();
   const { data: dsaItems = [], isLoading: isDsaLoading } = useDSAItems();
+  const { data: taskItems = [], isLoading: isTasksLoading } = useTasks();
   const { data: allNotes = [], isLoading: isNotesLoading } = useAllUserNotes();
 
   const updateSrsMutation = useUpdateSRSItem();
   const updateDsaMutation = useUpdateDSAItem();
+  const updateTaskMutation = useUpdateTask();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
-  const [filterType, setFilterType] = useState<"all" | "srs" | "dsa">("all");
+  const [filterType, setFilterType] = useState<"all" | "srs" | "dsa" | "task">("all");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const today = startOfToday();
@@ -59,12 +64,12 @@ export function RevisionCalendar() {
 
   // Aggregate items mapped by date for calendar display
   const itemsByDate = useMemo(() => {
-    const map: Record<string, { srs: any[]; dsa: any[] }> = {};
+    const map: Record<string, { srs: any[]; dsa: any[]; task: any[] }> = {};
 
-    const add = (date: Date, type: "srs" | "dsa", item: any) => {
+    const add = (date: Date, type: "srs" | "dsa" | "task", item: any) => {
       const key = format(startOfDay(date), "yyyy-MM-dd");
       if (!map[key]) {
-        map[key] = { srs: [], dsa: [] };
+        map[key] = { srs: [], dsa: [], task: [] };
       }
       map[key][type].push(item);
     };
@@ -81,24 +86,42 @@ export function RevisionCalendar() {
       }
     });
 
+    taskItems.forEach((item) => {
+      if (item.dueDate && item.status !== "Done") {
+        add(item.dueDate.toDate(), "task", item);
+      }
+    });
+
     return map;
-  }, [srsItems, dsaItems]);
+  }, [srsItems, dsaItems, taskItems]);
 
   // Get items for selected day
   const selectedDayItems = useMemo(() => {
     const key = format(startOfDay(selectedDate), "yyyy-MM-dd");
-    const dayData = itemsByDate[key] || { srs: [], dsa: [] };
+    const dayData = itemsByDate[key] || { srs: [], dsa: [], task: [] };
 
     let srsList = dayData.srs;
     let dsaList = dayData.dsa;
+    let taskList = dayData.task;
 
-    if (filterType === "srs") dsaList = [];
-    if (filterType === "dsa") srsList = [];
+    if (filterType === "srs") {
+      dsaList = [];
+      taskList = [];
+    }
+    if (filterType === "dsa") {
+      srsList = [];
+      taskList = [];
+    }
+    if (filterType === "task") {
+      srsList = [];
+      dsaList = [];
+    }
 
     return {
       srs: srsList,
       dsa: dsaList,
-      total: srsList.length + dsaList.length,
+      task: taskList,
+      total: srsList.length + dsaList.length + taskList.length,
     };
   }, [selectedDate, itemsByDate, filterType]);
 
@@ -170,6 +193,16 @@ export function RevisionCalendar() {
     });
   };
 
+  const handleTaskComplete = (item: any) => {
+    requireAuth(() => {
+      updateTaskMutation.mutate({
+        itemId: item.id,
+        data: { status: "Done" },
+      });
+      toast({ title: "Task completed!", description: "Nice work — one less thing to do.", variant: "success" });
+    });
+  };
+
   // Generate calendar days
   const calendarCells = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -187,7 +220,7 @@ export function RevisionCalendar() {
     return cells;
   }, [currentMonth]);
 
-  const isLoading = isSrsLoading || isDsaLoading || isNotesLoading;
+  const isLoading = isSrsLoading || isDsaLoading || isTasksLoading || isNotesLoading;
 
   if (isLoading) {
     return (
@@ -250,6 +283,17 @@ export function RevisionCalendar() {
                 >
                   DSA
                 </button>
+                <button
+                  onClick={() => setFilterType("task")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    filterType === "task"
+                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-primary"
+                  )}
+                >
+                  Tasks
+                </button>
               </div>
 
               <button
@@ -283,12 +327,13 @@ export function RevisionCalendar() {
           <div className="grid grid-cols-7 gap-1.5">
             {calendarCells.map((day) => {
               const dayKey = format(day, "yyyy-MM-dd");
-              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [] };
+              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [] };
 
-              const srsFiltered = filterType !== "dsa" ? dayData.srs : [];
-              const dsaFiltered = filterType !== "srs" ? dayData.dsa : [];
+              const srsFiltered = filterType === "all" || filterType === "srs" ? dayData.srs : [];
+              const dsaFiltered = filterType === "all" || filterType === "dsa" ? dayData.dsa : [];
+              const taskFiltered = filterType === "all" || filterType === "task" ? dayData.task : [];
 
-              const totalItemsCount = srsFiltered.length + dsaFiltered.length;
+              const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length;
 
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isDayToday = isSameDay(day, today);
@@ -364,6 +409,16 @@ export function RevisionCalendar() {
                         </div>
                       );
                     })}
+
+                    {taskFiltered.slice(0, 2).map((item) => (
+                      <div
+                        key={item.id}
+                        className="text-[9px] truncate bg-violet-500/10 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border border-violet-500/10"
+                      >
+                        <ListTodo className="h-2.5 w-2.5 flex-shrink-0" />
+                        <span>{item.title}</span>
+                      </div>
+                    ))}
 
                     {totalItemsCount > 4 && (
                       <div className="text-[8px] font-black text-muted-foreground/50 text-right leading-none pr-1">
@@ -578,6 +633,67 @@ export function RevisionCalendar() {
                       >
                         <Check className="h-3 w-3" />
                         Solved
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Tasks due this day */}
+              {selectedDayItems.task.map((item) => {
+                const priority =
+                  PRIORITY_META[item.priority as keyof typeof PRIORITY_META] ??
+                  PRIORITY_META.None;
+                return (
+                  <div
+                    key={item.id}
+                    className="border border-border/40 bg-secondary/[0.08] hover:bg-secondary/[0.12] transition-colors rounded-2xl p-4 space-y-4 relative overflow-hidden"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-violet-600 bg-violet-500/10 px-2 py-0.5 rounded-md">
+                          <ListTodo className="h-3 w-3" />
+                          Task
+                        </span>
+                        <span
+                          className={cn(
+                            "flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border",
+                            priority.chip
+                          )}
+                        >
+                          <span className={cn("w-1.5 h-1.5 rounded-full", priority.dot)} />
+                          {priority.label}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm text-foreground">{item.title}</h4>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic leading-relaxed">
+                          {item.description}
+                        </p>
+                      )}
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {item.tags.slice(0, 3).map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="text-[8px] font-black uppercase bg-secondary/80 text-muted-foreground px-1.5 py-0.5 rounded-md"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-1 border-t border-border/20">
+                      <button
+                        onClick={() => handleTaskComplete(item)}
+                        disabled={updateTaskMutation.isPending}
+                        className="p-1 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        title="Mark this task as done."
+                      >
+                        <Check className="h-3 w-3" />
+                        Complete
                       </button>
                     </div>
                   </div>

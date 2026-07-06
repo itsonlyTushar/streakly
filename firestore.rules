@@ -59,6 +59,22 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
+    // Tasks collection rules
+    match /tasks/{taskId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    // Task Projects (lists) collection rules
+    match /taskProjects/{projectId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
     // Profiles collection rules
     match /profiles/{userId} {
       allow read, write: if isOwner(userId);

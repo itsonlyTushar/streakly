@@ -6,7 +6,7 @@ import { ChatWindow } from "./chat-window";
 export function ChatFAB() {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-
+  
   // Close panel on clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

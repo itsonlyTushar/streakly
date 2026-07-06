@@ -11,6 +11,7 @@ import {
   Code,
   Cpu,
   Calendar,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -37,9 +38,11 @@ export function Sidebar() {
   }, []);
 
   const navItems = [
+
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
     { href: "/dsa", icon: Code, label: "DSA Arena" },
     { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },
+        { href: "/tasks", icon: ListTodo, label: "Tasks" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
     { href: "/app", icon: Target, label: "Active Goals" },
     { href: "/profile", icon: User, label: "Profile" },
@@ -78,6 +81,13 @@ export function Sidebar() {
         pathname === "/machine-coding"
           ? "border-primary bg-secondary shadow-inner"
           : "",
+    },
+        {
+      icon: <ListTodo className="h-5 w-5" />,
+      label: "Tasks",
+      onClick: () => router.push("/tasks"),
+      className:
+        pathname === "/tasks" ? "border-primary bg-secondary shadow-inner" : "",
     },
     {
       icon: <Trophy className="h-5 w-5" />,
