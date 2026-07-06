@@ -1,6 +1,7 @@
 "use client";
 
 import { RevisionCalendar } from "@/components/srs/revision-calendar";
+import { ConsolidatedList } from "@/components/consolidated-list";
 
 export default function CalendarPage() {
   return (
@@ -20,6 +21,9 @@ export default function CalendarPage() {
 
       {/* Revision Calendar Dashboard */}
       <RevisionCalendar />
+
+      {/* Consolidated Top 5 — Tasks + SRS + DSA + Machine Coding */}
+      <ConsolidatedList />
     </div>
   );
 }
