@@ -27,8 +27,17 @@ const COLORS = [
   '#D0BCFF', // Purple
 ];
 
+// Stable hash so a goal keeps the same color across re-renders.
+function colorForId(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  }
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
 export function GoalCard({ goal, onPress }: GoalCardProps) {
-  const cardColor = goal.color || COLORS[Math.floor(Math.random() * COLORS.length)];
+  const cardColor = goal.color || colorForId(goal.id);
   const isCompleted = goal.status === 'completed';
 
   const daysLeft = differenceInDays(

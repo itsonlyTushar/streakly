@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-export const TaskStatusSchema = z.enum(["Todo", "Done"]);
+export const TaskStatusSchema = z.enum(["Todo", "Done"]).catch("Todo");
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 
-export const TaskPrioritySchema = z.enum(["Urgent", "High", "Medium", "Low", "None"]);
+export const TaskPrioritySchema = z.enum(["Urgent", "High", "Medium", "Low", "None"]).catch("None");
 export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
 
 export const SubtaskSchema = z.object({
@@ -13,11 +13,20 @@ export const SubtaskSchema = z.object({
 });
 export type Subtask = z.infer<typeof SubtaskSchema>;
 
+const normalizeTaskTitle = (value: unknown) => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || "Untitled task";
+  }
+
+  return value ?? "Untitled task";
+};
+
 export const TaskSchema = z.object({
   id: z.string(),
   userId: z.string(),
   userEmail: z.string().optional().nullable(),
-  title: z.string().min(1, "Title is required"),
+  title: z.preprocess(normalizeTaskTitle, z.string().min(1, "Title is required")),
   description: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(), // null = Inbox
   status: TaskStatusSchema.default("Todo"),
@@ -27,7 +36,7 @@ export const TaskSchema = z.object({
   subtasks: z.array(SubtaskSchema).default([]),
   order: z.number().default(0),
   completedAt: z.any().optional().nullable(), // Firebase Timestamp
-  createdAt: z.any(),
+  createdAt: z.any().optional().nullable().default(null),
   updatedAt: z.any().optional().nullable(),
 });
 export type Task = z.infer<typeof TaskSchema>;
