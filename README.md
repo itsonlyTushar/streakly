@@ -2,72 +2,112 @@
   <img src="https://res.cloudinary.com/dartdvch1/image/upload/v1774367308/screenzy-1774367244497_jrvxhq.jpg" width="100%" alt="Streakly Banner" />
 </p>
 
-# Streakly — A Workspace for Active Learning & Commitment
+# Streakly — A Developer Learning Workspace
 
-> **Streakly** is a high-intent productivity environment designed for those who value consistency over speed. It strips away the noise—the dopamine loops, the rankings, the "game" of productivity—to provide a workspace centered around real output and long-term retention.
-
----
-
-## ⚡ Core Philosophy: "Intentionality First"
-
-Streakly isn't just another notes app. Every feature is framed by two core rules:
-1. **Commitment is Final**: A goal, once locked, remains. A log, once passed, is history. 
-2. **Mastery Through Repetition**: Building knowledge requires structured return visits, not just one-off captures.
+> **Streakly** is built to help developers turn effort into durable progress. It brings goals, spaced repetition, interview prep, and daily execution into one clean workspace.
 
 ---
 
-## 🚀 Key Features
+## 🚀 What’s New
 
-### 🧠 Spaced Repetition System (SRS)
-*Retain mastery through scheduled revision milestones.*
-- **Automated Retention**: Log a topic and Streakly automatically schedules review windows at **1, 3, 7, and 30-day** intervals.
-- **Smart Reminders**: Receive elegant, minimalist email reminders via Resend + Vercel Cron when it's time to solidify knowledge.
-- **Visual Learning Path**: Track your progress with a signature "Milestone Circle" progression UI.
+Streakly today includes:
+- **Active Goals** with locked progress and a clean archive for completed work.
+- **Spaced Repetition** for study topics with review milestones, progress tracking, and reminder support.
+- **DSA Arena** to capture problems, tag topics/patterns, track review due dates, and mark mastery.
+- **Machine Coding Vault** for questions, step-by-step approaches, and reusable solutions.
+- **Tasks & Projects** with priorities, filters, due dates, quick-add, and list management.
+- **Revision Calendar** that aggregates SRS, DSA, and task due dates in one view.
+- **AI Coach** powered by Gemini API key integration and contextual RAG from your goals, notes, DSA, and machine coding entries.
+- **Profile tools** for Gemini API configuration, LeetCode stats, and personal progress settings.
 
-### 🎨 Immersive Whiteboard
-*A distraction-free canvas for sketching and code dry-runs.*
-- **Zero-Borders Architecture**: A true edge-to-edge workspace that lets your thoughts breathe.
-- **Excalidraw-Inspired Core**: Responsive drawing, text annotations, and shape rendering.
-- **Persistence**: Your whiteboard saves automatically and is tied directly to your dashboard.
+---
 
-### 📅 The Streak & Hall of Fame
-- **The Honest Log**: Daily check-ins are locked at midnight. If you miss a day, it shows. No back-filling.
-- **Hall of Fame**: Completed goals move into an immutable, read-only gallery—a permanent record of everything you have built and achieved.
+## 📦 Core Features
+
+### Goals
+- Create and manage outcome-focused goals.
+- Track active targets, due dates, and goal completion progress.
+- Completed goals move to a read-only **Hall of Fame** archive.
+
+### Spaced Repetition System (SRS)
+- Add study topics and notes.
+- Automatically schedule reviews across multi-day intervals.
+- View review progress and status filters like Due, In Progress, Mastered, and Reminders.
+- Email reminder support via cron.
+
+### DSA Practice
+- Log algorithm problems with difficulty, topics, patterns, and complexity.
+- Schedule follow-up reviews using the same spaced repetition cadence.
+- Group problems by patterns for faster practice planning.
+- Save problem notes, intuition, and time/space complexity details.
+
+### Machine Coding
+- Capture coding questions, planned approach, solution code, and language.
+- Keep a searchable library of machine-coding practice entries.
+- Inspect full problem details in a compact table-driven interface.
+
+### Tasks & Projects
+- Organize work with task lists, project groups, and priorities.
+- Mark tasks done, create new lists, and search across projects.
+- See task stats like due today, overdue, and completion progress.
+
+### Calendar & Review
+- Built-in **Revision Calendar** aggregates due dates for study items, DSA reviews, and task deadlines.
+- Filter by SRS, DSA, or tasks for a focused review view.
+
+### AI Assistant
+- Optional Gemini API integration for personalized study guidance.
+- Context-aware chat uses your existing goals, notes, DSA problems, and machine coding entries.
+- Saved conversation history and smart suggestions help you stay on track.
+
+---
+
+## 🧠 Project Structure
+
+- `app/` — Next.js App Router pages and route groups.
+- `components/` — UI building blocks and reusable feature components.
+- `hooks/` — React query hooks for goals, tasks, SRS, DSA, machine coding, profile, and notes.
+- `services/` — Firestore service layer and AI context helpers.
+- `lib/` — Shared utilities, schemas, and srs scheduling logic.
+- `emails/` — Email templates for reminders.
 
 ---
 
 ## 🛠 Tech Stack
 
-Streakly is built with a cutting-edge, serverless architecture for instant responsiveness:
-
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router) + [React 19](https://react.dev/)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) + [Framer Motion](https://www.framer.com/motion/)
-- **Backend / DB**: [Firebase Firestore](https://firebase.google.com/docs/firestore/)
-- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth/) (Google, GitHub)
-- **Email Service**: [Resend](https://resend.com/) + [React Email](https://react.email/)
-- **Theming**: [Next Themes](https://github.com/pacocoursey/next-themes) (Dark/Light mode support)
+- **Framework**: Next.js 16 + React 19
+- **State/Queries**: React Query / TanStack Query
+- **Styling**: Tailwind CSS 4 + Framer Motion
+- **Backend**: Firebase Firestore + Firebase Auth
+- **Email**: Resend + React Email
+- **AI**: Gemini API integration for optional chat assistance
+- **Utilities**: Zod, date-fns, Lucide icons, Zustand, Radix UI
 
 ---
 
-## 🏗 Setup & Installation
+## 🔧 Local Setup
 
-Follow these steps to set up your local development environment:
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/itsonlyTushar/streakly.git
-cd streakly
-```
-
-### 2. Install dependencies
+### 1. Install dependencies
 ```bash
 npm install
 ```
 
-### 3. Environment Variables
-Create a `.env.local` file in the root directory (referencing `.env.local.example`):
+### 2. Create environment file
+Create `.env.local` in the project root with the required Firebase, Resend, and secret values.
+
+### 3. Run the app
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## ⚙️ Environment Variables
+
+Example values:
 ```env
-# Firebase Configuration
 NEXT_PUBLIC_FIREBASE_API_KEY=xxx
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=xxx
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=xxx
@@ -75,37 +115,30 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=xxx
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=xxx
 NEXT_PUBLIC_FIREBASE_APP_ID=xxx
 
-# Email & Service Account
 RESEND_API_KEY=re_xxx
 FIREBASE_CLIENT_EMAIL=xxx
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n"
 CRON_SECRET=your_random_secret
 ```
 
-### 4. Run Locally
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) to see the application.
+> Note: AI chat requires a Gemini API key stored in the user profile page via browser local storage.
 
 ---
 
-## 📐 Design Philosophy
+## 📌 Notes
 
-Streakly's UI is built on the principles of **Glassmorphism** and **High-Frequency UX**:
-- **Modern Typography**: Heading: `Gravitas One` · Body: `Google Sans` · System: `Inter/Roboto`.
-- **Micro-interactions**: Subtle hover states and smooth Framer Motion transitions create a premium, "living" interface.
-- **Focus Mode**: Minimal sidebars and centered content areas prioritize the task at hand.
+- The AI assistant is optional and requires local Gemini API key configuration.
+- The app includes a dedicated profile page for LeetCode integration and user settings.
+- Completed goals are preserved in the Hall of Fame rather than being permanently deleted.
 
 ---
 
 ## 📜 License & Contact
 
-Project built with passion by **Tushar**.  
-Reach out on [GitHub](https://github.com/itsonlyTushar) for collaborations or inquiries.
+Built by **Tushar**. Reach out on [GitHub](https://github.com/itsonlyTushar) for questions or collaboration.
 
 ---
 
 <p align="center">
-  <i>"Streakly doesn't reward you for doing the thing. It just remembers that you did."</i>
+  <i>"Streakly helps you build the work habit, not the distraction habit."</i>
 </p>
