@@ -38,6 +38,9 @@ declare global {
 const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
 const PYODIDE_SCRIPT = `${PYODIDE_CDN}pyodide.js`;
 
+const LS_CODE_KEY = "streakly-compiler-code";
+const LS_STDIN_KEY = "streakly-compiler-stdin";
+
 const DEFAULT_CODE = `# 🐍 Python Playground — Streakly
 # Write your code below and hit Run (Ctrl + Enter)
 
@@ -72,6 +75,7 @@ export default function CompilerPage() {
   const [executionTime, setExecutionTime] = useState<number | null>(null);
   const [stdinInputs, setStdinInputs] = useState("");
   const [showStdinPanel, setShowStdinPanel] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   const pyodideRef = useRef<PyodideInterface | null>(null);
@@ -99,6 +103,35 @@ export default function CompilerPage() {
       }
     };
   }, [isStopwatchRunning]);
+
+  /* ── Hydrate state from localStorage on mount ────────── */
+  useEffect(() => {
+    try {
+      const savedCode = localStorage.getItem(LS_CODE_KEY);
+      const savedStdin = localStorage.getItem(LS_STDIN_KEY);
+      if (savedCode !== null) setCode(savedCode);
+      if (savedStdin !== null) setStdinInputs(savedStdin);
+    } catch {
+      // localStorage may be unavailable (e.g. private browsing)
+    }
+    setHydrated(true);
+  }, []);
+
+  /* ── Persist code to localStorage on change ─────────── */
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(LS_CODE_KEY, code);
+    } catch { /* quota exceeded or unavailable */ }
+  }, [code, hydrated]);
+
+  /* ── Persist stdin inputs to localStorage on change ─── */
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(LS_STDIN_KEY, stdinInputs);
+    } catch { /* quota exceeded or unavailable */ }
+  }, [stdinInputs, hydrated]);
 
   const formatStopwatchTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -333,6 +366,11 @@ export default function CompilerPage() {
               setCode(DEFAULT_CODE);
               setOutput([]);
               setExecutionTime(null);
+              setStdinInputs("");
+              try {
+                localStorage.removeItem(LS_CODE_KEY);
+                localStorage.removeItem(LS_STDIN_KEY);
+              } catch { /* ignore */ }
             }}
             className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
           >
