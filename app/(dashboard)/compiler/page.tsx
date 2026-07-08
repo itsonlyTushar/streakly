@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Play,
@@ -15,6 +15,12 @@ import {
   Timer,
   Pause,
 } from "lucide-react";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
+import { python } from "@codemirror/lang-python";
+import { autocompletion } from "@codemirror/autocomplete";
+import { keymap } from "@codemirror/view";
+import { createTheme } from "@uiw/codemirror-themes";
+import { tags as t } from "@lezer/highlight";
 
 /* ──────────────────────────────────────────────────────────
    Types
@@ -64,6 +70,46 @@ print(f"Hello, {name}! Happy coding 🚀")
 `;
 
 /* ──────────────────────────────────────────────────────────
+   Night Owl CodeMirror Theme
+   ────────────────────────────────────────────────────────── */
+const nightOwlTheme = createTheme({
+  theme: "dark",
+  settings: {
+    background: "#011627",
+    foreground: "#d6deeb",
+    caret: "#80a4c2",
+    selection: "#1d3b53",
+    selectionMatch: "#1d3b5380",
+    lineHighlight: "#01162720",
+    gutterBackground: "#011627",
+    gutterForeground: "rgba(255,255,255,0.15)",
+    gutterBorder: "transparent",
+    gutterActiveForeground: "rgba(255,255,255,0.5)",
+  },
+  styles: [
+    { tag: t.comment, color: "#637777", fontStyle: "italic" },
+    { tag: t.string, color: "#ecc48d" },
+    { tag: t.regexp, color: "#5ca7e4" },
+    { tag: t.number, color: "#f78c6c" },
+    { tag: t.bool, color: "#ff5874" },
+    { tag: [t.keyword, t.operator], color: "#c792ea" },
+    { tag: [t.definitionKeyword, t.modifier], color: "#c792ea" },
+    { tag: [t.function(t.variableName), t.function(t.definition(t.variableName))], color: "#82aaff" },
+    { tag: [t.className, t.definition(t.typeName)], color: "#ffcb8b" },
+    { tag: t.variableName, color: "#d6deeb" },
+    { tag: [t.propertyName, t.definition(t.propertyName)], color: "#7fdbca" },
+    { tag: t.punctuation, color: "#7fdbca" },
+    { tag: t.bracket, color: "#d6deeb" },
+    { tag: t.tagName, color: "#caece6" },
+    { tag: t.attributeName, color: "#addb67" },
+    { tag: t.self, color: "#7fdbca", fontStyle: "italic" },
+    { tag: t.null, color: "#ff5874" },
+    { tag: [t.controlKeyword], color: "#c792ea" },
+    { tag: t.special(t.string), color: "#addb67" },
+  ],
+});
+
+/* ──────────────────────────────────────────────────────────
    Component
    ────────────────────────────────────────────────────────── */
 export default function CompilerPage() {
@@ -79,7 +125,7 @@ export default function CompilerPage() {
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   const pyodideRef = useRef<PyodideInterface | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<ReactCodeMirrorRef>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
   /* ── Stopwatch State & Logic ────────────────────────── */
@@ -247,7 +293,7 @@ export default function CompilerPage() {
     }
   }, [code, isRunning, loadPyodide, stdinInputs, setIsStopwatchRunning]);
 
-  /* ── Keyboard shortcut ───────────────────────────────── */
+  /* ── Keyboard shortcut (global, for when editor isn't focused) ── */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -266,21 +312,29 @@ export default function CompilerPage() {
     }
   }, [output]);
 
-  /* ── Tab key support in textarea ─────────────────────── */
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const target = e.target as HTMLTextAreaElement;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const newCode = code.substring(0, start) + "    " + code.substring(end);
-      setCode(newCode);
-      // Set cursor position after the inserted tab
-      requestAnimationFrame(() => {
-        target.selectionStart = target.selectionEnd = start + 4;
-      });
-    }
-  };
+  /* ── CodeMirror extensions (memoised to avoid re-creating) ── */
+  const runCodeRef = useRef(runCode);
+  runCodeRef.current = runCode;
+
+  const cmExtensions = useMemo(
+    () => [
+      python(),
+      autocompletion({
+        activateOnTyping: true,
+      }),
+      keymap.of([
+        {
+          key: "Ctrl-Enter",
+          mac: "Cmd-Enter",
+          run: () => {
+            runCodeRef.current();
+            return true;
+          },
+        },
+      ]),
+    ],
+    []
+  );
 
   /* ── Download code ───────────────────────────────────── */
   const downloadCode = () => {
@@ -309,9 +363,6 @@ export default function CompilerPage() {
             <Terminal className="h-4 w-4" />
             Online IDE
           </div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tighter">
-            Python Compiler
-          </h1>
         </div>
 
         {/* Action buttons */}
@@ -346,21 +397,6 @@ export default function CompilerPage() {
               </button>
             </div>
           </div>
-
-          <button
-            onClick={() => setShowShortcuts(!showShortcuts)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
-          >
-            <Keyboard className="h-3.5 w-3.5" />
-            Shortcuts
-          </button>
-          <button
-            onClick={downloadCode}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-border text-muted-foreground hover:text-primary hover:border-primary/30 transition-all"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Download .py
-          </button>
           <button
             onClick={() => {
               setCode(DEFAULT_CODE);
@@ -380,28 +416,6 @@ export default function CompilerPage() {
         </div>
       </header>
 
-      {/* ─── Shortcuts popover ──────────────────────────── */}
-      {showShortcuts && (
-        <div className="bg-card border border-border rounded-2xl p-4 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-          <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-3">
-            Keyboard Shortcuts
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            {[
-              ["Ctrl + Enter", "Run code"],
-              ["Tab", "Insert 4 spaces"],
-              ["Ctrl + S", "Download .py file"],
-            ].map(([key, desc]) => (
-              <div key={key} className="flex items-center gap-3">
-                <kbd className="px-2 py-1 rounded-lg bg-secondary text-[11px] font-mono font-bold border border-border/60">
-                  {key}
-                </kbd>
-                <span className="text-muted-foreground text-xs">{desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ─── Status bar ─────────────────────────────────── */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -490,49 +504,34 @@ export default function CompilerPage() {
             </button>
           </div>
 
-          {/* Textarea editor */}
-          <div className="flex-1 relative" style={{ background: "#011627" }}>
-            {/* Line numbers gutter */}
-            <div
-              className="absolute left-0 top-0 bottom-0 overflow-hidden select-none pointer-events-none"
-              style={{
-                width: "50px",
-                paddingTop: "16px",
-                fontFamily:
-                  "'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace",
-                fontSize: "13px",
-                lineHeight: "1.7",
-                color: "rgba(255,255,255,0.15)",
-                textAlign: "right",
-                paddingRight: "12px",
-              }}
-            >
-              {code.split("\n").map((_, i) => (
-                <div key={i}>{i + 1}</div>
-              ))}
-            </div>
-
-            <textarea
-              ref={textareaRef}
+          {/* CodeMirror Editor */}
+          <div className="flex-1 relative cm-editor-wrapper" style={{ background: "#011627" }}>
+            <CodeMirror
+              ref={editorRef}
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              spellCheck={false}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              className="w-full h-full resize-none outline-none placeholder:text-white/20 scrollbar-thin"
+              onChange={(value) => setCode(value)}
+              theme={nightOwlTheme}
+              extensions={cmExtensions}
+              basicSetup={{
+                lineNumbers: true,
+                highlightActiveLineGutter: true,
+                highlightActiveLine: true,
+                foldGutter: true,
+                dropCursor: true,
+                allowMultipleSelections: true,
+                indentOnInput: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                autocompletion: true,
+                highlightSelectionMatches: true,
+                searchKeymap: true,
+                tabSize: 4,
+              }}
               style={{
-                background: "transparent",
-                color: "#d6deeb",
-                caretColor: "#80a4c2",
+                fontSize: "13px",
+                minHeight: "400px",
                 fontFamily:
                   "'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace",
-                fontSize: "13px",
-                lineHeight: "1.7",
-                padding: "16px 20px 16px 58px",
-                minHeight: "400px",
-                border: "none",
               }}
             />
           </div>
