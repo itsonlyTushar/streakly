@@ -22,6 +22,8 @@ import {
   Trash2,
   Check,
   RefreshCw,
+  Link,
+  ExternalLink,
 } from "lucide-react";
 import { useState } from "react";
 import { format, addDays, isPast, set } from "date-fns";
@@ -45,6 +47,7 @@ export default function SRSPage() {
 
   const [newTopic, setNewTopic] = useState("");
   const [newDetails, setNewDetails] = useState("");
+  const [newLink, setNewLink] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [hasReminder, setHasReminder] = useState(false);
   const [reminderSelectedDate, setReminderSelectedDate] = useState<
@@ -55,6 +58,7 @@ export default function SRSPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTopic, setEditTopic] = useState("");
   const [editDetails, setEditDetails] = useState("");
+  const [editLink, setEditLink] = useState("");
 
   // Delete states
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -73,6 +77,7 @@ export default function SRSPage() {
         {
           topic: newTopic.trim(),
           details: newDetails.trim(),
+          link: newLink.trim() || null,
           nextReviewDate: hasReminder ? null : getInitialReviewDate(),
           reminderDate:
             hasReminder && reminderSelectedDate ? reminderSelectedDate : null,
@@ -81,6 +86,7 @@ export default function SRSPage() {
           onSuccess: () => {
             setNewTopic("");
             setNewDetails("");
+            setNewLink("");
             setHasReminder(false);
           },
         },
@@ -135,12 +141,14 @@ export default function SRSPage() {
     setEditingId(item.id);
     setEditTopic(item.topic);
     setEditDetails(item.details || "");
+    setEditLink(item.link || "");
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditTopic("");
     setEditDetails("");
+    setEditLink("");
   };
 
   const handleSaveEdit = async (itemId: string) => {
@@ -153,6 +161,7 @@ export default function SRSPage() {
           data: {
             topic: editTopic.trim(),
             details: editDetails.trim(),
+            link: editLink.trim() || null,
           },
         },
         {
@@ -286,6 +295,22 @@ export default function SRSPage() {
               placeholder="Key takeaway or reference"
               className="w-full bg-background border border-border/60 rounded-xl px-4 py-4 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/30"
             />
+          </div>
+
+          <div className="md:col-span-5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+              Reference Link
+            </label>
+            <div className="relative">
+              <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+              <input
+                type="url"
+                value={newLink}
+                onChange={(e) => setNewLink(e.target.value)}
+                placeholder="https://example.com/article"
+                className="w-full bg-background border border-border/60 rounded-xl pl-11 pr-4 py-4 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/30"
+              />
+            </div>
           </div>
 
           <div className="md:col-span-12 flex flex-wrap items-center gap-6 mt-2">
@@ -517,6 +542,16 @@ export default function SRSPage() {
                                 className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all min-h-[60px]"
                                 placeholder="Details..."
                               />
+                              <div className="relative">
+                                <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
+                                <input
+                                  type="url"
+                                  value={editLink}
+                                  onChange={(e) => setEditLink(e.target.value)}
+                                  className="w-full bg-background border border-border/60 rounded-lg pl-8 pr-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all"
+                                  placeholder="https://reference-link.com"
+                                />
+                              </div>
                               <div className="flex items-center gap-2 mt-1">
                                 <button
                                   onClick={() => handleSaveEdit(item.id)}
@@ -541,6 +576,27 @@ export default function SRSPage() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <div className="font-bold text-lg leading-tight group-hover/title:text-primary transition-colors">
                                   {item.topic}
+                                  {item.link && (
+                                    <a
+                                      href={item.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 ml-2 align-middle px-1.5 py-0.5 rounded-md bg-primary/8 hover:bg-primary/15 text-primary/70 hover:text-primary transition-all"
+                                      title={item.link}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <img
+                                        src={`https://www.google.com/s2/favicons?domain=${new URL(item.link).hostname}&sz=16`}
+                                        alt=""
+                                        className="h-3 w-3 rounded-sm"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                      />
+                                      <span className="text-[10px] font-bold">
+                                        {new URL(item.link).hostname.replace('www.', '')}
+                                      </span>
+                                      <ExternalLink className="h-2.5 w-2.5" />
+                                    </a>
+                                  )}
                                 </div>
                                 {deletingId === item.id ? (
                                   <div className="flex items-center gap-1.5 animate-in fade-in zoom-in duration-200 bg-destructive/10 border border-destructive/20 rounded-lg px-2 py-0.5 ml-2">

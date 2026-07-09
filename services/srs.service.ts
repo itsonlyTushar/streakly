@@ -57,12 +57,13 @@ export const srsService = {
     });
   },
 
-  addItem: async (userId: string, email: string | null, topic: string, details: string, nextReviewDate: Date | null, reminderDate?: Date | null) => {
+  addItem: async (userId: string, email: string | null, topic: string, details: string, nextReviewDate: Date | null, reminderDate?: Date | null, link?: string | null) => {
     return await addDoc(collection(db, COLLECTION_NAME), {
       userId,
       userEmail: email,
       topic: topic.trim(),
       details: details.trim(),
+      link: link?.trim() || null,
       dateLearned: serverTimestamp(),
       nextReviewDate: nextReviewDate ? Timestamp.fromDate(nextReviewDate) : null,
       reviewCount: 0,

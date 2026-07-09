@@ -6,6 +6,7 @@ export const SRSItemSchema = z.object({
   userEmail: z.string().optional().nullable(),
   topic: z.string().min(1, "Topic is required"),
   details: z.string().optional().nullable(),
+  link: z.string().url().optional().nullable(),
   dateLearned: z.any(), // Firebase Timestamp
   nextReviewDate: z.any(), // Firebase Timestamp
   reviewCount: z.number().nonnegative(),

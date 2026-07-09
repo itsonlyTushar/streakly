@@ -35,9 +35,9 @@ export function useAddSRSItem() {
   const { user } = useAuth();
 
   return useMutationWrapper({
-    mutationFn: (vars: { topic: string; details: string; nextReviewDate: Date | null; reminderDate?: Date | null }) => {
+    mutationFn: (vars: { topic: string; details: string; nextReviewDate: Date | null; reminderDate?: Date | null; link?: string | null }) => {
       if (!user) throw new Error("Auth required");
-      return srsService.addItem(user.uid, user.email, vars.topic, vars.details, vars.nextReviewDate, vars.reminderDate);
+      return srsService.addItem(user.uid, user.email, vars.topic, vars.details, vars.nextReviewDate, vars.reminderDate, vars.link);
     },
     invalidateKeys: [[QUERY_KEY, user?.uid]],
     successMessage: "Topic added to your SRS list.",
