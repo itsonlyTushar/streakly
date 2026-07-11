@@ -12,6 +12,7 @@ import {
   Cpu,
   Calendar,
   ListTodo,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -42,6 +43,7 @@ export function Sidebar() {
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
     { href: "/dsa", icon: Code, label: "DSA Arena" },
     { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },
+    { href: "/interview", icon: Bot, label: "Mock Interview (Beta)" },
         { href: "/tasks", icon: ListTodo, label: "Tasks" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
     { href: "/app", icon: Target, label: "Active Goals" },
@@ -81,6 +83,13 @@ export function Sidebar() {
         pathname === "/machine-coding"
           ? "border-primary bg-secondary shadow-inner"
           : "",
+    },
+    {
+      icon: <Bot className="h-5 w-5" />,
+      label: "Interview",
+      onClick: () => router.push("/interview"),
+      className:
+        pathname === "/interview" ? "border-primary bg-secondary shadow-inner" : "",
     },
         {
       icon: <ListTodo className="h-5 w-5" />,
