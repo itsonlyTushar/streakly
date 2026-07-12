@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Search - Backtracking Walkthrough</title>
+  <!-- Google Fonts for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Premium CSS Variables and Theme definition */
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-gradient: radial-gradient(circle at 50% 50%, #151c2c 0%, #080b13 100%);
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      
+      --accent-color: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-gradient: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+      
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      
+      /* Code highlighting colors */
+      --syntax-keyword: #ff7b72;
+      --syntax-builtin: #79c0ff;
+      --syntax-function: #d2a8ff;
+      --syntax-string: #a5d6ff;
+      --syntax-number: #f2cc60;
+      --syntax-comment: #8b949e;
+      --syntax-default: #c9d1d9;
+    }
+
+    /* Reset and base styles */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-dark);
+      background-image: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    /* Walkthrough container card */
+    .walkthrough-card {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Header styling */
+    .walkthrough-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+    }
+
+    .walkthrough-title-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .leetcode-badge {
+      background: rgba(245, 158, 11, 0.1);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .tag-badge {
+      background: rgba(99, 102, 241, 0.1);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .walkthrough-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+
+    .walkthrough-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .walkthrough-subtitle kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: #ffffff;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+    }
+
+    /* Main visual columns */
+    .walkthrough-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      .walkthrough-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panels headers */
+    .column-header {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    .code-column, .explain-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Code layout */
+    pre#code {
+      background: rgba(5, 8, 16, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 0;
+      margin: 0;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Interactive Line element style */
+    .code-line {
+      display: flex;
+      cursor: pointer;
+      padding: 1px 0;
+      transition: all 0.15s ease;
+      border-left: 3px solid transparent;
+      user-select: text;
+    }
+
+    .code-line:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.03);
+      border-left-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .code-line.active {
+      background: var(--accent-glow);
+      border-left-color: var(--accent-color);
+      color: #ffffff;
+    }
+
+    /* Line Numbers columns */
+    .line-num {
+      width: 48px;
+      text-align: right;
+      padding-right: 16px;
+      color: rgba(148, 163, 184, 0.4);
+      user-select: none;
+      font-weight: 500;
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      margin-right: 16px;
+    }
+
+    .code-line.active .line-num {
+      color: var(--accent-color);
+      font-weight: 700;
+    }
+
+    .line-content {
+      flex-grow: 1;
+      padding-right: 16px;
+      white-space: pre;
+    }
+
+    /* Syntax Highlighting Colors */
+    .code-keyword { color: var(--syntax-keyword); font-weight: 600; }
+    .code-builtin { color: var(--syntax-builtin); }
+    .code-function { color: var(--syntax-function); }
+    .code-string { color: var(--syntax-string); }
+    .code-number { color: var(--syntax-number); }
+    .code-comment { color: var(--syntax-comment); font-style: italic; }
+
+    /* Explanation side layout */
+    .explain-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 280px;
+      position: relative;
+    }
+
+    #explain {
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      will-change: opacity, transform;
+    }
+
+    .explain-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 12px;
+    }
+
+    .explain-badge {
+      background: var(--accent-color);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .explain-scope {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+    }
+
+    .explain-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #e2e8f0;
+      margin-bottom: 24px;
+    }
+
+    /* Navigation control bar */
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 16px;
+      margin-top: auto;
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .nav-btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .nav-progress {
+      font-size: 13px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    #curr-line {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    /* Background accent glow effects */
+    .glow-dot-1 {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0) 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-dot-1"></div>
+  
+  <div class="walkthrough-card">
+    <div class="walkthrough-header">
+      <div class="walkthrough-title-area">
+        <div class="leetcode-badge">LeetCode 79</div>
+        <div class="tag-badge">Backtracking</div>
+        <div class="tag-badge">DFS</div>
+        <div class="tag-badge">Python</div>
+      </div>
+      <h1 class="walkthrough-title">Word Search Line-by-Line Breakdown</h1>
+      <p class="walkthrough-subtitle">
+        Understand every single statement of the backtracking algorithm. Click any line on the left or press <kbd>↑</kbd> <kbd>↓</kbd> on your keyboard.
+      </p>
+    </div>
+    
+    <h2 class="sr-only">Interactive line-by-line walkthrough of the Word Search backtracking solution: click any code line to see why it exists</h2>
+    
+    <div class="walkthrough-grid">
+      <div class="code-column">
+        <div class="column-header">Python Solution</div>
+        <pre id="code"></pre>
+      </div>
+      
+      <div class="explain-column">
+        <div class="column-header">Line Explanation</div>
+        <div class="explain-card">
+          <div id="explain"></div>
+          
+          <div class="nav-controls">
+            <button id="prev-btn" class="nav-btn" title="Previous Line (Up Arrow)">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Prev</span>
+            </button>
+            <div class="nav-progress"><span id="curr-line">1</span> / <span id="total-lines">--</span></div>
+            <button id="next-btn" class="nav-btn" title="Next Line (Down Arrow)">
+              <span>Next</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const lines = [
+      {code:"class Solution:", explain:"LeetCode calls a method on a class, so we define this class here to give it something to call."},
+      {code:"    def exist(self, board, word):", explain:"This is the exact method signature LeetCode expects, so it can pass in board and word and read our True/False return value."},
+      {code:"        num_rows = len(board)", explain:"We store the row count here so every boundary check later doesn't need to recompute len(board) each time."},
+      {code:"        num_cols = len(board[0])", explain:"Same idea for columns, so we can quickly tell when we've stepped off the grid."},
+      {code:"        def search(row, col, word_index):", explain:"We define this helper inside exist() so it can directly reuse board, num_rows and num_cols without us passing them around."},
+      {code:"            if word_index == len(word):", explain:"We check this first, before anything else, because if every letter is already matched there's no more work to do."},
+      {code:"                return True", explain:"We return True here so the moment the full word is matched, that success gets reported immediately, no need to look further."},
+      {code:"            if row<0 or row>=num_rows or col<0 or col>=num_cols:", explain:"We check bounds before touching board[row][col], so we never crash trying to read a cell that doesn't exist."},
+      {code:"                return False", explain:"We stop this path here because stepping off the grid can never continue the word."},
+      {code:"            if board[row][col] != word[word_index]:", explain:"We compare the letter here so we abandon this path the instant it stops matching, instead of wasting time exploring further."},
+      {code:"                return False", explain:"We stop this path here because a wrong letter can never lead to a valid match."},
+      {code:"            original_letter = board[row][col]", explain:"We save the letter here so we can put it back later, after we're done using this cell."},
+      {code:"            board[row][col] = \"*\"", explain:"We overwrite the cell here so this exact cell can't be reused later in the same path, since one cell can only serve one letter."},
+      {code:"            found_below = search(row+1, col, word_index+1)", explain:"We try going down here, one of the four possible next steps for continuing the word."},
+      {code:"            found_above = search(row-1, col, word_index+1)", explain:"We try going up here as another possible next step."},
+      {code:"            found_right = search(row, col+1, word_index+1)", explain:"We try going right here as another possible next step."},
+      {code:"            found_left = search(row, col-1, word_index+1)", explain:"We try going left here, the last of the four directions, so every neighbor gets a chance."},
+      {code:"            board[row][col] = original_letter", explain:"We restore the letter here (this is the backtrack step) so that once we're done exploring from this cell, a different path that doesn't go through it can still use it."},
+      {code:"            return found_below or found_above or found_right or found_left", explain:"We combine all four results here so if any single direction eventually found the word, that success gets passed all the way back up the call chain."},
+      {code:"        for row in range(num_rows):", explain:"We loop over every row here because the word could start on any row of the board."},
+      {code:"            for col in range(num_cols):", explain:"We loop over every column here for the same reason, giving every single cell a turn as a starting point."},
+      {code:"                if search(row, col, 0):", explain:"We start a brand new search from this cell here, with word_index=0 since we're matching from the word's first letter."},
+      {code:"                    return True", explain:"We return True the moment any starting cell succeeds, since we only need to find the word once."},
+      {code:"        return False", explain:"We only reach this line after every single starting cell has been tried and failed, so at this point we know the word genuinely isn't on the board."}
+    ];
+
+    const codeEl = document.getElementById("code");
+    const explainEl = document.getElementById("explain");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const currLineEl = document.getElementById("curr-line");
+    const totalLinesEl = document.getElementById("total-lines");
+
+    totalLinesEl.textContent = lines.length;
+    let currentIndex = 0;
+
+    // A lightweight syntax highlighter for Python to make it look premium
+    function highlightPython(code) {
+      // Token regex matching strings, comments, keywords, builtins, function calls, numbers, etc.
+      const tokenRegex = /("[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*'|#.*|\b(?:class|def|return|if|or|and|for|in)\b|\b(?:self|True|False|len|range)\b|\b(?:exist|search)\b|\b\d+\b|[a-zA-Z_]\w*|[^a-zA-Z_0-9\s]+|\s+)/g;
+
+      return code.replace(tokenRegex, (match) => {
+        // Escape HTML characters safely
+        const escaped = match
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        if (match.startsWith('"') || match.startsWith("'")) {
+          return `<span class="code-string">${escaped}</span>`;
+        }
+        if (match.startsWith('#')) {
+          return `<span class="code-comment">${escaped}</span>`;
+        }
+        if (['class', 'def', 'return', 'if', 'or', 'and', 'for', 'in'].includes(match)) {
+          return `<span class="code-keyword">${escaped}</span>`;
+        }
+        if (['self', 'True', 'False', 'len', 'range'].includes(match)) {
+          return `<span class="code-builtin">${escaped}</span>`;
+        }
+        if (['exist', 'search'].includes(match)) {
+          return `<span class="code-function">${escaped}</span>`;
+        }
+        if (/^\d+$/.test(match)) {
+          return `<span class="code-number">${escaped}</span>`;
+        }
+        return escaped;
+      });
+    }
+
+    // Dynamic scope labeling based on line numbers
+    function getScopeName(lineNum) {
+      if (lineNum <= 2) return "Method Signature";
+      if (lineNum <= 4) return "Setup Grid";
+      if (lineNum === 5) return "DFS Signature";
+      if (lineNum <= 7) return "Base Case (Success)";
+      if (lineNum <= 9) return "Bounds Check";
+      if (lineNum <= 11) return "Match Check";
+      if (lineNum <= 13) return "Mark Visited";
+      if (lineNum <= 17) return "Explore Neighbors";
+      if (lineNum === 18) return "Backtrack (Restore)";
+      if (lineNum === 19) return "Combine Results";
+      if (lineNum <= 21) return "Grid Traversal";
+      if (lineNum <= 23) return "Start DFS";
+      return "Fallback Return";
+    }
+
+    // Render the lines
+    lines.forEach((l, i) => {
+      const lineDiv = document.createElement("div");
+      lineDiv.className = "code-line";
+      lineDiv.dataset.i = i;
+
+      const numSpan = document.createElement("span");
+      numSpan.className = "line-num";
+      numSpan.textContent = i + 1;
+
+      const contentSpan = document.createElement("span");
+      contentSpan.className = "line-content";
+      contentSpan.innerHTML = highlightPython(l.code);
+
+      lineDiv.appendChild(numSpan);
+      lineDiv.appendChild(contentSpan);
+      codeEl.appendChild(lineDiv);
+    });
+
+    // Select line function
+    function select(i) {
+      currentIndex = i;
+      
+      // Update UI active line highlight
+      [...codeEl.children].forEach((el, idx) => {
+        if (idx === i) {
+          el.classList.add("active");
+          // Smooth scroll inside code container if it goes offscreen
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          el.classList.remove("active");
+        }
+      });
+
+      // Update nav controls status
+      currLineEl.textContent = i + 1;
+      prevBtn.disabled = i === 0;
+      nextBtn.disabled = i === lines.length - 1;
+
+      // Smooth text transition on select
+      explainEl.style.opacity = '0';
+      explainEl.style.transform = 'translateY(6px)';
+
+      setTimeout(() => {
+        explainEl.innerHTML = `
+          <div class="explain-header">
+            <span class="explain-badge">Line ${i + 1}</span>
+            <span class="explain-scope">${getScopeName(i + 1)}</span>
+          </div>
+          <p class="explain-text">${lines[i].explain}</p>
+        `;
+        explainEl.style.opacity = '1';
+        explainEl.style.transform = 'translateY(0)';
+      }, 120);
+    }
+
+    // Event Listeners
+    codeEl.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-i]");
+      if (t) select(Number(t.dataset.i));
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (currentIndex > 0) select(currentIndex - 1);
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentIndex < lines.length - 1) select(currentIndex + 1);
+    });
+
+    // Keyboard navigation
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "Down") {
+        e.preventDefault();
+        if (currentIndex < lines.length - 1) {
+          select(currentIndex + 1);
+        }
+      } else if (e.key === "ArrowUp" || e.key === "Up") {
+        e.preventDefault();
+        if (currentIndex > 0) {
+          select(currentIndex - 1);
+        }
+      }
+    });
+
+    // Initial load
+    select(0);
+  </script>
+</body>
+</html>
