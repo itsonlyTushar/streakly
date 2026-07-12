@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Key, Bot, Sparkles, Code, Cpu, Layers, Play, AlertCircle, Search, Sliders, Check, HelpCircle, Star, Terminal } from "lucide-react";
+import { Key, Bot, Sparkles, Code, Cpu, Layers, Play, Search, Sliders, Check, HelpCircle, Star, Terminal } from "lucide-react";
 import { useDSAItems } from "@/hooks/use-dsa";
 import { useMachineCodingItems } from "@/hooks/use-machine-coding";
-import { motion, AnimatePresence } from "framer-motion";
 
 // Preset interview problems
 export const INTERVIEW_PRESETS = [
@@ -74,8 +73,8 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<"all" | "Easy" | "Medium" | "Hard">("all");
 
-  const { data: dsaItems = [], isLoading: loadingDsa } = useDSAItems();
-  const { data: mcItems = [], isLoading: loadingMc } = useMachineCodingItems();
+  const { data: dsaItems = [] } = useDSAItems();
+  const { data: mcItems = [] } = useMachineCodingItems();
 
   useEffect(() => {
     const savedKey = localStorage.getItem("streakly:dsa:gemini_api_key") || "";
@@ -138,15 +137,11 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
     });
   }, [availableProblemsList, searchQuery, difficultyFilter]);
 
-  useEffect(() => {
-    if (filteredProblems.length > 0) {
-      const stillExists = filteredProblems.some((p) => p.id === selectedProblemId);
-      if (!stillExists) {
-        setSelectedProblemId(filteredProblems[0].id);
-      }
-    } else {
-      setSelectedProblemId("");
-    }
+  // Derived active selected problem to avoid double-render flickers caused by useEffect syncing
+  const activeProblemId = useMemo(() => {
+    if (filteredProblems.length === 0) return "";
+    const stillExists = filteredProblems.some((p) => p.id === selectedProblemId);
+    return stillExists ? selectedProblemId : filteredProblems[0].id;
   }, [filteredProblems, selectedProblemId]);
 
   const handleSaveKey = (key: string) => {
@@ -162,7 +157,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
       return;
     }
 
-    const selectedObj = availableProblemsList.find((p) => p.id === selectedProblemId);
+    const selectedObj = availableProblemsList.find((p) => p.id === activeProblemId);
     if (!selectedObj) {
       alert("Please select a problem to start.");
       return;
@@ -196,16 +191,11 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[480px] bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,var(--color-primary)_0%,transparent_80%)] opacity-[0.06] dark:opacity-[0.09]" />
 
       {/* ── Header Area ── */}
-      <div className="text-center space-y-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/10 bg-primary/[0.03] text-[10px] font-black uppercase tracking-widest text-primary/80 dark:border-primary/20 dark:bg-primary/[0.05]"
-        >
+      <div className="text-center space-y-4 select-none">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/10 bg-primary/[0.03] text-[10px] font-black uppercase tracking-widest text-primary/80 dark:border-primary/20 dark:bg-primary/[0.05]">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           Technical Mock Simulator
-        </motion.div>
+        </div>
         
         <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-foreground font-v-headings leading-none">
           Live Mock Interview Arena
@@ -219,7 +209,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         
         {/* Left Column: Format & Persona (5 Cols) */}
-        <div className="lg:col-span-5 flex flex-col space-y-6">
+        <div className="lg:col-span-5 flex flex-col">
           <div className="flex-1 rounded-3xl border border-border bg-card/45 backdrop-blur-xl p-6 md:p-8 space-y-6 shadow-sm flex flex-col justify-between">
             
             <div className="space-y-6">
@@ -239,7 +229,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                     <button
                       type="button"
                       onClick={() => setShowKeyInput(!showKeyInput)}
-                      className="text-[10px] text-primary hover:underline font-bold"
+                      className="text-[10px] text-primary hover:underline font-bold transition-all cursor-pointer"
                     >
                       {showKeyInput ? "Cancel" : "Change"}
                     </button>
@@ -264,7 +254,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                         const input = document.getElementById("gemini-key-input") as HTMLInputElement;
                         handleSaveKey(input?.value || "");
                       }}
-                      className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 transition-all"
+                      className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
                     >
                       Save
                     </button>
@@ -293,8 +283,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                   ].map((opt) => {
                     const isSelected = type === opt.id;
                     return (
-                      <motion.button
-                        whileHover={{ y: -1 }}
+                      <button
                         key={opt.id}
                         type="button"
                         onClick={() => {
@@ -303,7 +292,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                             setProblemSource("preset");
                           }
                         }}
-                        className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                        className={`flex items-center gap-4 p-4 rounded-2xl border text-left cursor-pointer relative transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] ${
                           isSelected
                             ? "border-primary bg-primary/[0.02] shadow-inner"
                             : "border-border/60 bg-background/10 text-muted-foreground hover:text-foreground hover:bg-background/40"
@@ -314,14 +303,14 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                             <Check className="h-3.5 w-3.5 stroke-[3]" />
                           </div>
                         )}
-                        <div className={`p-2.5 rounded-xl border ${isSelected ? "bg-primary/10 border-primary/20 text-primary" : "bg-muted border-border/40 text-muted-foreground"}`}>
+                        <div className={`p-2.5 rounded-xl border transition-colors duration-200 ${isSelected ? "bg-primary/10 border-primary/20 text-primary" : "bg-muted border-border/40 text-muted-foreground"}`}>
                           <opt.icon className="h-4.5 w-4.5" />
                         </div>
                         <div className="pr-6">
                           <div className="text-xs font-black text-foreground">{opt.label}</div>
                           <div className="text-[10px] leading-tight text-muted-foreground/80 mt-0.5">{opt.desc}</div>
                         </div>
-                      </motion.button>
+                      </button>
                     );
                   })}
                 </div>
@@ -338,19 +327,19 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                     {
                       id: "friendly",
                       label: "Coach",
-                      accent: "border-emerald-500 bg-emerald-500/5 text-emerald-600 hover:border-emerald-500/40 hover:bg-emerald-500/5",
+                      accent: "border-emerald-500 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/5",
                       normal: "border-border bg-background/10 hover:border-emerald-500/30 hover:bg-emerald-500/[0.02] text-muted-foreground hover:text-emerald-500",
                     },
                     {
                       id: "standard",
                       label: "Standard",
-                      accent: "border-blue-500 bg-blue-500/5 text-blue-600 hover:border-blue-500/40 hover:bg-blue-500/5",
+                      accent: "border-blue-500 bg-blue-500/5 text-blue-600 dark:text-blue-400 hover:border-blue-500/40 hover:bg-blue-500/5",
                       normal: "border-border bg-background/10 hover:border-blue-500/30 hover:bg-blue-500/[0.02] text-muted-foreground hover:text-blue-500",
                     },
                     {
                       id: "demanding",
                       label: "Principal",
-                      accent: "border-rose-500 bg-rose-500/5 text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/5",
+                      accent: "border-rose-500 bg-rose-500/5 text-rose-600 dark:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/5",
                       normal: "border-border bg-background/10 hover:border-rose-500/30 hover:bg-rose-500/[0.02] text-muted-foreground hover:text-rose-500",
                     },
                   ].map((style) => {
@@ -360,7 +349,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                         key={style.id}
                         type="button"
                         onClick={() => setInterviewerStyle(style.id as any)}
-                        className={`py-3 px-1 rounded-xl border text-center transition-all cursor-pointer text-xs font-black uppercase tracking-wider ${
+                        className={`py-3 px-1 rounded-xl border text-center transition-all cursor-pointer text-xs font-black uppercase tracking-wider active:scale-[0.98] ${
                           isSelected ? style.accent : style.normal
                         }`}
                       >
@@ -377,7 +366,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
         </div>
 
         {/* Right Column: Problem Select Grid (7 Cols) */}
-        <div className="lg:col-span-7 flex flex-col space-y-6">
+        <div className="lg:col-span-7 flex flex-col">
           <div className="flex-1 rounded-3xl border border-border bg-card/45 backdrop-blur-xl p-6 md:p-8 space-y-6 shadow-sm flex flex-col justify-between h-full">
             
             <div className="space-y-6 flex-1 flex flex-col min-h-0">
@@ -388,7 +377,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                 </h3>
                 
                 {type !== "system-design" && (
-                  <div className="flex bg-muted/65 p-0.5 rounded-lg border border-border/50">
+                  <div className="flex bg-muted/65 p-0.5 rounded-lg border border-border/50 select-none">
                     {[
                       { id: "preset", label: "Presets" },
                       { id: "dsa", label: "DSA Arena" },
@@ -400,7 +389,7 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                         onClick={() => setProblemSource(src.id as any)}
                         className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider cursor-pointer transition-all ${
                           problemSource === src.id
-                            ? "bg-card text-foreground shadow-sm"
+                            ? "bg-card text-foreground shadow-sm font-bold"
                             : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
@@ -420,12 +409,12 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
                     placeholder="Search problem title..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-primary/50 text-foreground"
+                    className="w-full rounded-xl border border-border bg-background pl-10 pr-4 py-2.5 text-xs focus:outline-none focus:border-primary/50 text-foreground transition-all duration-200"
                   />
                 </div>
 
                 {type !== "system-design" && (
-                  <div className="flex items-center gap-1.5 bg-background border border-border rounded-xl px-3">
+                  <div className="flex items-center gap-1.5 bg-background border border-border rounded-xl px-3 select-none">
                     <Sliders className="h-3.5 w-3.5 text-muted-foreground/60" />
                     <select
                       value={difficultyFilter}
@@ -442,52 +431,47 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
               </div>
 
               {/* Scrollable Selector Grid */}
-              <div className="flex-1 overflow-y-auto max-h-[320px] pr-1.5 space-y-2 mt-2">
-                <AnimatePresence mode="popLayout">
-                  {filteredProblems.map((prob) => {
-                    const isSelected = selectedProblemId === prob.id;
-                    return (
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        key={prob.id}
-                        onClick={() => setSelectedProblemId(prob.id)}
-                        className={`p-4 rounded-2xl border text-left cursor-pointer transition-all flex items-center justify-between group relative overflow-hidden ${
-                          isSelected
-                            ? "border-primary bg-primary/[0.02] shadow-inner"
-                            : "border-border bg-background/10 hover:bg-background/80 hover:border-primary/30"
-                        }`}
-                      >
-                        <div className="space-y-1.5 pr-6 z-10">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-[9px] font-black uppercase tracking-widest border px-2.5 py-0.5 rounded-full ${getDifficultyColor(prob.difficulty)}`}>
-                              {prob.difficulty}
-                            </span>
-                            <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider bg-muted/40 px-2 py-0.5 rounded-md">
-                              {prob.source}
-                            </span>
-                          </div>
-                          <h4 className="text-xs font-black text-foreground group-hover:text-primary transition-colors">
-                            {prob.title}
-                          </h4>
+              <div className="h-[280px] overflow-y-auto pr-1.5 space-y-2 mt-2">
+                {filteredProblems.map((prob) => {
+                  const isSelected = activeProblemId === prob.id;
+                  return (
+                    <button
+                      key={prob.id}
+                      type="button"
+                      onClick={() => setSelectedProblemId(prob.id)}
+                      className={`w-full p-4 rounded-2xl border text-left cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99] flex items-center justify-between group relative overflow-hidden ${
+                        isSelected
+                          ? "border-primary bg-primary/[0.02] shadow-inner"
+                          : "border-border bg-background/10 hover:bg-background/80 hover:border-primary/30"
+                      }`}
+                    >
+                      <div className="space-y-1.5 pr-6 z-10 pointer-events-none">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[9px] font-black uppercase tracking-widest border px-2.5 py-0.5 rounded-full ${getDifficultyColor(prob.difficulty)}`}>
+                            {prob.difficulty}
+                          </span>
+                          <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider bg-muted/40 px-2 py-0.5 rounded-md">
+                            {prob.source}
+                          </span>
                         </div>
-                        
-                        <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 border z-10 transition-all ${
-                          isSelected
-                            ? "bg-primary border-primary text-primary-foreground scale-105"
-                            : "border-border/65 text-transparent group-hover:border-primary/40"
-                        }`}>
-                          <Check className="h-3 w-3 stroke-[3]" />
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+                        <h4 className="text-xs font-black text-foreground group-hover:text-primary transition-colors duration-200">
+                          {prob.title}
+                        </h4>
+                      </div>
+                      
+                      <div className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 border z-10 transition-all duration-200 pointer-events-none ${
+                        isSelected
+                          ? "bg-primary border-primary text-primary-foreground scale-105"
+                          : "border-border/65 text-transparent group-hover:border-primary/40"
+                      }`}>
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      </div>
+                    </button>
+                  );
+                })}
 
                 {filteredProblems.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 border border-dashed border-border/80 rounded-2xl bg-background/[0.03]">
+                  <div className="flex flex-col items-center justify-center py-16 text-center space-y-3 border border-dashed border-border/80 rounded-2xl bg-background/[0.03] select-none">
                     <HelpCircle className="h-7 w-7 text-muted-foreground/45" />
                     <div className="text-xs text-muted-foreground font-bold">No challenge entries match this query.</div>
                   </div>
@@ -497,15 +481,21 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
             </div>
 
             {/* Selection details preview card */}
-            {selectedProblemId && (
-              <div className="mt-4 p-4 rounded-2xl border border-border/50 bg-background/30 shrink-0 select-none relative overflow-hidden">
+            {activeProblemId ? (
+              <div className="mt-4 p-4 h-[110px] rounded-2xl border border-border/50 bg-background/30 shrink-0 select-none relative overflow-hidden transition-all duration-200">
                 <div className="absolute top-0 right-0 h-16 w-16 bg-primary/[0.01] blur-md rounded-full pointer-events-none" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-primary/70 block mb-1.5">
                   Question Outline
                 </span>
                 <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-3">
-                  {availableProblemsList.find((p) => p.id === selectedProblemId)?.description}
+                  {availableProblemsList.find((p) => p.id === activeProblemId)?.description}
                 </p>
+              </div>
+            ) : (
+              <div className="mt-4 p-4 h-[110px] rounded-2xl border border-border/40 border-dashed bg-background/[0.01] shrink-0 select-none flex flex-col justify-center items-center text-center transition-all duration-200">
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground/35">
+                  Select a challenge to view outline
+                </span>
               </div>
             )}
 
@@ -516,17 +506,15 @@ export function InterviewSetup({ onStart }: InterviewSetupProps) {
 
       {/* Start Arena button */}
       <div className="flex justify-center pt-4">
-        <motion.button
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           type="button"
           onClick={handleStart}
-          disabled={!apiKey || !selectedProblemId}
-          className="w-full max-w-xl rounded-2xl bg-primary py-4.5 font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none relative overflow-hidden"
+          disabled={!apiKey || !activeProblemId}
+          className="w-full max-w-xl rounded-2xl bg-primary py-4.5 font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none relative overflow-hidden"
         >
           <Play className="h-4.5 w-4.5 fill-current" />
           Enter Practice Arena
-        </motion.button>
+        </button>
       </div>
 
     </div>
