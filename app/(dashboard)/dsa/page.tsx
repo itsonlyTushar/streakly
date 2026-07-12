@@ -128,6 +128,60 @@ const generateLeetCodeUrl = (name: string) => {
   return `https://leetcode.com/problems/${slug}/`;
 };
 
+interface ReferenceLinkBadgeProps {
+  url: string | null | undefined;
+  className?: string;
+  maxW?: string;
+}
+
+const ReferenceLinkBadge = ({ url, className, maxW = "100px" }: ReferenceLinkBadgeProps) => {
+  if (!url) return null;
+
+  let hostname = "Link";
+  let faviconUrl = "";
+  let isValid = false;
+
+  try {
+    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+    hostname = parsed.hostname.replace("www.", "");
+    faviconUrl = `https://www.google.com/s2/favicons?domain=${parsed.hostname}&sz=16`;
+    isValid = true;
+  } catch (_) {
+    isValid = false;
+  }
+
+  const finalUrl = url.startsWith("http") ? url : `https://${url}`;
+
+  return (
+    <a
+      href={finalUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-primary/8 hover:bg-primary/15 text-primary/70 hover:text-primary transition-all text-[9px] font-bold align-middle shrink-0",
+        className
+      )}
+      title={url}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {isValid && faviconUrl && (
+        <img
+          src={faviconUrl}
+          alt=""
+          className="h-3 w-3 rounded-sm shrink-0"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      )}
+      <span className="truncate" style={{ maxWidth: maxW }}>
+        {hostname}
+      </span>
+      <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+    </a>
+  );
+};
+
 /* ─── Pattern Icon Map ─────────────────────────────────────────── */
 
 const PATTERN_ICONS: Record<string, LucideIcon> = {
@@ -278,6 +332,7 @@ function PatternsView({ items, expandedPatterns, onTogglePattern }: PatternsView
                               <ExternalLink className="h-3 w-3" />
                             </a>
                           )}
+                          <ReferenceLinkBadge url={item.link} />
                         </div>
                         {item.subPattern && (
                           <span className="text-[10px] text-violet-500 font-bold tracking-wide mt-0.5">
@@ -512,6 +567,7 @@ export default function DSAPage() {
   const [spaceComplexity, setSpaceComplexity] = useState("O(1)");
   const [intuition, setIntuition] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
+  const [referenceLink, setReferenceLink] = useState("");
   const [hasSrs, setHasSrs] = useState(true);
   const [nextReviewDateInput, setNextReviewDateInput] = useState("");
   const [editNextReviewDate, setEditNextReviewDate] = useState("");
@@ -558,6 +614,7 @@ export default function DSAPage() {
   const [editSpace, setEditSpace] = useState("");
   const [editIntuition, setEditIntuition] = useState("");
   const [editSnippet, setEditSnippet] = useState("");
+  const [editLink, setEditLink] = useState("");
 
   // Delete states
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -605,6 +662,7 @@ export default function DSAPage() {
           intuition: intuition.trim() || null,
           codeSnippet: codeSnippet.trim() || null,
           nextReviewDate: customNextReviewDate,
+          link: referenceLink.trim() || null,
         },
         {
           onSuccess: () => {
@@ -618,6 +676,7 @@ export default function DSAPage() {
             setSpaceComplexity("O(1)");
             setIntuition("");
             setCodeSnippet("");
+            setReferenceLink("");
             setHasSrs(true);
             setNextReviewDateInput("");
             setIsOpenAddForm(false);
@@ -985,12 +1044,14 @@ export default function DSAPage() {
     setEditSpace(item.spaceComplexity || "");
     setEditIntuition(item.intuition || "");
     setEditSnippet(item.codeSnippet || "");
+    setEditLink(item.link || "");
     setEditNextReviewDate(item.nextReviewDate ? format(item.nextReviewDate.toDate(), "yyyy-MM-dd") : "");
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditNextReviewDate("");
+    setEditLink("");
   };
 
   const handleSaveEdit = async (itemId: string) => {
@@ -1016,12 +1077,14 @@ export default function DSAPage() {
             intuition: editIntuition.trim() || null,
             codeSnippet: editSnippet.trim() || null,
             nextReviewDate: parsedDate ? Timestamp.fromDate(parsedDate) : null,
+            link: editLink.trim() || null,
           },
         },
         {
           onSuccess: () => {
             setEditingId(null);
             setEditNextReviewDate("");
+            setEditLink("");
           },
         }
       );
@@ -1312,6 +1375,25 @@ export default function DSAPage() {
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Reference Link */}
+            <div className="md:col-span-12">
+              <div className="flex items-center gap-1.5 ml-1 mb-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  Reference Link (Article or YouTube Video)
+                </label>
+                <Tooltip content="Add a link to an article or YouTube video explaining the problem" side="top">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary cursor-help transition-colors" />
+                </Tooltip>
+              </div>
+              <input
+                type="url"
+                value={referenceLink}
+                onChange={(e) => setReferenceLink(e.target.value)}
+                placeholder="e.g. https://www.youtube.com/watch?v=..., https://medium.com/..."
+                className="w-full bg-background border border-border/60 rounded-xl px-4 py-3.5 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/30"
+              />
             </div>
 
             {/* Difficulty */}
@@ -1733,6 +1815,13 @@ export default function DSAPage() {
                                   </button>
                                 )}
                               </div>
+                              <input
+                                type="url"
+                                value={editLink}
+                                onChange={(e) => setEditLink(e.target.value)}
+                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary"
+                                placeholder="Reference Link (Article or YouTube Video)"
+                              />
                               <div className="flex gap-2">
                                 {(["Easy", "Medium", "Hard"] as DSADifficulty[]).map((d) => (
                                   <button
@@ -1865,6 +1954,7 @@ export default function DSAPage() {
                                     <ExternalLink className="h-3.5 w-3.5" />
                                   </a>
                                 )}
+                                <ReferenceLinkBadge url={item.link} />
 
                                 {/* Delete conf toggle */}
                                 {deletingId === item.id ? (
@@ -2051,6 +2141,14 @@ export default function DSAPage() {
                                 <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
                                   {item.intuition || "No approach logged for this problem yet. Add one in edit mode."}
                                 </p>
+                                {item.link && (
+                                  <div className="pt-2">
+                                    <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 block mb-1">
+                                      Reference Material
+                                    </span>
+                                    <ReferenceLinkBadge url={item.link} maxW="300px" className="px-2.5 py-1.5 rounded-lg text-[10px]" />
+                                  </div>
+                                )}
                               </div>
 
                               {/* Code Snippet - Syntax Highlighted */}
@@ -2253,17 +2351,26 @@ export default function DSAPage() {
                             </span>
                           </h3>
                         </div>
-                        {problem.problemUrl && (
-                          <a
-                            href={problem.problemUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:scale-[1.02] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            Open Platform
-                          </a>
-                        )}
+                        <div className="flex flex-wrap gap-2 items-center self-start sm:self-auto">
+                          {problem.problemUrl && (
+                            <a
+                              href={problem.problemUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 px-3.5 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 hover:scale-[1.02] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                              Open Platform
+                            </a>
+                          )}
+                          {problem.link && (
+                            <ReferenceLinkBadge
+                              url={problem.link}
+                              className="px-3.5 py-2 bg-secondary/80 hover:bg-secondary text-muted-foreground border border-border/80 hover:scale-[1.02] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all h-auto leading-normal gap-1.5"
+                              maxW="150px"
+                            />
+                          )}
+                        </div>
                       </div>
 
                       {/* Collapsible hints: Intuition & Solution */}

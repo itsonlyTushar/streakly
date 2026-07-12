@@ -48,6 +48,7 @@ export function useAddDSAItem() {
       codeSnippet?: string | null;
       nextReviewDate: Date | null;
       priority?: DSAPriority;
+      link?: string | null;
     }) => {
       if (!user) throw new Error("Auth required");
       return dsaService.addItem({

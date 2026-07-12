@@ -6,6 +6,7 @@ import { DSAItem } from "@/services/dsa.service";
 import { DSAPriority } from "@/lib/schemas/dsa.schema";
 import { useUpdateDSAItem } from "@/hooks/use-dsa";
 import { format } from "date-fns";
+import { ExternalLink } from "lucide-react";
 
 const PRIORITIES: DSAPriority[] = ["High", "Medium", "Low", "Unprioritized"];
 
@@ -134,7 +135,48 @@ export function DSAKanbanBoard({ items }: DSAKanbanBoardProps) {
                                 {item.difficulty}
                               </span>
                             </div>
-                            <h4 className={`font-bold text-sm leading-tight ${item.subPattern ? "mb-1" : "mb-3"}`}>{item.problemName}</h4>
+                             <h4 className={`font-bold text-sm leading-tight ${item.subPattern ? "mb-1" : "mb-3"} flex items-center gap-1.5 flex-wrap`}>
+                               {item.problemName}
+                               {item.link && (() => {
+                                 try {
+                                   const urlObj = new URL(item.link.startsWith("http") ? item.link : `https://${item.link}`);
+                                   const host = urlObj.hostname.replace("www.", "");
+                                   return (
+                                     <a
+                                       href={item.link.startsWith("http") ? item.link : `https://${item.link}`}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="inline-flex items-center gap-1 align-middle px-1.5 py-0.5 rounded-md bg-primary/8 hover:bg-primary/15 text-primary/70 hover:text-primary transition-all text-[8px] font-bold"
+                                       title={item.link}
+                                       onClick={(e) => e.stopPropagation()}
+                                     >
+                                       <img
+                                         src={`https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=16`}
+                                         alt=""
+                                         className="h-2.5 w-2.5 rounded-sm"
+                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                       />
+                                       <span className="truncate max-w-[80px]">{host}</span>
+                                       <ExternalLink className="h-2 w-2" />
+                                     </a>
+                                   );
+                                 } catch (_) {
+                                   return (
+                                     <a
+                                       href={item.link.startsWith("http") ? item.link : `https://${item.link}`}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="inline-flex items-center gap-1 align-middle px-1.5 py-0.5 rounded-md bg-primary/8 hover:bg-primary/15 text-primary/70 hover:text-primary transition-all text-[8px] font-bold"
+                                       title={item.link}
+                                       onClick={(e) => e.stopPropagation()}
+                                     >
+                                       <span>Link</span>
+                                       <ExternalLink className="h-2 w-2" />
+                                     </a>
+                                   );
+                                 }
+                               })()}
+                             </h4>
                             {item.subPattern && (
                               <div className="text-[10px] font-semibold text-violet-500 mb-2.5 truncate" title={item.subPattern}>
                                 ↳ {item.subPattern}

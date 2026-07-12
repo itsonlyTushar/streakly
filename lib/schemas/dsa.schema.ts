@@ -25,6 +25,7 @@ export const DSAItemSchema = z.object({
   reviewCount: z.number().nonnegative(),
   createdAt: z.any(),
   updatedAt: z.any().optional().nullable(),
+  link: z.string().optional().nullable(),
 });
 
 export type DSAItem = z.infer<typeof DSAItemSchema>;

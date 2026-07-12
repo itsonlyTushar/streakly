@@ -71,6 +71,7 @@ export const dsaService = {
     codeSnippet?: string | null;
     nextReviewDate: Date | null;
     priority?: DSAPriority;
+    link?: string | null;
   }) => {
     const {
       userId,
@@ -86,6 +87,7 @@ export const dsaService = {
       codeSnippet,
       nextReviewDate,
       priority,
+      link,
     } = params;
 
     return await addDoc(collection(db, COLLECTION_NAME), {
@@ -105,6 +107,7 @@ export const dsaService = {
       reviewCount: 0,
       priority: priority || "Unprioritized",
       createdAt: serverTimestamp(),
+      link: link?.trim() || null,
     });
   },
 
