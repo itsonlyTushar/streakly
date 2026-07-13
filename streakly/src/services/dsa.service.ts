@@ -27,7 +27,7 @@ export const dsaService = {
       items.sort((a, b) => {
         const da = a.createdAt?.toMillis?.() || 0;
         const dbb = b.createdAt?.toMillis?.() || 0;
-        if (da !== dbb) return dbb - da;
+        if (da !== dbb) return da - dbb;
         return a.problemName.localeCompare(b.problemName);
       });
       callback(items);

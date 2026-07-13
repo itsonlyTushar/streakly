@@ -615,6 +615,12 @@ export default function DSAPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "due" | "Easy" | "Medium" | "Hard" | "topic">("all");
   const [topicFilter, setTopicFilter] = useState("");
+  const [reviewedSessionIds, setReviewedSessionIds] = useState<Set<string>>(new Set());
+
+  // Reset reviewed session IDs when changing filters or searching to refresh the view
+  useEffect(() => {
+    setReviewedSessionIds(new Set());
+  }, [statusFilter, searchQuery, topicFilter]);
 
   // Expand states for code snippets
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -1016,6 +1022,11 @@ export default function DSAPage() {
   };
 
   const handleReviewSuccess = async (item: any) => {
+    setReviewedSessionIds((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
+      return next;
+    });
     requireAuth(() => {
       const nextReviewCount = item.reviewCount + 1;
       const baseDate = item.dateLearned ? item.dateLearned.toDate() : (item.createdAt ? item.createdAt.toDate() : new Date());
@@ -1032,6 +1043,11 @@ export default function DSAPage() {
   };
 
   const handleReviewForgot = async (item: any) => {
+    setReviewedSessionIds((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
+      return next;
+    });
     requireAuth(() => {
       const nextDateValue = calculateNextReviewDate(0);
 
@@ -1152,6 +1168,7 @@ export default function DSAPage() {
   const filteredItems = searchedItems.filter((item) => {
     if (statusFilter === "all") return true;
     if (statusFilter === "due") {
+      if (reviewedSessionIds.has(item.id)) return true;
       const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
       const isCompleted = item.reviewCount >= SRS_INTERVALS.length;
       return item.nextReviewDate && isDue && !isCompleted;
@@ -2115,7 +2132,11 @@ export default function DSAPage() {
 
                         {/* Actions */}
                         <td className="p-4 align-middle text-right px-8">
-                          {item.nextReviewDate && !isCompleted ? (
+                          {reviewedSessionIds.has(item.id) ? (
+                            <span className="text-[10px] font-black text-emerald-500 uppercase flex items-center justify-end gap-1">
+                              <Check className="h-3.5 w-3.5" /> Reviewed
+                            </span>
+                          ) : item.nextReviewDate && !isCompleted ? (
                             isDue ? (
                               <div className="flex items-center justify-end gap-1.5">
                                 <button

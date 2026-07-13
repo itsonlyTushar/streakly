@@ -32,11 +32,11 @@ export const dsaService = {
         return DSAItemSchema.parse(data);
       });
 
-      // Sort by creation date (newest first)
+      // Sort by creation date (oldest first)
       items.sort((a, b) => {
         const dateA = a.createdAt?.toMillis() || 0;
         const dateB = b.createdAt?.toMillis() || 0;
-        if (dateA !== dateB) return dateB - dateA;
+        if (dateA !== dateB) return dateA - dateB;
         return a.problemName.localeCompare(b.problemName);
       });
 
