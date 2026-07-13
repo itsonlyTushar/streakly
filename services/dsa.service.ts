@@ -32,11 +32,11 @@ export const dsaService = {
         return DSAItemSchema.parse(data);
       });
 
-      // Sort by creation date (oldest first)
+      // Sort by creation date (newest first)
       items.sort((a, b) => {
         const dateA = a.createdAt?.toMillis() || 0;
         const dateB = b.createdAt?.toMillis() || 0;
-        if (dateA !== dateB) return dateA - dateB;
+        if (dateA !== dateB) return dateB - dateA;
         return a.problemName.localeCompare(b.problemName);
       });
 
@@ -51,10 +51,20 @@ export const dsaService = {
       where("userId", "==", userId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => {
+    const items = snapshot.docs.map((doc) => {
       const data = { id: doc.id, ...doc.data() };
       return DSAItemSchema.parse(data);
     });
+
+    // Sort by creation date (newest first)
+    items.sort((a, b) => {
+      const dateA = a.createdAt?.toMillis() || 0;
+      const dateB = b.createdAt?.toMillis() || 0;
+      if (dateA !== dateB) return dateB - dateA;
+      return a.problemName.localeCompare(b.problemName);
+    });
+
+    return items;
   },
 
   addItem: async (params: {
