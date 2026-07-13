@@ -116,14 +116,14 @@ function Markdown({ text }: { text: string }) {
   const parts = text.split(/(```[\s\S]*?```)/g);
 
   return (
-    <div className="space-y-2 text-[13px] leading-relaxed break-words font-v-body text-foreground">
+    <div className="space-y-2 text-sm leading-relaxed break-words font-v-body text-foreground">
       {parts.map((part, index) => {
         if (part.startsWith("```")) {
           const match = part.match(/```(\w*)\n([\s\S]*?)```/);
           const lang = match ? match[1] : "";
           const code = match ? match[2] : part.slice(3, -3);
           return (
-            <div key={index} className="my-2 text-xs bg-secondary/50 p-3 rounded-xl font-mono border border-border/30 overflow-x-auto">
+            <div key={index} className="my-2 text-xs md:text-sm bg-secondary/50 p-3 rounded-xl font-mono border border-border/30 overflow-x-auto">
               <pre>{code.trim()}</pre>
             </div>
           );
@@ -175,7 +175,7 @@ function Markdown({ text }: { text: string }) {
               const headers = headerRow.split("|").filter(Boolean).map((h) => h.trim());
               renderedElements.push(
                 <div key={`table-${i}`} className="my-3 overflow-x-auto rounded-xl border border-border/40 bg-secondary/10">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-xs md:text-sm">
                     <thead>
                       <tr className="bg-secondary/60">
                         {headers.map((h, hi) => (
@@ -249,7 +249,7 @@ function Markdown({ text }: { text: string }) {
                 listType = "ul";
               }
               currentListItems.push(
-                <li key={`li-${i}`} className="text-[13px] leading-relaxed">
+                <li key={`li-${i}`} className="text-sm leading-relaxed text-foreground">
                   {renderInlineMarkdown(bulletMatch[2])}
                 </li>
               );
@@ -264,7 +264,7 @@ function Markdown({ text }: { text: string }) {
                 listType = "ol";
               }
               currentListItems.push(
-                <li key={`li-${i}`} className="text-[13px] leading-relaxed">
+                <li key={`li-${i}`} className="text-sm leading-relaxed text-foreground">
                   {renderInlineMarkdown(numMatch[2])}
                 </li>
               );
@@ -274,7 +274,7 @@ function Markdown({ text }: { text: string }) {
             // Normal text paragraph
             flushList(`para-${i}`);
             renderedElements.push(
-              <p key={`p-${i}`} className="my-0.5 text-[13px] leading-relaxed">
+              <p key={`p-${i}`} className="my-0.5 text-sm leading-relaxed text-foreground">
                 {renderInlineMarkdown(line)}
               </p>
             );
@@ -297,7 +297,7 @@ function renderInlineMarkdown(text: string) {
     return parts.map((part, idx) => {
       if (part.startsWith("`") && part.endsWith("`")) {
         return (
-          <code key={`code-${idx}`} className="px-1 py-0.5 rounded bg-secondary font-mono text-[11px] text-foreground/90 border border-border/30">
+          <code key={`code-${idx}`} className="px-1 py-0.5 rounded bg-secondary font-mono text-xs md:text-[13px] text-foreground/90 border border-border/30">
             {part.slice(1, -1)}
           </code>
         );
@@ -1058,13 +1058,13 @@ export default function WizardPage() {
                   </span>
                 )}
                 {walkthroughData?.tags?.map((tag) => (
-                  <span key={tag} className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-medium">
+                  <span key={tag} className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full text-[11px] font-semibold">
                     {tag}
                   </span>
                 ))}
               </div>
 
-              <div className="text-[11px] text-muted-foreground italic">
+              <div className="text-xs text-foreground/70 italic">
                 Tip: Press <kbd className="px-1 py-0.5 rounded bg-secondary font-mono border border-border/30">↑</kbd> <kbd className="px-1 py-0.5 rounded bg-secondary font-mono border border-border/30">↓</kbd> on your keyboard to navigate lines.
               </div>
             </div>
@@ -1082,7 +1082,7 @@ export default function WizardPage() {
 
                 <div 
                   ref={codeContainerRef}
-                  className="flex-1 overflow-y-auto font-mono text-[13px] leading-relaxed p-4 select-text scrollbar-thin bg-[#050810]/60 text-slate-100"
+                  className="flex-1 overflow-y-auto font-mono text-sm leading-relaxed p-4 select-text scrollbar-thin bg-[#050810]/60 text-slate-100"
                 >
                   <Highlight
                     theme={themes.nightOwl}
@@ -1103,13 +1103,13 @@ export default function WizardPage() {
                                 onClick={() => setActiveLineIdx(idx)}
                                 className={cn(
                                   "group cursor-pointer border-l-4 border-transparent transition-all hover:bg-white/5",
-                                  isActive && "bg-indigo-500/10 border-indigo-505 border-indigo-500 font-medium"
+                                  isActive && "bg-indigo-500/15 border-indigo-500 font-medium"
                                 )}
                                 style={{}}
                               >
                                 {/* Line Number */}
                                 <td className={cn(
-                                  "w-12 text-right pr-4 select-none border-r border-border/10 text-slate-500 font-medium text-[11px]",
+                                  "w-12 text-right pr-4 select-none border-r border-border/10 text-slate-500 font-medium text-xs",
                                   isActive && "text-indigo-400 font-bold border-indigo-500/20"
                                 )}>
                                   {idx + 1}
@@ -1142,17 +1142,17 @@ export default function WizardPage() {
                 <div className="flex-1 overflow-y-auto p-5 flex flex-col justify-between scrollbar-thin">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-border/10 pb-2">
-                      <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                         Line {activeLineIdx + 1}
                       </span>
                       {activeLine?.scope && (
-                        <span className="text-xs font-medium text-muted-foreground font-mono">
+                        <span className="text-xs font-medium text-foreground/70 font-mono">
                           {activeLine.scope}
                         </span>
                       )}
                     </div>
 
-                    <div className="text-[13px] leading-relaxed text-foreground/95 select-text font-v-body py-2">
+                    <div className="text-sm md:text-base leading-relaxed text-foreground select-text font-v-body py-2">
                       {activeLine?.explanation || "No specific walkthrough explanation generated for this line."}
                     </div>
                   </div>
@@ -1193,11 +1193,11 @@ export default function WizardPage() {
                 <div className="space-y-3">
                   {walkthroughData?.problemUnderstanding && (
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <HelpCircle className="h-3.5 w-3.5 text-indigo-400" />
+                      <h4 className="text-sm md:text-base font-bold text-foreground flex items-center gap-1.5">
+                        <HelpCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         <span>Problem Understanding</span>
                       </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
+                      <p className="text-sm text-foreground leading-relaxed">
                         {walkthroughData.problemUnderstanding}
                       </p>
                     </div>
@@ -1205,11 +1205,11 @@ export default function WizardPage() {
 
                   {walkthroughData?.approach && (
                     <div className="space-y-1 pt-2 border-t border-border/10">
-                      <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <Zap className="h-3.5 w-3.5 text-indigo-400" />
+                      <h4 className="text-sm md:text-base font-bold text-foreground flex items-center gap-1.5">
+                        <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         <span>Approach & Pattern</span>
                       </h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
+                      <p className="text-sm text-foreground leading-relaxed">
                         {walkthroughData.approach}
                       </p>
                     </div>
@@ -1220,20 +1220,20 @@ export default function WizardPage() {
                 <div className="space-y-3">
                   {parsedComplexity && (
                     <div className="space-y-1">
-                      <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <Hash className="h-3.5 w-3.5 text-indigo-400" />
+                      <h4 className="text-sm md:text-base font-bold text-foreground flex items-center gap-1.5">
+                        <Hash className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         <span>Complexity Analysis</span>
                       </h4>
-                      <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                      <div className="grid grid-cols-2 gap-2 text-sm pt-1">
                         <div className="p-2 rounded-xl bg-secondary/30">
                           <span className="font-bold text-foreground">Time: </span>
-                          <span className="font-mono text-indigo-400">{parsedComplexity.time}</span>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{parsedComplexity.timeReason}</p>
+                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">{parsedComplexity.time}</span>
+                          <p className="text-xs text-foreground/80 mt-0.5">{parsedComplexity.timeReason}</p>
                         </div>
                         <div className="p-2 rounded-xl bg-secondary/30">
                           <span className="font-bold text-foreground">Space: </span>
-                          <span className="font-mono text-indigo-400">{parsedComplexity.space}</span>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{parsedComplexity.spaceReason}</p>
+                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-semibold">{parsedComplexity.space}</span>
+                          <p className="text-xs text-foreground/80 mt-0.5">{parsedComplexity.spaceReason}</p>
                         </div>
                       </div>
                     </div>
@@ -1241,14 +1241,14 @@ export default function WizardPage() {
 
                   {walkthroughData?.edgeCases && walkthroughData.edgeCases.length > 0 && (
                     <div className="space-y-1 pt-2 border-t border-border/10">
-                      <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-indigo-400" />
+                      <h4 className="text-sm md:text-base font-bold text-foreground flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                         <span>Key Edge Cases</span>
                       </h4>
-                      <ul className="list-disc pl-4 space-y-0.5">
+                      <ul className="list-disc pl-5 space-y-1.5">
                         {walkthroughData.edgeCases.map((ec, idx) => (
-                          <li key={idx} className="text-[11px] text-muted-foreground">
-                            <span className="font-semibold text-foreground">{ec.case}</span>: {ec.reason}
+                          <li key={idx} className="text-xs md:text-sm text-foreground leading-relaxed">
+                            <span className="font-bold text-foreground">{ec.case}</span>: {ec.reason}
                           </li>
                         ))}
                       </ul>
@@ -1261,8 +1261,8 @@ export default function WizardPage() {
               {/* Dry Run Full width representation */}
               {walkthroughData?.dryRun && (
                 <div className="pt-3 border-t border-border/10 space-y-1.5">
-                  <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <Activity className="h-3.5 w-3.5 text-indigo-400" />
+                  <h4 className="text-sm md:text-base font-bold text-foreground flex items-center gap-1.5">
+                    <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     <span>Dry Run Walkthrough</span>
                   </h4>
                   <div className="overflow-x-auto">
