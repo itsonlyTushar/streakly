@@ -1,18 +1,105 @@
 "use client";
 
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import {
-  Bold,
-  Italic,
-  List,
-  ListOrdered,
-  Heading1,
-  Heading2,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import Placeholder from "@tiptap/extension-placeholder";
-import { useEffect } from "react";
+import { marked } from "marked";
+
+/* ─── Display helpers ─────────────────────────────────────────── */
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
+ * Detect if a block of lines is a Markdown table.
+ * A valid MD table needs: header row with pipes, separator row with dashes.
+ */
+function isMarkdownTable(lines: string[]): boolean {
+  if (lines.length < 2) return false;
+  const hasPipeRow = lines[0].includes("|");
+  const hasSeparator = /^\|?[\s-:|]+\|[\s-:|]+\|?$/.test(lines[1].trim());
+  return hasPipeRow && hasSeparator;
+}
+
+/**
+ * Detect if a block of lines is tab-separated (from copying web tables).
+ */
+function isTsvBlock(lines: string[]): boolean {
+  if (lines.length < 2) return false;
+  const tabLines = lines.filter((l) => l.includes("\t"));
+  return tabLines.length >= 2 && tabLines.length >= lines.length * 0.5;
+}
+
+/**
+ * Convert tab-separated lines into an HTML table.
+ */
+function tsvToHtmlTable(lines: string[]): string {
+  const nonEmpty = lines.filter((l) => l.trim() !== "");
+  if (nonEmpty.length === 0) return "";
+
+  let html = '<table><thead><tr>';
+  const headers = nonEmpty[0].split("\t");
+  for (const h of headers) {
+    html += `<th>${escapeHtml(h.trim())}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  for (let i = 1; i < nonEmpty.length; i++) {
+    html += '<tr>';
+    const cells = nonEmpty[i].split("\t");
+    for (const c of cells) {
+      html += `<td>${escapeHtml(c.trim())}</td>`;
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  return html;
+}
+
+/**
+ * Parse raw text into display-ready HTML.
+ *
+ * Handles:
+ *  - Already-HTML content (pass-through)
+ *  - Markdown (including tables, bold, italic, headings, lists)
+ *  - Tab-separated data (copied from web tables) → HTML table
+ *  - Code blocks (``` fenced)
+ *  - Plain text paragraphs
+ */
+export function parseTextToHtml(text: string): string {
+  if (!text) return "";
+  const trimmed = text.trim();
+
+  // Already HTML? Return as-is.
+  if (/<[a-z][\s\S]*>/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const lines = trimmed.split("\n");
+
+  // Pure TSV table
+  if (isTsvBlock(lines)) {
+    return tsvToHtmlTable(lines);
+  }
+
+  // Use marked for Markdown (handles tables, bold, code fences, etc.)
+  try {
+    return marked.parse(text, { breaks: true }) as string;
+  } catch {
+    return `<p>${escapeHtml(text)}</p>`;
+  }
+}
+
+export function convertToHtmlIfNeeded(content: string): string {
+  return parseTextToHtml(content);
+}
+
+/* ─── Simple Textarea Component ─────────────────────────────── */
 
 interface RichEditorProps {
   content: string;
@@ -22,33 +109,6 @@ interface RichEditorProps {
   wrapperClassName?: string;
 }
 
-const ToolbarButton = ({
-  onClick,
-  isActive,
-  children,
-}: {
-  onClick: () => void;
-  isActive?: boolean;
-  children: React.ReactNode;
-}) => (
-  <button
-    type="button"
-    onClick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onClick();
-    }}
-    className={cn(
-      "p-2 rounded-lg transition-colors hover:bg-black/5 dark:hover:bg-white/5",
-      isActive
-        ? "text-primary bg-black/5 dark:bg-white/5"
-        : "text-muted-foreground",
-    )}
-  >
-    {children}
-  </button>
-);
-
 export function RichEditor({
   content,
   onChange,
@@ -56,95 +116,23 @@ export function RichEditor({
   className,
   wrapperClassName,
 }: RichEditorProps) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2],
-        },
-      }),
-      Placeholder.configure({
-        placeholder: placeholder || "Describe your progress...",
-        emptyEditorClass: "is-editor-empty",
-      }),
-    ],
-    immediatelyRender: false,
-    content,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
-    editorProps: {
-      attributes: {
-        class: cn(
-          "tiptap prose prose-sm dark:prose-invert focus:outline-none max-w-none min-h-[150px] p-6 text-lg font-medium",
-          className,
-        ),
-      },
-    },
-  });
-
-  // Sync content from parent (e.g. when cleared)
-  useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      // Only update if it's a programmatic change (like clearing after save)
-      // to avoid cursor jumps during typing.
-      if (content === "" || content === "<p></p>") {
-        editor.commands.setContent(content);
-      }
-    }
-  }, [content, editor]);
-
-  if (!editor) {
-    return null;
-  }
-
   return (
-    <div className={cn("border border-border/50 rounded-3xl overflow-hidden bg-secondary/30 focus-within:ring-4 ring-primary/5 transition-all relative flex flex-col", wrapperClassName)}>
-      <div className="flex items-center flex-wrap gap-1 p-2 border-b border-border/30 bg-secondary/10 shrink-0">
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          isActive={editor.isActive("bold")}
-        >
-          <Bold className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          isActive={editor.isActive("italic")}
-        >
-          <Italic className="h-4 w-4" />
-        </ToolbarButton>
-        <div className="w-px h-4 bg-border/50 mx-1" />
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          isActive={editor.isActive("bulletList")}
-        >
-          <List className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          isActive={editor.isActive("orderedList")}
-        >
-          <ListOrdered className="h-4 w-4" />
-        </ToolbarButton>
-        <div className="w-px h-4 bg-border/50 mx-1" />
-        <ToolbarButton
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
-          isActive={editor.isActive("heading", { level: 1 })}
-        >
-          <Heading1 className="h-4 w-4" />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
-          isActive={editor.isActive("heading", { level: 2 })}
-        >
-          <Heading2 className="h-4 w-4" />
-        </ToolbarButton>
-      </div>
-      <EditorContent editor={editor} className="flex-1 min-h-0 overflow-y-auto" />
+    <div className={cn("relative", wrapperClassName)}>
+      <textarea
+        value={content}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder || "Describe your progress..."}
+        rows={6}
+        className={cn(
+          "w-full bg-secondary/30 border border-border/50 rounded-2xl px-5 py-4",
+          "text-sm font-medium leading-relaxed",
+          "placeholder:text-muted-foreground/30",
+          "focus:border-primary focus:ring-4 ring-primary/10 outline-none",
+          "transition-all resize-y min-h-[150px]",
+          "font-mono",
+          className,
+        )}
+      />
     </div>
   );
 }

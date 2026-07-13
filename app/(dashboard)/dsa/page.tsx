@@ -63,6 +63,8 @@ import { useToast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CodeBlock, CodeTextarea } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
+import { RichEditor, convertToHtmlIfNeeded } from "@/components/ui/rich-editor";
+import { marked } from "marked";
 
 import {
   useDSAItems,
@@ -181,6 +183,26 @@ const ReferenceLinkBadge = ({ url, className, maxW = "100px" }: ReferenceLinkBad
     </a>
   );
 };
+
+const IntuitionDisplay = ({ content }: { content: string | null | undefined }) => {
+  if (!content) return null;
+
+  const html = convertToHtmlIfNeeded(content);
+
+  return (
+    <div
+      className="prose prose-sm dark:prose-invert text-sm font-medium text-muted-foreground leading-relaxed max-w-none break-words"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+};
+
+function cleanIntuition(text: string): string | null {
+  if (!text) return null;
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  return trimmed;
+}
 
 /* ─── Pattern Icon Map ─────────────────────────────────────────── */
 
@@ -659,7 +681,7 @@ export default function DSAPage() {
           subPattern: subPattern.trim() || null,
           timeComplexity: timeComplexity || null,
           spaceComplexity: spaceComplexity || null,
-          intuition: intuition.trim() || null,
+          intuition: cleanIntuition(intuition),
           codeSnippet: codeSnippet.trim() || null,
           nextReviewDate: customNextReviewDate,
           link: referenceLink.trim() || null,
@@ -1074,7 +1096,7 @@ export default function DSAPage() {
             subPattern: editSubPattern.trim() || null,
             timeComplexity: editTime || null,
             spaceComplexity: editSpace || null,
-            intuition: editIntuition.trim() || null,
+            intuition: cleanIntuition(editIntuition),
             codeSnippet: editSnippet.trim() || null,
             nextReviewDate: parsedDate ? Timestamp.fromDate(parsedDate) : null,
             link: editLink.trim() || null,
@@ -1531,11 +1553,10 @@ export default function DSAPage() {
               <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
                 The Intuition (The AHA! Concept)
               </label>
-              <textarea
-                value={intuition}
-                onChange={(e) => setIntuition(e.target.value)}
+              <RichEditor
+                content={intuition}
+                onChange={setIntuition}
                 placeholder="Sort first, then anchor left pointer i, and use traditional two pointers for left + right elements to find sum === -nums[i]..."
-                className="w-full bg-background border border-border/60 rounded-xl px-4 py-3 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all min-h-[140px] resize-none"
               />
             </div>
 
@@ -1885,11 +1906,10 @@ export default function DSAPage() {
                                 placeholder="Sub-Pattern / Variant (e.g. 0/1 Knapsack)"
                                 className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-bold outline-none focus:border-primary"
                               />
-                              <textarea
-                                value={editIntuition}
-                                onChange={(e) => setEditIntuition(e.target.value)}
+                              <RichEditor
+                                content={editIntuition}
+                                onChange={setEditIntuition}
                                 placeholder="The Intuition / Approach"
-                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:border-primary min-h-[80px] resize-y"
                               />
                               <CodeTextarea
                                 value={editSnippet}
@@ -2138,9 +2158,7 @@ export default function DSAPage() {
                                   <BookOpen className="h-4 w-4" />
                                   The Intuition / Approach
                                 </h4>
-                                <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                  {item.intuition || "No approach logged for this problem yet. Add one in edit mode."}
-                                </p>
+                                <IntuitionDisplay content={item.intuition} />
                                 {item.link && (
                                   <div className="pt-2">
                                     <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 block mb-1">
@@ -2389,9 +2407,7 @@ export default function DSAPage() {
                           </button>
                           {revealIntuition[problem.id] && (
                             <div className="p-4 bg-background border border-border/40 rounded-xl animate-in fade-in duration-200">
-                              <p className="text-sm font-medium text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                {problem.intuition || "No approach logged for this problem yet."}
-                              </p>
+                              <IntuitionDisplay content={problem.intuition} />
                             </div>
                           )}
                         </div>
