@@ -201,6 +201,16 @@ export default function CompilerPage() {
     setStopwatchTime(0);
   };
 
+  /* ── Auto-start the stopwatch when the user starts writing code ──
+     CodeMirror's onChange only fires on real user edits (not on the
+     programmatic value updates from Reset or localStorage hydration),
+     so this won't false-trigger. Setting `true` when already running
+     is a no-op React bails on, so it's safe on every keystroke. */
+  const handleCodeChange = useCallback((value: string) => {
+    setCode(value);
+    setIsStopwatchRunning(true);
+  }, []);
+
   /* ── Load Pyodide WASM ───────────────────────────────── */
   const loadPyodide = useCallback(async () => {
     if (pyodideRef.current) return pyodideRef.current;
@@ -509,7 +519,7 @@ export default function CompilerPage() {
             <CodeMirror
               ref={editorRef}
               value={code}
-              onChange={(value) => setCode(value)}
+              onChange={handleCodeChange}
               theme={nightOwlTheme}
               extensions={cmExtensions}
               basicSetup={{
