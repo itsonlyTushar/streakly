@@ -20,12 +20,13 @@ import { useAuthGuard } from "@/components/auth-guard";
 import { useToast } from "@/components/ui/toast";
 
 import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
-import { useSRSItems, useUpdateSRSItem } from "@/hooks/use-srs";
+import { useSRSItems, useUpdateSRSItem, useAddSRSItem } from "@/hooks/use-srs";
 import { useDSAItems, useUpdateDSAItem } from "@/hooks/use-dsa";
 import { useMachineCodingItems } from "@/hooks/use-machine-coding";
+import { useSrsPrompt } from "@/components/tasks/srs-prompt-provider";
 
 import { PRIORITY_META } from "@/components/tasks/task-ui";
-import { calculateNextReviewDate } from "@/lib/srs-utils";
+import { calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
 
 // ---------------------------------------------------------------------------
 // Unified item type used by the consolidated list
@@ -109,6 +110,8 @@ export function ConsolidatedList() {
   const updateTask = useUpdateTask();
   const updateSrs = useUpdateSRSItem();
   const updateDsa = useUpdateDSAItem();
+  const addSrsItem = useAddSRSItem();
+  const { promptSrs } = useSrsPrompt();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
 
@@ -227,20 +230,47 @@ export function ConsolidatedList() {
     if (completedIds.has(item.id)) return;
 
     requireAuth(() => {
-      setCompletedIds((prev) => new Set(prev).add(item.id));
+      if (item.source !== "task") {
+        setCompletedIds((prev) => new Set(prev).add(item.id));
+      }
 
       switch (item.source) {
-        case "task":
-          updateTask.mutate({
-            itemId: item.id,
-            data: { status: "Done" },
-          });
-          toast({
-            title: "Task completed!",
-            description: "Nice work — one less thing to do.",
-            variant: "success",
-          });
+        case "task": {
+          const task = item.raw;
+          promptSrs(
+            task,
+            () => {
+              setCompletedIds((prev) => new Set(prev).add(item.id));
+              updateTask.mutate({
+                itemId: item.id,
+                data: { status: "Done" },
+              });
+              addSrsItem.mutate({
+                topic: task.title,
+                details: task.description || "",
+                nextReviewDate: getInitialReviewDate(),
+              });
+              toast({
+                title: "Task completed!",
+                description: "Nice work — added to SRS.",
+                variant: "success",
+              });
+            },
+            () => {
+              setCompletedIds((prev) => new Set(prev).add(item.id));
+              updateTask.mutate({
+                itemId: item.id,
+                data: { status: "Done" },
+              });
+              toast({
+                title: "Task completed!",
+                description: "Nice work — one less thing to do.",
+                variant: "success",
+              });
+            }
+          );
           break;
+        }
 
         case "srs": {
           const srs = item.raw;

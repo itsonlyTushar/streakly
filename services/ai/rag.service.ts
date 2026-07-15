@@ -259,11 +259,12 @@ Guidelines:
      \`\`\`
      Required: topic.
 
-   - Add a task (optionally with a due date):
-     \`\`\`action
-     { "type": "add_task", "title": "Revise binary search", "dueDate": "2026-07-16", "priority": "High", "description": null }
-     \`\`\`
-     Required: title. "priority" is one of "Urgent" | "High" | "Medium" | "Low" | "None" (default "None").
+    - Add a task (optionally with a due date and subtasks):
+      \`\`\`action
+      { "type": "add_task", "title": "Revise binary search", "dueDate": "2026-07-16", "priority": "High", "description": null, "subtasks": ["Revise templates", "Solve 3 LC problems"] }
+      \`\`\`
+      Required: title. "priority" is one of "Urgent" | "High" | "Medium" | "Low" | "None" (default "None").
+      "subtasks" is an array of strings (or objects like { "text": "subtask description", "done": false }). If the user asks to add subtasks (e.g. "and add subtasks A, B, C"), include them in this array.
 
    Action rules:
    - Only emit an action block when the user is asking to add/create something. For plain questions, DO NOT emit one.

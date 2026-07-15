@@ -31,6 +31,41 @@ describe("extractActions", () => {
     });
   });
 
+  it("parses a task with subtasks as strings array", () => {
+    const raw =
+      '```action\n{ "type": "add_task", "title": "Revise graphs", "subtasks": ["BFS", "DFS"] }\n```';
+    const { actions } = extractActions(raw);
+    expect(actions[0]).toMatchObject({
+      type: "add_task",
+      title: "Revise graphs",
+    });
+    const subtasks = (actions[0] as any).subtasks;
+    expect(subtasks).toHaveLength(2);
+    expect(subtasks[0]).toMatchObject({ text: "BFS", done: false });
+    expect(subtasks[1]).toMatchObject({ text: "DFS", done: false });
+    expect(subtasks[0].id).toBeDefined();
+  });
+
+  it("parses a task with subtasks as objects array", () => {
+    const raw =
+      '```action\n{ "type": "add_task", "title": "Revise graphs", "subtasks": [{"text": "BFS", "done": true}, {"text": "DFS"}] }\n```';
+    const { actions } = extractActions(raw);
+    const subtasks = (actions[0] as any).subtasks;
+    expect(subtasks).toHaveLength(2);
+    expect(subtasks[0]).toMatchObject({ text: "BFS", done: true });
+    expect(subtasks[1]).toMatchObject({ text: "DFS", done: false });
+  });
+
+  it("parses a task with subtasks as newline separated string", () => {
+    const raw =
+      '```action\n{ "type": "add_task", "title": "Revise graphs", "subTask": "- BFS\\n- DFS" }\n```';
+    const { actions } = extractActions(raw);
+    const subtasks = (actions[0] as any).subtasks;
+    expect(subtasks).toHaveLength(2);
+    expect(subtasks[0]).toMatchObject({ text: "BFS", done: false });
+    expect(subtasks[1]).toMatchObject({ text: "DFS", done: false });
+  });
+
   it("parses an array of actions in one block", () => {
     const raw =
       '```action\n[{ "type": "add_srs", "topic": "Sliding Window" }, { "type": "add_task", "title": "Do 2 mediums" }]\n```';

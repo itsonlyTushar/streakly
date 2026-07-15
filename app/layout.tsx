@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 import { ToastProvider } from "@/components/ui/toast";
 import { SoundProvider } from "@/components/sound-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { SrsPromptProvider } from "@/components/tasks/srs-prompt-provider";
 import NextTopLoader from "nextjs-toploader";
 
 export default function RootLayout({
@@ -56,7 +57,9 @@ export default function RootLayout({
             <ToastProvider>
               <AuthProvider>
                 <AuthGuardProvider>
-                  <SoundProvider>{children}</SoundProvider>
+                  <SrsPromptProvider>
+                    <SoundProvider>{children}</SoundProvider>
+                  </SrsPromptProvider>
                   <Analytics />
                 </AuthGuardProvider>
               </AuthProvider>

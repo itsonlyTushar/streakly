@@ -31,12 +31,13 @@ import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import { useAuthGuard } from "@/components/auth-guard";
 import { useToast } from "@/components/ui/toast";
-import { useSRSItems, useUpdateSRSItem } from "@/hooks/use-srs";
+import { useSRSItems, useUpdateSRSItem, useAddSRSItem } from "@/hooks/use-srs";
 import { useDSAItems, useUpdateDSAItem } from "@/hooks/use-dsa";
 import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
 import { PRIORITY_META } from "@/components/tasks/task-ui";
 import { useAllUserNotes } from "@/hooks/use-notes";
-import { SRS_INTERVALS, calculateNextReviewDate } from "@/lib/srs-utils";
+import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
+import { useSrsPrompt } from "@/components/tasks/srs-prompt-provider";
 import { Sheet } from "@/components/ui/sheet";
 
 export function RevisionCalendar() {
@@ -48,6 +49,8 @@ export function RevisionCalendar() {
   const updateSrsMutation = useUpdateSRSItem();
   const updateDsaMutation = useUpdateDSAItem();
   const updateTaskMutation = useUpdateTask();
+  const addSrsMutation = useAddSRSItem();
+  const { promptSrs } = useSrsPrompt();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
 
@@ -195,11 +198,28 @@ export function RevisionCalendar() {
 
   const handleTaskComplete = (item: any) => {
     requireAuth(() => {
-      updateTaskMutation.mutate({
-        itemId: item.id,
-        data: { status: "Done" },
-      });
-      toast({ title: "Task completed!", description: "Nice work — one less thing to do.", variant: "success" });
+      promptSrs(
+        item,
+        () => {
+          updateTaskMutation.mutate({
+            itemId: item.id,
+            data: { status: "Done" },
+          });
+          addSrsMutation.mutate({
+            topic: item.title,
+            details: item.description || "",
+            nextReviewDate: getInitialReviewDate(),
+          });
+          toast({ title: "Task completed!", description: "Nice work — added to SRS.", variant: "success" });
+        },
+        () => {
+          updateTaskMutation.mutate({
+            itemId: item.id,
+            data: { status: "Done" },
+          });
+          toast({ title: "Task completed!", description: "Nice work — one less thing to do.", variant: "success" });
+        }
+      );
     });
   };
 
@@ -234,26 +254,44 @@ export function RevisionCalendar() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Monthly Calendar Grid Card */}
-      <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+      <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
         <div className="space-y-4">
           {/* Header / Month Navigator */}
-          <div className="flex items-center justify-between border-b border-border/50 pb-4">
-            <div className="space-y-1">
-              <h3 className="text-2xl font-black tracking-tighter">
-                {format(currentMonth, "MMMM yyyy")}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Visualize your active retention paths.
-              </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
+            <div className="flex items-center justify-between w-full sm:w-auto">
+              <div className="space-y-0.5">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tighter">
+                  {format(currentMonth, "MMMM yyyy")}
+                </h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Visualize your active retention paths.
+                </p>
+              </div>
+
+              {/* Navigation buttons on mobile */}
+              <div className="flex sm:hidden items-center gap-1">
+                <button
+                  onClick={prevMonth}
+                  className="p-1.5 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={nextMonth}
+                  className="p-1.5 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto overflow-x-auto scrollbar-none py-0.5">
               {/* Type Filters */}
-              <div className="bg-secondary/60 p-1 rounded-xl flex items-center gap-1 border border-border/10 mr-2">
+              <div className="bg-secondary/60 p-0.5 sm:p-1 rounded-xl flex items-center gap-0.5 border border-border/10">
                 <button
                   onClick={() => setFilterType("all")}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
                     filterType === "all"
                       ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-primary"
@@ -264,7 +302,7 @@ export function RevisionCalendar() {
                 <button
                   onClick={() => setFilterType("srs")}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
                     filterType === "srs"
                       ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-primary"
@@ -275,7 +313,7 @@ export function RevisionCalendar() {
                 <button
                   onClick={() => setFilterType("dsa")}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
                     filterType === "dsa"
                       ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-primary"
@@ -286,7 +324,7 @@ export function RevisionCalendar() {
                 <button
                   onClick={() => setFilterType("task")}
                   className={cn(
-                    "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
                     filterType === "task"
                       ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-primary"
@@ -296,18 +334,21 @@ export function RevisionCalendar() {
                 </button>
               </div>
 
-              <button
-                onClick={prevMonth}
-                className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                onClick={nextMonth}
-                className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+              {/* Navigation buttons on desktop */}
+              <div className="hidden sm:flex items-center gap-1">
+                <button
+                  onClick={prevMonth}
+                  className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={nextMonth}
+                  className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -316,9 +357,10 @@ export function RevisionCalendar() {
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div
                 key={day}
-                className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 py-2"
+                className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 py-2"
               >
-                {day}
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day[0]}</span>
               </div>
             ))}
           </div>
@@ -350,7 +392,7 @@ export function RevisionCalendar() {
                     setIsSheetOpen(true);
                   }}
                   className={cn(
-                    "min-h-[110px] p-1.5 rounded-2xl flex flex-col items-stretch justify-between border transition-all text-left group overflow-hidden relative",
+                    "min-h-[50px] md:min-h-[110px] p-1 sm:p-1.5 rounded-xl md:rounded-2xl flex flex-col items-stretch justify-between border transition-all text-left group overflow-hidden relative",
                     isCurrentMonth ? "bg-background/20" : "bg-secondary/[0.05] border-transparent opacity-30",
                     isDaySelected
                       ? "border-primary ring-2 ring-primary/10 shadow-sm"
@@ -377,8 +419,8 @@ export function RevisionCalendar() {
                     )}
                   </header>
 
-                  {/* Small pills/indicators representation */}
-                  <div className="mt-2 space-y-1 overflow-hidden pointer-events-none flex-1 flex flex-col justify-end">
+                  {/* Small pills/indicators representation - Desktop */}
+                  <div className="hidden md:flex mt-2 space-y-1 overflow-hidden pointer-events-none flex-1 flex flex-col justify-end">
                     {srsFiltered.slice(0, 2).map((item) => (
                       <div
                         key={item.id}
@@ -424,6 +466,19 @@ export function RevisionCalendar() {
                       <div className="text-[8px] font-black text-muted-foreground/50 text-right leading-none pr-1">
                         +{totalItemsCount - 4} more
                       </div>
+                    )}
+                  </div>
+
+                  {/* Tiny dot indicators - Mobile */}
+                  <div className="flex md:hidden mt-1 gap-1 justify-center items-center pointer-events-none flex-wrap w-full">
+                    {srsFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    )}
+                    {dsaFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    )}
+                    {taskFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
                     )}
                   </div>
                 </button>

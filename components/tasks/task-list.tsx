@@ -5,6 +5,9 @@ import { CalendarClock, ListChecks, Check, ChevronDown } from "lucide-react";
 import { format, isPast, isToday, startOfDay } from "date-fns";
 import { Task, TaskProject } from "@/services/tasks.service";
 import { useUpdateTask } from "@/hooks/use-tasks";
+import { useAddSRSItem } from "@/hooks/use-srs";
+import { useSrsPrompt } from "./srs-prompt-provider";
+import { getInitialReviewDate } from "@/lib/srs-utils";
 import { useAuthGuard } from "@/components/auth-guard";
 import { cn } from "@/lib/utils";
 import { PRIORITY_META, PROJECT_COLORS } from "./task-ui";
@@ -17,6 +20,8 @@ interface TaskListProps {
 
 export function TaskList({ tasks, projects, onOpenTask }: TaskListProps) {
   const updateMutation = useUpdateTask();
+  const addSrsItem = useAddSRSItem();
+  const { promptSrs } = useSrsPrompt();
   const { requireAuth } = useAuthGuard();
   const [showCompleted, setShowCompleted] = useState(false);
 
@@ -39,10 +44,35 @@ export function TaskList({ tasks, projects, onOpenTask }: TaskListProps) {
   const toggleDone = (task: Task, e: React.MouseEvent) => {
     e.stopPropagation();
     requireAuth(() => {
-      updateMutation.mutate({
-        itemId: task.id,
-        data: { status: task.status === "Done" ? "Todo" : "Done" },
-      });
+      if (task.status !== "Done") {
+        promptSrs(
+          task,
+          () => {
+            // Yes, start SRS: complete task & add to SRS
+            updateMutation.mutate({
+              itemId: task.id,
+              data: { status: "Done" },
+            });
+            addSrsItem.mutate({
+              topic: task.title,
+              details: task.description || "",
+              nextReviewDate: getInitialReviewDate(),
+            });
+          },
+          () => {
+            // No, just complete: complete task only
+            updateMutation.mutate({
+              itemId: task.id,
+              data: { status: "Done" },
+            });
+          }
+        );
+      } else {
+        updateMutation.mutate({
+          itemId: task.id,
+          data: { status: "Todo" },
+        });
+      }
     });
   };
 

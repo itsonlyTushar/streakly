@@ -5,9 +5,13 @@ export interface ChatMessage {
 
 const MODELS_TO_TRY = [
   { model: "gemini-2.5-flash", apiVersion: "v1beta" },
+  { model: "gemini-2.0-flash", apiVersion: "v1" },
+  { model: "gemini-2.0-flash", apiVersion: "v1beta" },
+  { model: "gemini-1.5-flash", apiVersion: "v1" },
   { model: "gemini-1.5-flash", apiVersion: "v1beta" },
   { model: "gemini-1.5-flash-latest", apiVersion: "v1beta" },
   { model: "gemini-1.5-flash-8b", apiVersion: "v1beta" },
+  { model: "gemini-1.5-pro", apiVersion: "v1" },
   { model: "gemini-1.5-pro", apiVersion: "v1beta" },
   { model: "gemini-1.5-pro-latest", apiVersion: "v1beta" },
 ];

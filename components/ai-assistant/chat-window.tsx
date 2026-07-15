@@ -278,6 +278,7 @@ export function ChatWindow() {
         dueDate: parseActionDate(action.dueDate),
         priority: normalizeTaskPriority(action.priority),
         description: action.description ?? null,
+        subtasks: action.subtasks ?? [],
       });
       return { ok: true, label: action.title, area };
     } catch {

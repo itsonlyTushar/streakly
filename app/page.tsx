@@ -3,7 +3,7 @@
 import { useAuth } from "@/components/auth-provider";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Logo } from "@/components/ui/logo";
-import { LogIn, Target, Brain, Code, Cpu, Trophy, ArrowRight, Zap, ChevronRight } from "lucide-react";
+import { LogIn, Target, Brain, Code, Cpu, Trophy, ArrowRight, Zap, ChevronRight, Calendar, Wand2, Bot, ListTodo } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -143,7 +143,10 @@ export default function Home() {
               "Spaced repetition",
               "DSA tracker",
               "Machine coding",
-              "Hall of fame",
+              "Revision calendar",
+              "AI code wizard",
+              "AI mock interviews",
+              "Smart checklists",
             ].map((f) => (
               <span
                 key={f}
@@ -204,28 +207,46 @@ export default function Home() {
             {/* Regular cards */}
             {[
               {
+                icon: <Calendar className="h-5 w-5" />,
+                label: "Calendar",
+                title: "Revision Calendar",
+                desc: "Visualize your upcoming SRS reviews, DSA problems, and daily tasks in a unified monthly view.",
+              },
+              {
                 icon: <Target className="h-5 w-5" />,
                 label: "Goals",
-                title: "Goal Tracking",
-                desc: "Set timed goals with a daily log. Stay consistent, not just motivated.",
+                title: "Goal Tracking & Archive",
+                desc: "Set timed goals with a daily log, and archive them in the Hall of Fame upon completion.",
+              },
+              {
+                icon: <Wand2 className="h-5 w-5" />,
+                label: "Wizard",
+                title: "AI Code Explainer",
+                desc: "Let AI explain complex code blocks, suggest optimizations, and document your learnings.",
+              },
+              {
+                icon: <Bot className="h-5 w-5" />,
+                label: "Interviews",
+                title: "Mock Interview (Beta)",
+                desc: "Pre-empt actual technical rounds by chatting with a dedicated AI mock interviewer.",
+              },
+              {
+                icon: <ListTodo className="h-5 w-5" />,
+                label: "Tasks",
+                title: "Smart Task Lists",
+                desc: "Create daily check-lists and convert your completed tasks into active Spaced Repetition cards.",
               },
               {
                 icon: <Code className="h-5 w-5" />,
                 label: "DSA",
                 title: "DSA Practice",
-                desc: "Log problems, tag topics, and track your review schedule.",
+                desc: "Log problems, tag topics, and track your active review schedule using Spaced Repetition.",
               },
               {
                 icon: <Cpu className="h-5 w-5" />,
                 label: "Coding",
                 title: "Machine Coding",
-                desc: "Save questions with your approach and solution for fast recall.",
-              },
-              {
-                icon: <Trophy className="h-5 w-5" />,
-                label: "Archive",
-                title: "Hall of Fame",
-                desc: "Goals you've completed live here as a record of what you've built.",
+                desc: "Save architecture patterns, boilerplate codes, and frontend setups for rapid recall.",
               },
             ].map((card, i) => (
               <motion.div
@@ -251,20 +272,6 @@ export default function Home() {
                 </div>
               </motion.div>
             ))}
-
-            {/* Coming soon */}
-            <motion.div
-              custom={6}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-40px" }}
-              variants={fadeUp}
-              className="rounded-3xl border border-dashed border-border bg-card/30 p-6 flex items-center justify-center text-center"
-            >
-              <p className="text-sm text-muted-foreground">
-                More features shipping soon.
-              </p>
-            </motion.div>
           </div>
         </section>
 

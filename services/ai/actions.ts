@@ -41,6 +41,7 @@ export interface AddTaskAction {
   dueDate?: string | null;
   priority?: string;
   description?: string;
+  subtasks?: { id: string; text: string; done: boolean }[];
 }
 
 export type CoachAction = AddDsaAction | AddSrsAction | AddTaskAction;
@@ -59,6 +60,36 @@ function toStringArray(v: unknown): string[] {
       .filter(Boolean);
   }
   return [];
+}
+
+function toSubtasksArray(v: unknown): { id: string; text: string; done: boolean }[] {
+  const list: { id: string; text: string; done: boolean }[] = [];
+  const genId = () =>
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+
+  if (Array.isArray(v)) {
+    for (const item of v) {
+      if (typeof item === "string" && item.trim()) {
+        list.push({ id: genId(), text: item.trim(), done: false });
+      } else if (item && typeof item === "object") {
+        const text = str(item.text || item.title || item.name);
+        if (text) {
+          list.push({ id: genId(), text, done: !!item.done });
+        }
+      }
+    }
+  } else if (typeof v === "string" && v.trim()) {
+    const items = v
+      .split(/[\n,]+/)
+      .map((s) => s.replace(/^[-*•\s]+/, "").trim())
+      .filter(Boolean);
+    for (const text of items) {
+      list.push({ id: genId(), text, done: false });
+    }
+  }
+  return list;
 }
 
 /* ── enum normalization (models are fuzzy about casing) ──── */
@@ -144,6 +175,7 @@ function normalizeAction(item: any): CoachAction | null {
       dueDate: item.dueDate ?? item.due ?? null,
       priority: str(item.priority) || undefined,
       description: str(item.description) || undefined,
+      subtasks: toSubtasksArray(item.subtasks ?? item.subTask ?? item.sub_tasks ?? item.subTasks),
     };
   }
 
