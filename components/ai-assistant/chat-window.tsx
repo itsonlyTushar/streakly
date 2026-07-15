@@ -3,6 +3,18 @@ import { useAuth } from "@/components/auth-provider";
 import { useToast } from "@/components/ui/toast";
 import { geminiService, ChatMessage } from "@/services/ai/gemini.service";
 import { ragService, UserProgressContext } from "@/services/ai/rag.service";
+import {
+  extractActions,
+  parseActionDate,
+  normalizeDifficulty,
+  normalizeTaskPriority,
+  actionAreaLabel,
+  CoachAction,
+} from "@/services/ai/actions";
+import { useAddDSAItem } from "@/hooks/use-dsa";
+import { useAddSRSItem } from "@/hooks/use-srs";
+import { useAddTask } from "@/hooks/use-tasks";
+import { format } from "date-fns";
 import { ContextStatus } from "./context-status";
 import { Suggestions } from "./suggestions";
 import { CodeBlock } from "@/components/ui/code-block";
@@ -228,6 +240,57 @@ export function ChatWindow() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Workspace mutation hooks — let the coach add items on request.
+  const addDSA = useAddDSAItem();
+  const addSRS = useAddSRSItem();
+  const addTask = useAddTask();
+
+  // Execute a single parsed action through the real workspace hooks.
+  const runAction = async (
+    action: CoachAction
+  ): Promise<{ ok: boolean; label: string; area: string }> => {
+    const area = actionAreaLabel(action.type);
+    try {
+      if (action.type === "add_dsa") {
+        await addDSA.mutateAsync({
+          problemName: action.problemName,
+          difficulty: normalizeDifficulty(action.difficulty),
+          topics: action.topics ?? [],
+          intuition: action.intuition ?? null,
+          timeComplexity: action.timeComplexity ?? null,
+          spaceComplexity: action.spaceComplexity ?? null,
+          problemUrl: action.problemUrl ?? null,
+          nextReviewDate: parseActionDate(action.nextReviewDate),
+        });
+        return { ok: true, label: action.problemName, area };
+      }
+      if (action.type === "add_srs") {
+        await addSRS.mutateAsync({
+          topic: action.topic,
+          details: action.details ?? "",
+          nextReviewDate: parseActionDate(action.nextReviewDate),
+        });
+        return { ok: true, label: action.topic, area };
+      }
+      // add_task
+      await addTask.mutateAsync({
+        title: action.title,
+        dueDate: parseActionDate(action.dueDate),
+        priority: normalizeTaskPriority(action.priority),
+        description: action.description ?? null,
+      });
+      return { ok: true, label: action.title, area };
+    } catch {
+      const label =
+        action.type === "add_dsa"
+          ? action.problemName
+          : action.type === "add_srs"
+            ? action.topic
+            : action.title;
+      return { ok: false, label, area };
+    }
+  };
+
   // 1. Initial configuration check
   useEffect(() => {
     const savedKey = localStorage.getItem("streakly:dsa:gemini_api_key") || "";
@@ -326,7 +389,8 @@ export function ChatWindow() {
       if (!context) setContext(freshContext);
 
       const contextString = ragService.buildContextString(freshContext);
-      const systemInstruction = ragService.getSystemInstruction(contextString);
+      const today = format(new Date(), "yyyy-MM-dd");
+      const systemInstruction = ragService.getSystemInstruction(contextString, today);
 
       // Invoke Gemini API Client
       const result = await geminiService.chatCompletion(
@@ -335,9 +399,31 @@ export function ChatWindow() {
         systemInstruction
       );
 
+      // Pull out any workspace actions the coach wants to perform,
+      // execute them, and append a confirmation summary to the reply.
+      const { text: cleanedText, actions } = extractActions(result);
+      let finalText = cleanedText;
+
+      if (actions.length > 0) {
+        const results = [];
+        for (const action of actions) {
+          results.push(await runAction(action));
+        }
+        const summary = results
+          .map((r) =>
+            r.ok
+              ? `- ✅ Added **${r.label}** to ${r.area}`
+              : `- ⚠️ Couldn't add **${r.label}** to ${r.area}`
+          )
+          .join("\n");
+        finalText = [cleanedText, summary].filter(Boolean).join("\n\n");
+        // Refresh RAG context so the coach "sees" the new items.
+        loadUserContext();
+      }
+
       const modelMessage: ChatMessage = {
         role: "model",
-        parts: [{ text: result }],
+        parts: [{ text: finalText || "Done!" }],
       };
 
       const updatedHistory = [...newMessages, modelMessage];
@@ -477,7 +563,7 @@ export function ChatWindow() {
                 <p className="font-bold mb-1 flex items-center gap-1.5">
                   Welcome to Streakly AI Coach! <Sparkles className="h-3.5 w-3.5 text-yellow-500" />
                 </p>
-                I am connected to your active goals, study notes, DSA problems, and machine coding tasks. Ask me questions about your studies, request a weekly schedule, or check if you have practiced a pattern!
+                I am connected to your active goals, study notes, DSA problems, and machine coding tasks. Ask me about your studies, request a weekly schedule, or have me <strong>add</strong> things for you — e.g. &ldquo;add Two Sum to my DSA arena&rdquo;, &ldquo;add Sliding Window to SRS&rdquo;, or &ldquo;add a task to revise graphs due tomorrow&rdquo;.
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Calendar, BookOpen, Brain, Code } from "lucide-react";
+import { Sparkles, Calendar, BookOpen, Brain, Code, Plus } from "lucide-react";
 
 interface SuggestionsProps {
   onSelect: (prompt: string) => void;
@@ -16,6 +16,11 @@ export function Suggestions({ onSelect }: SuggestionsProps) {
       text: "Analyze my DSA prep & suggest next steps",
       icon: Code,
       color: "text-amber-500 bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/20",
+    },
+    {
+      text: "Add a task to revise Sliding Window due tomorrow",
+      icon: Plus,
+      color: "text-rose-500 bg-rose-500/5 dark:bg-rose-500/10 border-rose-500/20",
     },
     {
       text: "Summarize and review my recent notes",
