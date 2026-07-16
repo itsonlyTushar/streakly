@@ -134,11 +134,12 @@ export default function MachineCodingPage() {
   const handleAddEntry = (e: FormEvent) => {
     e.preventDefault();
 
-    if (
-      !form.questionName.trim() ||
-      !form.approach.trim() ||
-      !form.solutionCode.trim()
-    ) {
+    if (!form.questionName.trim()) {
+      toast({
+        title: "Validation error",
+        description: "Please specify a question name.",
+        variant: "error",
+      });
       return;
     }
 
@@ -478,7 +479,7 @@ export default function MachineCodingPage() {
                       </div>
 
                       <p className="text-xs text-muted-foreground font-medium line-clamp-3 leading-relaxed">
-                        {entry.approach}
+                        {entry.approach || "No approach details provided."}
                       </p>
                     </div>
 
@@ -603,7 +604,7 @@ export default function MachineCodingPage() {
                           </span>
                         </td>
                         <td className="px-6 py-5 align-middle text-muted-foreground max-w-sm">
-                          <div className="line-clamp-2 text-xs font-medium leading-relaxed">{entry.approach}</div>
+                          <div className="line-clamp-2 text-xs font-medium leading-relaxed">{entry.approach || "—"}</div>
                         </td>
                         <td className="px-6 py-5 align-middle">
                           {hasDate ? (
@@ -745,7 +746,7 @@ export default function MachineCodingPage() {
                   Approach used to solve
                 </p>
                 <p className="text-sm leading-7 text-foreground whitespace-pre-line">
-                  {selectedEntry.approach}
+                  {selectedEntry.approach || "No approach details provided."}
                 </p>
               </section>
 
@@ -866,24 +867,30 @@ export default function MachineCodingPage() {
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-border bg-background/70 p-5">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-bold">
-                    Solution code
-                  </p>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-                    {selectedEntry.language}
-                  </span>
-                </div>
-                <CodeBlock
-                  code={selectedEntry.solutionCode}
-                  language={
-                    selectedEntry.language === "React" ? "tsx" : "javascript"
-                  }
-                  showCopyButton
-                  maxHeight="420px"
-                />
-              </section>
+              {selectedEntry.solutionCode ? (
+                <section className="rounded-3xl border border-border bg-background/70 p-5">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-bold">
+                      Solution code
+                    </p>
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+                      {selectedEntry.language}
+                    </span>
+                  </div>
+                  <CodeBlock
+                    code={selectedEntry.solutionCode}
+                    language={
+                      selectedEntry.language === "React" ? "tsx" : "javascript"
+                    }
+                    showCopyButton
+                    maxHeight="420px"
+                  />
+                </section>
+              ) : (
+                <section className="rounded-3xl border border-border bg-background/70 p-5 py-8 text-center text-muted-foreground text-xs italic">
+                  No solution code has been uploaded yet.
+                </section>
+              )}
 
               <div className="flex items-center justify-end gap-3 pt-4">
                 {deletingId === selectedEntry.id ? (

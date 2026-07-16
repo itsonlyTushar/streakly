@@ -58,7 +58,7 @@ export function useAddMachineCodingItem() {
         ...vars,
       });
     },
-    invalidateKeys: [[QUERY_KEY]],
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
     successMessage: "Machine-coding entry saved to your library.",
   });
 }
@@ -110,7 +110,7 @@ export function useDeleteMachineCodingItem() {
       if (!currentUser) throw new Error("Auth required");
       return machineCodingService.deleteItem(itemId);
     },
-    invalidateKeys: [[QUERY_KEY]],
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
     successMessage: "Machine-coding entry removed.",
   });
 }
