@@ -728,7 +728,14 @@ export default function DSAPage() {
       { model: "gemini-1.5-pro-latest", apiVersion: "v1beta" },
     ];
 
-    const prompt = `You are a DSA expert. Given the problem name "${name.trim()}", analyze it and provide standard DSA information. Keep the intuition brief and direct (2-3 sentences max). Keep the code snippet clean, optimal, and without unnecessary comments:
+    const prompt = `You are a DSA expert. Given the problem name "${name.trim()}", analyze it and provide standard DSA information.
+
+Follow these development guidelines to find the optimal solution:
+- Understand First (CRITICAL): Determine input and output, note constraints, and identify duplicates, ordering, and boundary behavior.
+- Pick the Best Pattern (CRITICAL): Select the most suitable algorithmic pattern (Hash map or set, Two pointers, Sliding window, Prefix sum, Binary search, Stack or monotonic stack, Heap, Greedy, Backtracking, Dynamic programming, BFS or DFS, Union find, Trie, Topological sort).
+- Write Accepted-Style Code: Keep the code snippet clean, optimal, and without unnecessary comments.
+
+Provide the following information:
 1. LeetCode URL (standard problem link)
 2. Difficulty (Easy, Medium, Hard)
 3. Topics (Choose relevant data structure topics AND algorithmic patterns from these lists:
@@ -736,8 +743,8 @@ export default function DSAPage() {
    - Algorithmic Patterns: ${PRESET_PATTERNS.join(", ")})
 4. Time Complexity (e.g., O(N), O(N log N), O(1))
 5. Space Complexity (e.g., O(1), O(N))
-6. Intuition (Brief AHA! concept and core algorithmic idea in 2-3 sentences)
-7. CodeSnippet (Clear, standard, optimal solution in standard programming language, preferably TypeScript/JavaScript or Python/C++ with minimal comments)`;
+6. Intuition (Write the intuition using the "Approach" instruction. The intuition should not be detailed; do not include problem understanding, algorithm steps, line-by-line explanation, dry run, or edge cases here, but only cover the "Approach" section which explains the optimized idea and why it works. Format the string value exactly as: "## Approach\n[Explain the optimized idea and why it works.]")
+7. CodeSnippet (Clear, standard, optimal solution in Python using LeetCode class Solution structure, without stdin/stdout parsing)`;
 
     const schema = {
       type: "OBJECT",
