@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { Code2, Eye, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { Code2, Eye, Plus, Sparkles, Trash2, X, Link, ExternalLink } from "lucide-react";
 import { useAuthGuard } from "@/components/auth-guard";
 import { CodeBlock, CodeTextarea } from "@/components/ui/code-block";
 import {
@@ -16,6 +16,50 @@ interface MachineCodingEntry {
   approach: string;
   solutionCode: string;
   language: "JavaScript" | "React";
+  link?: string | null;
+}
+
+function ReferenceLink({ href, className = "text-[10px]" }: { href: string; className?: string }) {
+  const displayInfo = useMemo(() => {
+    try {
+      const url = new URL(href);
+      return {
+        hostname: url.hostname.replace("www.", ""),
+        favicon: `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`,
+      };
+    } catch {
+      return {
+        hostname: "Link",
+        favicon: null,
+      };
+    }
+  }, [href]);
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center gap-1 align-middle px-1.5 py-0.5 rounded-md bg-primary/8 hover:bg-primary/15 text-primary/70 hover:text-primary transition-all ${className}`}
+      title={href}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {displayInfo.favicon && (
+        <img
+          src={displayInfo.favicon}
+          alt=""
+          className="h-3 w-3 rounded-sm"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      )}
+      <span className="font-bold">
+        {displayInfo.hostname}
+      </span>
+      <ExternalLink className="h-3 w-3" />
+    </a>
+  );
 }
 
 export default function MachineCodingPage() {
@@ -33,6 +77,7 @@ export default function MachineCodingPage() {
     approach: "",
     solutionCode: "",
     language: "JavaScript" as "JavaScript" | "React",
+    link: "",
   });
 
   const totalEntries = useMemo(() => entries.length, [entries]);
@@ -65,6 +110,7 @@ export default function MachineCodingPage() {
           approach: form.approach.trim(),
           solutionCode: form.solutionCode.trim(),
           language: form.language,
+          link: form.link.trim() || null,
         },
         {
           onSuccess: () => {
@@ -73,6 +119,7 @@ export default function MachineCodingPage() {
               approach: "",
               solutionCode: "",
               language: "JavaScript",
+              link: "",
             });
             setIsFormOpen(false);
           },
@@ -177,6 +224,25 @@ export default function MachineCodingPage() {
             </div>
 
             <label className="grid gap-2 text-sm font-medium">
+              Reference Link
+              <div className="relative">
+                <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+                <input
+                  type="url"
+                  value={form.link}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      link: e.target.value,
+                    }))
+                  }
+                  placeholder="https://example.com/question"
+                  className="w-full rounded-2xl border border-border bg-card pl-11 pr-4 py-3 text-foreground outline-none ring-0 transition focus:border-primary placeholder:text-muted-foreground/30"
+                />
+              </div>
+            </label>
+
+            <label className="grid gap-2 text-sm font-medium">
               Approach used to solve
               <textarea
                 rows={4}
@@ -253,13 +319,18 @@ export default function MachineCodingPage() {
                   className="hover:bg-secondary/40 transition-colors"
                 >
                   <td className="px-4 py-4 align-top">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedEntry(entry)}
-                      className="text-left font-semibold text-primary hover:underline"
-                    >
-                      {entry.questionName}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEntry(entry)}
+                        className="text-left font-semibold text-primary hover:underline"
+                      >
+                        {entry.questionName}
+                      </button>
+                      {entry.link && (
+                        <ReferenceLink href={entry.link} className="text-[10px] ml-1" />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4 align-top">
                     <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
@@ -313,8 +384,14 @@ export default function MachineCodingPage() {
                 <h3 className="mt-2 text-3xl font-v-headings">
                   {selectedEntry.questionName}
                 </h3>
-                <p className="mt-2 text-muted-foreground">
-                  {selectedEntry.language} · machine-coding solution
+                <p className="mt-2 text-muted-foreground flex items-center gap-2 flex-wrap">
+                  <span>{selectedEntry.language} · machine-coding solution</span>
+                  {selectedEntry.link && (
+                    <>
+                      <span>·</span>
+                      <ReferenceLink href={selectedEntry.link} className="text-xs" />
+                    </>
+                  )}
                 </p>
               </div>
               <button

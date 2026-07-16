@@ -46,6 +46,7 @@ export function useAddMachineCodingItem() {
       approach: string;
       solutionCode: string;
       language: "JavaScript" | "React";
+      link?: string | null;
     }) => {
       const currentUser = userRef.current;
       if (!currentUser) throw new Error("Auth required");

@@ -19,6 +19,7 @@ export interface MachineCodingEntry {
   approach: string;
   solutionCode: string;
   language: "JavaScript" | "React";
+  link?: string | null;
   createdAt?: { toMillis: () => number } | null;
 }
 
@@ -70,8 +71,9 @@ export const machineCodingService = {
     approach: string;
     solutionCode: string;
     language: "JavaScript" | "React";
+    link?: string | null;
   }) => {
-    const { userId, email, questionName, approach, solutionCode, language } = params;
+    const { userId, email, questionName, approach, solutionCode, language, link } = params;
 
     return await addDoc(collection(db, COLLECTION_NAME), {
       userId,
@@ -80,6 +82,7 @@ export const machineCodingService = {
       approach: approach.trim(),
       solutionCode: solutionCode.trim(),
       language,
+      link: link?.trim() || null,
       createdAt: serverTimestamp(),
     });
   },
