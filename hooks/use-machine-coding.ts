@@ -47,6 +47,7 @@ export function useAddMachineCodingItem() {
       solutionCode: string;
       language: "JavaScript" | "React";
       link?: string | null;
+      practiceDate?: Date | null;
     }) => {
       const currentUser = userRef.current;
       if (!currentUser) throw new Error("Auth required");
@@ -59,6 +60,39 @@ export function useAddMachineCodingItem() {
     },
     invalidateKeys: [[QUERY_KEY]],
     successMessage: "Machine-coding entry saved to your library.",
+  });
+}
+
+export function useUpdateMachineCodingItem() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutationWrapper({
+    mutationFn: (vars: { itemId: string; data: Partial<MachineCodingEntry> }) => {
+      return machineCodingService.updateItem(vars.itemId, vars.data);
+    },
+    invalidateKeys: [[QUERY_KEY, user?.uid]],
+    // Optimistic Update
+    onMutate: async (newInfo) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEY, user?.uid] });
+      const previousItems = queryClient.getQueryData<MachineCodingEntry[]>([QUERY_KEY, user?.uid]);
+
+      if (previousItems) {
+        queryClient.setQueryData(
+          [QUERY_KEY, user?.uid],
+          previousItems.map((item) =>
+            item.id === newInfo.itemId ? { ...item, ...newInfo.data } : item
+          )
+        );
+      }
+
+      return { previousItems };
+    },
+    onError: (err, newInfo, context: any) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([QUERY_KEY, user?.uid], context.previousItems);
+      }
+    },
   });
 }
 

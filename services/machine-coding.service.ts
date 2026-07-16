@@ -8,6 +8,8 @@ import {
   query,
   serverTimestamp,
   where,
+  updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -20,6 +22,7 @@ export interface MachineCodingEntry {
   solutionCode: string;
   language: "JavaScript" | "React";
   link?: string | null;
+  practiceDate?: any | null; // Firebase Timestamp
   createdAt?: { toMillis: () => number } | null;
 }
 
@@ -72,8 +75,9 @@ export const machineCodingService = {
     solutionCode: string;
     language: "JavaScript" | "React";
     link?: string | null;
+    practiceDate?: Date | null;
   }) => {
-    const { userId, email, questionName, approach, solutionCode, language, link } = params;
+    const { userId, email, questionName, approach, solutionCode, language, link, practiceDate } = params;
 
     return await addDoc(collection(db, COLLECTION_NAME), {
       userId,
@@ -83,7 +87,16 @@ export const machineCodingService = {
       solutionCode: solutionCode.trim(),
       language,
       link: link?.trim() || null,
+      practiceDate: practiceDate ? Timestamp.fromDate(practiceDate) : null,
       createdAt: serverTimestamp(),
+    });
+  },
+
+  updateItem: async (itemId: string, data: Partial<MachineCodingEntry>) => {
+    const docRef = doc(db, COLLECTION_NAME, itemId);
+    return await updateDoc(docRef, {
+      ...data,
+      updatedAt: serverTimestamp(),
     });
   },
 

@@ -26,6 +26,7 @@ import {
   RefreshCw,
   CalendarDays,
   ListTodo,
+  Sparkles,
 } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ import { useToast } from "@/components/ui/toast";
 import { useSRSItems, useUpdateSRSItem, useAddSRSItem } from "@/hooks/use-srs";
 import { useDSAItems, useUpdateDSAItem } from "@/hooks/use-dsa";
 import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useMachineCodingItems, useUpdateMachineCodingItem } from "@/hooks/use-machine-coding";
 import { PRIORITY_META } from "@/components/tasks/task-ui";
 import { useAllUserNotes } from "@/hooks/use-notes";
 import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
@@ -45,11 +47,13 @@ export function RevisionCalendar() {
   const { data: dsaItems = [], isLoading: isDsaLoading } = useDSAItems();
   const { data: taskItems = [], isLoading: isTasksLoading } = useTasks();
   const { data: allNotes = [], isLoading: isNotesLoading } = useAllUserNotes();
+  const { data: machineCodingItems = [], isLoading: isMachineCodingLoading } = useMachineCodingItems();
 
   const updateSrsMutation = useUpdateSRSItem();
   const updateDsaMutation = useUpdateDSAItem();
   const updateTaskMutation = useUpdateTask();
   const addSrsMutation = useAddSRSItem();
+  const updateMachineCodingMutation = useUpdateMachineCodingItem();
   const { promptSrs } = useSrsPrompt();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
@@ -67,12 +71,12 @@ export function RevisionCalendar() {
 
   // Aggregate items mapped by date for calendar display
   const itemsByDate = useMemo(() => {
-    const map: Record<string, { srs: any[]; dsa: any[]; task: any[] }> = {};
+    const map: Record<string, { srs: any[]; dsa: any[]; task: any[]; machineCoding: any[] }> = {};
 
-    const add = (date: Date, type: "srs" | "dsa" | "task", item: any) => {
+    const add = (date: Date, type: "srs" | "dsa" | "task" | "machineCoding", item: any) => {
       const key = format(startOfDay(date), "yyyy-MM-dd");
       if (!map[key]) {
-        map[key] = { srs: [], dsa: [], task: [] };
+        map[key] = { srs: [], dsa: [], task: [], machineCoding: [] };
       }
       map[key][type].push(item);
     };
@@ -95,36 +99,47 @@ export function RevisionCalendar() {
       }
     });
 
+    machineCodingItems.forEach((item) => {
+      if (item.practiceDate) {
+        add(item.practiceDate.toDate(), "machineCoding", item);
+      }
+    });
+
     return map;
-  }, [srsItems, dsaItems, taskItems]);
+  }, [srsItems, dsaItems, taskItems, machineCodingItems]);
 
   // Get items for selected day
   const selectedDayItems = useMemo(() => {
     const key = format(startOfDay(selectedDate), "yyyy-MM-dd");
-    const dayData = itemsByDate[key] || { srs: [], dsa: [], task: [] };
+    const dayData = itemsByDate[key] || { srs: [], dsa: [], task: [], machineCoding: [] };
 
-    let srsList = dayData.srs;
-    let dsaList = dayData.dsa;
-    let taskList = dayData.task;
+    let srsList = dayData.srs || [];
+    let dsaList = dayData.dsa || [];
+    let taskList = dayData.task || [];
+    let mcList = dayData.machineCoding || [];
 
     if (filterType === "srs") {
       dsaList = [];
       taskList = [];
+      mcList = [];
     }
     if (filterType === "dsa") {
       srsList = [];
       taskList = [];
+      mcList = [];
     }
     if (filterType === "task") {
       srsList = [];
       dsaList = [];
+      mcList = [];
     }
 
     return {
       srs: srsList,
       dsa: dsaList,
       task: taskList,
-      total: srsList.length + dsaList.length + taskList.length,
+      machineCoding: mcList,
+      total: srsList.length + dsaList.length + taskList.length + mcList.length,
     };
   }, [selectedDate, itemsByDate, filterType]);
 
@@ -240,7 +255,7 @@ export function RevisionCalendar() {
     return cells;
   }, [currentMonth]);
 
-  const isLoading = isSrsLoading || isDsaLoading || isTasksLoading || isNotesLoading;
+  const isLoading = isSrsLoading || isDsaLoading || isTasksLoading || isNotesLoading || isMachineCodingLoading;
 
   if (isLoading) {
     return (
@@ -369,13 +384,14 @@ export function RevisionCalendar() {
           <div className="grid grid-cols-7 gap-1.5">
             {calendarCells.map((day) => {
               const dayKey = format(day, "yyyy-MM-dd");
-              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [] };
+              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [], machineCoding: [] };
 
               const srsFiltered = filterType === "all" || filterType === "srs" ? dayData.srs : [];
               const dsaFiltered = filterType === "all" || filterType === "dsa" ? dayData.dsa : [];
               const taskFiltered = filterType === "all" || filterType === "task" ? dayData.task : [];
+              const mcFiltered = filterType === "all" ? (dayData.machineCoding || []) : [];
 
-              const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length;
+              const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length + mcFiltered.length;
 
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isDayToday = isSameDay(day, today);
@@ -462,6 +478,16 @@ export function RevisionCalendar() {
                       </div>
                     ))}
 
+                    {mcFiltered.slice(0, 2).map((item) => (
+                      <div
+                        key={item.id}
+                        className="text-[9px] truncate bg-emerald-500/10 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border border-emerald-500/10"
+                      >
+                        <Sparkles className="h-2.5 w-2.5 flex-shrink-0" />
+                        <span>{item.questionName}</span>
+                      </div>
+                    ))}
+
                     {totalItemsCount > 4 && (
                       <div className="text-[8px] font-black text-muted-foreground/50 text-right leading-none pr-1">
                         +{totalItemsCount - 4} more
@@ -479,6 +505,9 @@ export function RevisionCalendar() {
                     )}
                     {taskFiltered.length > 0 && (
                       <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                    )}
+                    {mcFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     )}
                   </div>
                 </button>
@@ -688,6 +717,60 @@ export function RevisionCalendar() {
                       >
                         <Check className="h-3 w-3" />
                         Solved
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Machine Coding Practice list */}
+              {selectedDayItems.machineCoding?.map((item) => {
+                return (
+                  <div
+                    key={item.id}
+                    className="border border-border/40 bg-secondary/[0.08] hover:bg-secondary/[0.12] transition-colors rounded-2xl p-4 space-y-4 relative overflow-hidden"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                          <Sparkles className="h-3 w-3" />
+                          Machine Coding
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+                          {item.language}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm text-foreground">
+                        {item.questionName}
+                      </h4>
+                      {item.approach && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 italic leading-relaxed">
+                          {item.approach}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-1 border-t border-border/20">
+                      <button
+                        onClick={() => {
+                          requireAuth(() => {
+                            updateMachineCodingMutation.mutate({
+                              itemId: item.id,
+                              data: { practiceDate: null },
+                            });
+                            toast({
+                              title: "Practice completed!",
+                              description: "Question marked as practiced.",
+                              variant: "success",
+                            });
+                          });
+                        }}
+                        disabled={updateMachineCodingMutation.isPending}
+                        className="p-1 px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                        title="Mark this session as practiced."
+                      >
+                        <Check className="h-3 w-3" />
+                        Mark Practiced
                       </button>
                     </div>
                   </div>
