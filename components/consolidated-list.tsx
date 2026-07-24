@@ -343,7 +343,7 @@ export function ConsolidatedList() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm animate-pulse">
+      <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm animate-pulse">
         <div className="h-8 w-48 rounded-2xl bg-secondary mb-6" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -359,7 +359,7 @@ export function ConsolidatedList() {
   const completedCount = items.length - visibleItems.length;
 
   return (
-    <div className="bg-white dark:bg-card border border-border/50 rounded-3xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="bg-card/75 dark:bg-zinc-900/50 backdrop-blur-2xl border border-border/40 dark:border-white/10 rounded-[2.5rem] shadow-2xl shadow-purple-500/5 dark:shadow-black/70 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}

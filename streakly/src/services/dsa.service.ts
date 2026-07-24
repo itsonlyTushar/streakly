@@ -45,6 +45,12 @@ export const dsaService = {
     timeComplexity?: string | null;
     spaceComplexity?: string | null;
     intuition?: string | null;
+    statement?: string | null;
+    actuallyAsking?: string | null;
+    pattern?: string | null;
+    keyObservation?: string | null;
+    maintainedState?: string | null;
+    whyItWorks?: string | null;
     codeSnippet?: string | null;
     nextReviewDate: Date | null;
   }) => {
@@ -59,6 +65,12 @@ export const dsaService = {
       timeComplexity: params.timeComplexity?.trim() || null,
       spaceComplexity: params.spaceComplexity?.trim() || null,
       intuition: params.intuition?.trim() || null,
+      statement: params.statement?.trim() || null,
+      actuallyAsking: params.actuallyAsking?.trim() || null,
+      pattern: params.pattern?.trim() || null,
+      keyObservation: params.keyObservation?.trim() || null,
+      maintainedState: params.maintainedState?.trim() || null,
+      whyItWorks: params.whyItWorks?.trim() || null,
       codeSnippet: params.codeSnippet || null,
       dateLearned: serverTimestamp(),
       nextReviewDate: params.nextReviewDate ? Timestamp.fromDate(params.nextReviewDate) : null,

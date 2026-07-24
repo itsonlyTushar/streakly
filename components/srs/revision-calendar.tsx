@@ -40,6 +40,8 @@ import { PRIORITY_META } from "@/components/tasks/task-ui";
 import { useAllUserNotes } from "@/hooks/use-notes";
 import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
 import { useSrsPrompt } from "@/components/tasks/srs-prompt-provider";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 import { Sheet } from "@/components/ui/sheet";
 
 export function RevisionCalendar() {
@@ -268,251 +270,169 @@ export function RevisionCalendar() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Monthly Calendar Grid Card */}
-      <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-3 sm:p-6 shadow-sm flex flex-col justify-between">
-        <div className="space-y-4">
-          {/* Header / Month Navigator */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
-            <div className="flex items-center justify-between w-full sm:w-auto">
-              <div className="space-y-0.5">
-                <h3 className="text-xl sm:text-2xl font-black tracking-tighter">
-                  {format(currentMonth, "MMMM yyyy")}
-                </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  Visualize your active retention paths.
-                </p>
-              </div>
+      {/* Monthly Calendar Grid Card powered by react-calendar */}
+      <div className="bg-card/75 dark:bg-zinc-900/50 backdrop-blur-2xl border border-border/40 dark:border-white/10 rounded-[2.5rem] p-4 sm:p-8 shadow-2xl shadow-purple-500/5 dark:shadow-black/70 flex flex-col justify-between relative overflow-hidden">
+        {/* Subtle inner glow */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-violet-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
-              {/* Navigation buttons on mobile */}
-              <div className="flex sm:hidden items-center gap-1">
-                <button
-                  onClick={prevMonth}
-                  className="p-1.5 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={nextMonth}
-                  className="p-1.5 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+        <div className="space-y-6">
+          {/* Top Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/30 pb-5">
+            <div className="space-y-1">
+              <h3 className="text-2xl sm:text-3xl font-black tracking-tighter bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">
+                Revision Calendar
+              </h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                Powered by react-calendar • Visualize SRS, DSA & Tasks.
+              </p>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto overflow-x-auto scrollbar-none py-0.5">
-              {/* Type Filters */}
-              <div className="bg-secondary/60 p-0.5 sm:p-1 rounded-xl flex items-center gap-0.5 border border-border/10">
-                <button
-                  onClick={() => setFilterType("all")}
-                  className={cn(
-                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
-                    filterType === "all"
-                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setFilterType("srs")}
-                  className={cn(
-                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
-                    filterType === "srs"
-                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  SRS
-                </button>
-                <button
-                  onClick={() => setFilterType("dsa")}
-                  className={cn(
-                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
-                    filterType === "dsa"
-                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  DSA
-                </button>
-                <button
-                  onClick={() => setFilterType("task")}
-                  className={cn(
-                    "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap",
-                    filterType === "task"
-                      ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                >
-                  Tasks
-                </button>
-              </div>
-
-              {/* Navigation buttons on desktop */}
-              <div className="hidden sm:flex items-center gap-1">
-                <button
-                  onClick={prevMonth}
-                  className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={nextMonth}
-                  className="p-2 rounded-xl hover:bg-secondary border border-border/30 transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Weekdays Labels */}
-          <div className="grid grid-cols-7 text-center">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div
-                key={day}
-                className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 py-2"
+            {/* Type Filters */}
+            <div className="bg-secondary/40 dark:bg-zinc-800/40 p-1 sm:p-1.5 rounded-2xl flex items-center gap-1 border border-border/20 backdrop-blur-md shadow-inner">
+              <button
+                onClick={() => setFilterType("all")}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                  filterType === "all"
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
               >
-                <span className="hidden sm:inline">{day}</span>
-                <span className="sm:hidden">{day[0]}</span>
-              </div>
-            ))}
+                All
+              </button>
+              <button
+                onClick={() => setFilterType("srs")}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                  filterType === "srs"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
+              >
+                SRS
+              </button>
+              <button
+                onClick={() => setFilterType("dsa")}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                  filterType === "dsa"
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
+              >
+                DSA
+              </button>
+              <button
+                onClick={() => setFilterType("task")}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                  filterType === "task"
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-500/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
+              >
+                Tasks
+              </button>
+            </div>
           </div>
 
-          {/* Day Cells Grid */}
-          <div className="grid grid-cols-7 gap-1.5">
-            {calendarCells.map((day) => {
-              const dayKey = format(day, "yyyy-MM-dd");
-              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [], machineCoding: [] };
+          {/* React Calendar Integration */}
+          <div className="w-full">
+            <Calendar
+              onChange={(val) => {
+                if (val instanceof Date) {
+                  setSelectedDate(val);
+                  setIsSheetOpen(true);
+                }
+              }}
+              value={selectedDate}
+              activeStartDate={currentMonth}
+              onActiveStartDateChange={({ activeStartDate }) => {
+                if (activeStartDate) setCurrentMonth(activeStartDate);
+              }}
+              tileContent={({ date, view }) => {
+                if (view !== "month") return null;
+                const dayKey = format(date, "yyyy-MM-dd");
+                const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [], machineCoding: [] };
 
-              const srsFiltered = filterType === "all" || filterType === "srs" ? dayData.srs : [];
-              const dsaFiltered = filterType === "all" || filterType === "dsa" ? dayData.dsa : [];
-              const taskFiltered = filterType === "all" || filterType === "task" ? dayData.task : [];
-              const mcFiltered = filterType === "all" ? (dayData.machineCoding || []) : [];
+                const srsFiltered = filterType === "all" || filterType === "srs" ? dayData.srs : [];
+                const dsaFiltered = filterType === "all" || filterType === "dsa" ? dayData.dsa : [];
+                const taskFiltered = filterType === "all" || filterType === "task" ? dayData.task : [];
+                const mcFiltered = filterType === "all" ? (dayData.machineCoding || []) : [];
 
-              const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length + mcFiltered.length;
+                const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length + mcFiltered.length;
 
-              const isCurrentMonth = isSameMonth(day, currentMonth);
-              const isDayToday = isSameDay(day, today);
-              const isDaySelected = isSameDay(day, selectedDate);
+                if (totalItemsCount === 0) return null;
 
-              // Highlight status: color cell outline if tasks due
-              const hasDueTasks = totalItemsCount > 0 && (isPast(day) || isSameDay(day, today));
+                return (
+                  <div className="w-full mt-1 flex flex-col justify-end gap-1 flex-1 overflow-hidden pointer-events-none">
+                    {/* Desktop Badges */}
+                    <div className="hidden md:flex flex-col gap-1 w-full">
+                      {srsFiltered.slice(0, 2).map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="text-[9px] truncate bg-blue-500/15 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
+                        >
+                          <Brain className="h-2.5 w-2.5 flex-shrink-0" />
+                          <span>{item.topic}</span>
+                        </div>
+                      ))}
 
-              return (
-                <button
-                  key={day.toString()}
-                  onClick={() => {
-                    setSelectedDate(day);
-                    setIsSheetOpen(true);
-                  }}
-                  className={cn(
-                    "min-h-[50px] md:min-h-[110px] p-1 sm:p-1.5 rounded-xl md:rounded-2xl flex flex-col items-stretch justify-between border transition-all text-left group overflow-hidden relative",
-                    isCurrentMonth ? "bg-background/20" : "bg-secondary/[0.05] border-transparent opacity-30",
-                    isDaySelected
-                      ? "border-primary ring-2 ring-primary/10 shadow-sm"
-                      : "border-border/35 hover:border-border-foreground/50 hover:bg-secondary/20",
-                    isDayToday && "bg-secondary/40 font-bold",
-                    hasDueTasks && !isDaySelected && "border-amber-500/30 bg-amber-500/[0.02]"
-                  )}
-                >
-                  <header className="flex justify-between items-center w-full px-0.5">
-                    <span
-                      className={cn(
-                        "text-xs font-bold leading-none",
-                        isDayToday ? "text-primary bg-secondary p-1 rounded-md" : "text-muted-foreground/80"
-                      )}
-                    >
-                      {format(day, "d")}
-                    </span>
-
-                    {/* Display Total Count Badge if item count is large */}
-                    {totalItemsCount > 0 && (
-                      <span className="text-[9px] font-black leading-none bg-secondary/80 px-1 py-0.5 rounded-full text-muted-foreground scale-90">
-                        {totalItemsCount}
-                      </span>
-                    )}
-                  </header>
-
-                  {/* Small pills/indicators representation - Desktop */}
-                  <div className="hidden md:flex mt-2 space-y-1 overflow-hidden pointer-events-none flex-1 flex flex-col justify-end">
-                    {srsFiltered.slice(0, 2).map((item) => (
-                      <div
-                        key={item.id}
-                        className="text-[9px] truncate bg-blue-500/10 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1"
-                      >
-                        <Brain className="h-2.5 w-2.5 flex-shrink-0" />
-                        <span>{item.topic}</span>
-                      </div>
-                    ))}
-
-                    {dsaFiltered.slice(0, 2).map((item) => {
-                      const isHard = item.difficulty === "Hard";
-                      const isEasy = item.difficulty === "Easy";
-                      return (
+                      {dsaFiltered.slice(0, 2).map((item: any) => (
                         <div
                           key={item.id}
                           className={cn(
-                            "text-[9px] truncate px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border",
-                            isHard
-                              ? "bg-red-500/10 text-red-600 border-red-500/10 dark:bg-red-900/20 dark:text-red-400"
-                              : isEasy
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/10 dark:bg-emerald-900/20 dark:text-emerald-400"
-                              : "bg-yellow-500/10 text-yellow-600 border-yellow-500/10 dark:bg-yellow-900/20 dark:text-yellow-400"
+                            "text-[9px] truncate px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 border backdrop-blur-xs shadow-xs",
+                            item.difficulty === "Hard"
+                              ? "bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30"
+                              : item.difficulty === "Easy"
+                              ? "bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30"
+                              : "bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30"
                           )}
                         >
                           <Code className="h-2.5 w-2.5 flex-shrink-0" />
                           <span>{item.problemName}</span>
                         </div>
-                      );
-                    })}
+                      ))}
 
-                    {taskFiltered.slice(0, 2).map((item) => (
-                      <div
-                        key={item.id}
-                        className="text-[9px] truncate bg-violet-500/10 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border border-violet-500/10"
-                      >
-                        <ListTodo className="h-2.5 w-2.5 flex-shrink-0" />
-                        <span>{item.title}</span>
-                      </div>
-                    ))}
+                      {taskFiltered.slice(0, 2).map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="text-[9px] truncate bg-violet-500/15 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
+                        >
+                          <ListTodo className="h-2.5 w-2.5 flex-shrink-0" />
+                          <span>{item.title}</span>
+                        </div>
+                      ))}
 
-                    {mcFiltered.slice(0, 2).map((item) => (
-                      <div
-                        key={item.id}
-                        className="text-[9px] truncate bg-emerald-500/10 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 px-1 py-0.5 rounded-md leading-none font-bold uppercase tracking-wider flex items-center gap-1 border border-emerald-500/10"
-                      >
-                        <Sparkles className="h-2.5 w-2.5 flex-shrink-0" />
-                        <span>{item.questionName}</span>
-                      </div>
-                    ))}
+                      {mcFiltered.slice(0, 2).map((item: any) => (
+                        <div
+                          key={item.id}
+                          className="text-[9px] truncate bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
+                        >
+                          <Sparkles className="h-2.5 w-2.5 flex-shrink-0" />
+                          <span>{item.questionName}</span>
+                        </div>
+                      ))}
 
-                    {totalItemsCount > 4 && (
-                      <div className="text-[8px] font-black text-muted-foreground/50 text-right leading-none pr-1">
-                        +{totalItemsCount - 4} more
-                      </div>
-                    )}
+                      {totalItemsCount > 4 && (
+                        <span className="text-[8px] font-black text-muted-foreground/70 text-right leading-none pr-1">
+                          +{totalItemsCount - 4} more
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Mobile Dots */}
+                    <div className="flex md:hidden gap-1 justify-center items-center flex-wrap w-full mt-1">
+                      {srsFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm" />}
+                      {dsaFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" />}
+                      {taskFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-sm" />}
+                      {mcFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-sm" />}
+                    </div>
                   </div>
-
-                  {/* Tiny dot indicators - Mobile */}
-                  <div className="flex md:hidden mt-1 gap-1 justify-center items-center pointer-events-none flex-wrap w-full">
-                    {srsFiltered.length > 0 && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    )}
-                    {dsaFiltered.length > 0 && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    )}
-                    {taskFiltered.length > 0 && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                    )}
-                    {mcFiltered.length > 0 && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                );
+              }}
+            />
           </div>
         </div>
       </div>

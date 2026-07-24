@@ -236,7 +236,7 @@ export function RevisionHeatmap() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm space-y-6 animate-pulse">
+      <div className="bg-card border border-border/50 rounded-3xl p-6 shadow-sm space-y-6 animate-pulse">
         <div className="h-6 w-48 bg-secondary/50 rounded-md" />
         <div className="h-[120px] bg-secondary/35 rounded-2xl" />
         <div className="h-20 bg-secondary/30 rounded-2xl" />
@@ -271,30 +271,30 @@ export function RevisionHeatmap() {
   };
 
   return (
-    <div className="bg-white dark:bg-card border border-border/50 rounded-3xl p-6 shadow-sm space-y-6">
+    <div className="bg-card/75 dark:bg-zinc-900/50 backdrop-blur-2xl border border-border/40 dark:border-white/10 rounded-[2.5rem] p-6 shadow-2xl shadow-purple-500/5 dark:shadow-black/70 space-y-6 relative overflow-hidden">
       {/* Header and Filter Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/30 pb-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">
             <Sparkles className="h-3.5 w-3.5" />
             Milestone Metrics
           </div>
-          <h3 className="text-xl font-bold tracking-tight">Learning & Revision Intensity</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="text-xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">Learning & Revision Intensity</h3>
+          <p className="text-xs text-muted-foreground font-medium">
             A combined retrospective of your daily DSA practice and SRS milestones.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           {/* Module filter */}
-          <div className="bg-secondary/60 p-1 rounded-xl flex items-center gap-1 border border-border/10">
+          <div className="bg-secondary/40 dark:bg-zinc-800/40 p-1 rounded-2xl flex items-center gap-1 border border-border/20 backdrop-blur-md">
             <button
               onClick={() => setFilterType("all")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
                 filterType === "all"
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
               )}
             >
               All Items
@@ -302,10 +302,10 @@ export function RevisionHeatmap() {
             <button
               onClick={() => setFilterType("dsa")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
                 filterType === "dsa"
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
               )}
             >
               DSA Practiced
@@ -313,10 +313,10 @@ export function RevisionHeatmap() {
             <button
               onClick={() => setFilterType("srs")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
                 filterType === "srs"
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
               )}
             >
               SRS Reviewed
@@ -324,14 +324,14 @@ export function RevisionHeatmap() {
           </div>
 
           {/* Metric mode filter */}
-          <div className="bg-secondary/60 p-1 rounded-xl flex items-center gap-1 border border-border/10">
+          <div className="bg-secondary/40 dark:bg-zinc-800/40 p-1 rounded-2xl flex items-center gap-1 border border-border/20 backdrop-blur-md">
             <button
               onClick={() => setMetricType("combined")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
                 metricType === "combined"
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-500/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
               )}
             >
               Combined
@@ -339,10 +339,10 @@ export function RevisionHeatmap() {
             <button
               onClick={() => setMetricType("learned")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
                 metricType === "learned"
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
               )}
             >
               Learned
@@ -350,10 +350,10 @@ export function RevisionHeatmap() {
             <button
               onClick={() => setMetricType("scheduled")}
               className={cn(
-                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all",
+                "px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
                 metricType === "scheduled"
-                  ? "bg-white dark:bg-zinc-800 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
               )}
             >
               Scheduled
@@ -364,40 +364,40 @@ export function RevisionHeatmap() {
 
       {/* Mini Stats Banner */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-secondary/[0.04] border border-border/30 rounded-2xl p-3 flex flex-col justify-between">
-          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+        <div className="bg-secondary/30 dark:bg-zinc-800/30 backdrop-blur-md border border-border/20 rounded-2xl p-3.5 flex flex-col justify-between hover:border-violet-500/30 transition-all">
+          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
             Practice Streak
           </span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-bold">{summaryStats.activeStreak}</span>
-            <span className="text-xs text-muted-foreground">days</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{summaryStats.activeStreak}</span>
+            <span className="text-xs text-muted-foreground font-medium">days</span>
           </div>
         </div>
-        <div className="bg-secondary/[0.04] border border-border/30 rounded-2xl p-3 flex flex-col justify-between">
-          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+        <div className="bg-secondary/30 dark:bg-zinc-800/30 backdrop-blur-md border border-border/20 rounded-2xl p-3.5 flex flex-col justify-between hover:border-emerald-500/30 transition-all">
+          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
             Items Learned
           </span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-bold">{summaryStats.totalLearned}</span>
-            <span className="text-xs text-muted-foreground">total</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">{summaryStats.totalLearned}</span>
+            <span className="text-xs text-muted-foreground font-medium">total</span>
           </div>
         </div>
-        <div className="bg-secondary/[0.04] border border-border/30 rounded-2xl p-3 flex flex-col justify-between">
-          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+        <div className="bg-secondary/30 dark:bg-zinc-800/30 backdrop-blur-md border border-border/20 rounded-2xl p-3.5 flex flex-col justify-between hover:border-blue-500/30 transition-all">
+          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
             Revisions Plotted
           </span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-bold">{summaryStats.totalScheduled}</span>
-            <span className="text-xs text-muted-foreground">due dates</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">{summaryStats.totalScheduled}</span>
+            <span className="text-xs text-muted-foreground font-medium">due dates</span>
           </div>
         </div>
-        <div className="bg-secondary/[0.04] border border-border/30 rounded-2xl p-3 flex flex-col justify-between">
-          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">
+        <div className="bg-secondary/30 dark:bg-zinc-800/30 backdrop-blur-md border border-border/20 rounded-2xl p-3.5 flex flex-col justify-between hover:border-purple-500/30 transition-all">
+          <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
             Max Daily Action
           </span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-bold">{summaryStats.highestDailyCount}</span>
-            <span className="text-xs text-muted-foreground">in a day</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">{summaryStats.highestDailyCount}</span>
+            <span className="text-xs text-muted-foreground font-medium">in a day</span>
           </div>
         </div>
       </div>

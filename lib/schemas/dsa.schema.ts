@@ -19,6 +19,12 @@ export const DSAItemSchema = z.object({
   timeComplexity: z.string().optional().nullable(),
   spaceComplexity: z.string().optional().nullable(),
   intuition: z.string().optional().nullable(),
+  statement: z.string().optional().nullable(),
+  actuallyAsking: z.string().optional().nullable(),
+  pattern: z.string().optional().nullable(),
+  keyObservation: z.string().optional().nullable(),
+  maintainedState: z.string().optional().nullable(),
+  whyItWorks: z.string().optional().nullable(),
   codeSnippet: z.string().optional().nullable(),
   dateLearned: z.any(), // Firebase Timestamp
   nextReviewDate: z.any().optional().nullable(), // Firebase Timestamp

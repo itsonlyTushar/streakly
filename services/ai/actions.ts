@@ -22,6 +22,12 @@ export interface AddDsaAction {
   difficulty?: string;
   topics?: string[];
   intuition?: string;
+  statement?: string;
+  actuallyAsking?: string;
+  pattern?: string;
+  keyObservation?: string;
+  maintainedState?: string;
+  whyItWorks?: string;
   timeComplexity?: string;
   spaceComplexity?: string;
   problemUrl?: string;
@@ -148,6 +154,12 @@ function normalizeAction(item: any): CoachAction | null {
       difficulty: str(item.difficulty) || undefined,
       topics: toStringArray(item.topics ?? item.tags),
       intuition: str(item.intuition) || undefined,
+      statement: str(item.statement) || undefined,
+      actuallyAsking: str(item.actuallyAsking) || undefined,
+      pattern: str(item.pattern) || undefined,
+      keyObservation: str(item.keyObservation) || undefined,
+      maintainedState: str(item.maintainedState) || undefined,
+      whyItWorks: str(item.whyItWorks || item.whyDoesItWork) || undefined,
       timeComplexity: str(item.timeComplexity) || undefined,
       spaceComplexity: str(item.spaceComplexity) || undefined,
       problemUrl: str(item.problemUrl || item.url || item.link) || undefined,

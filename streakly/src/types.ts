@@ -35,6 +35,12 @@ export interface DSAItem {
   timeComplexity?: string | null;
   spaceComplexity?: string | null;
   intuition?: string | null;
+  statement?: string | null;
+  actuallyAsking?: string | null;
+  pattern?: string | null;
+  keyObservation?: string | null;
+  maintainedState?: string | null;
+  whyItWorks?: string | null;
   codeSnippet?: string | null;
   dateLearned?: FireTimestamp | null;
   nextReviewDate?: FireTimestamp | null;

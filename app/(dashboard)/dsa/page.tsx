@@ -52,6 +52,11 @@ import {
   Timer,
   Pause,
   RefreshCw,
+  FileText,
+  Target,
+  Lightbulb,
+  Cpu,
+  CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 import { format, isPast } from "date-fns";
@@ -194,6 +199,43 @@ const IntuitionDisplay = ({ content }: { content: string | null | undefined }) =
       className="prose prose-sm dark:prose-invert text-sm font-medium text-muted-foreground leading-relaxed max-w-none break-words"
       dangerouslySetInnerHTML={{ __html: html }}
     />
+  );
+};
+
+const StructuredBreakdownDisplay = ({ item }: { item: any }) => {
+  const fields = [
+    { label: "Statement", value: item.statement, icon: FileText, color: "border-sky-500/20 bg-sky-500/5 text-sky-400" },
+    { label: "Actually asking", value: item.actuallyAsking, icon: Target, color: "border-indigo-500/20 bg-indigo-500/5 text-indigo-400" },
+    { label: "Pattern", value: item.pattern, icon: Layers, color: "border-purple-500/20 bg-purple-500/5 text-purple-400" },
+    { label: "Key Observation", value: item.keyObservation, icon: Lightbulb, color: "border-amber-500/20 bg-amber-500/5 text-amber-400" },
+    { label: "Maintained State", value: item.maintainedState, icon: Cpu, color: "border-emerald-500/20 bg-emerald-500/5 text-emerald-400" },
+    { label: "Why does it work?", value: item.whyItWorks, icon: CheckCircle2, color: "border-rose-500/20 bg-rose-500/5 text-rose-400" },
+  ].filter(f => f.value && f.value.trim());
+
+  if (fields.length === 0) return null;
+
+  return (
+    <div className="w-full space-y-2.5 pt-3 border-t border-border/40 col-span-full">
+      <h5 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+        <Sparkles className="h-3 w-3 text-primary" /> Problem Breakdown
+      </h5>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+        {fields.map((field) => {
+          const Icon = field.icon;
+          return (
+            <div key={field.label} className={`p-3 rounded-xl border ${field.color} space-y-1 w-full`}>
+              <div className="flex items-center gap-1.5 font-black text-[10px] uppercase tracking-wider">
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                {field.label}
+              </div>
+              <p className="text-xs font-medium leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                {field.value}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
@@ -588,6 +630,12 @@ export default function DSAPage() {
   const [timeComplexity, setTimeComplexity] = useState("O(N)");
   const [spaceComplexity, setSpaceComplexity] = useState("O(1)");
   const [intuition, setIntuition] = useState("");
+  const [statement, setStatement] = useState("");
+  const [actuallyAsking, setActuallyAsking] = useState("");
+  const [pattern, setPattern] = useState("");
+  const [keyObservation, setKeyObservation] = useState("");
+  const [maintainedState, setMaintainedState] = useState("");
+  const [whyItWorks, setWhyItWorks] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
   const [referenceLink, setReferenceLink] = useState("");
   const [hasSrs, setHasSrs] = useState(true);
@@ -641,6 +689,12 @@ export default function DSAPage() {
   const [editTime, setEditTime] = useState("");
   const [editSpace, setEditSpace] = useState("");
   const [editIntuition, setEditIntuition] = useState("");
+  const [editStatement, setEditStatement] = useState("");
+  const [editActuallyAsking, setEditActuallyAsking] = useState("");
+  const [editPattern, setEditPattern] = useState("");
+  const [editKeyObservation, setEditKeyObservation] = useState("");
+  const [editMaintainedState, setEditMaintainedState] = useState("");
+  const [editWhyItWorks, setEditWhyItWorks] = useState("");
   const [editSnippet, setEditSnippet] = useState("");
   const [editLink, setEditLink] = useState("");
 
@@ -688,6 +742,12 @@ export default function DSAPage() {
           timeComplexity: timeComplexity || null,
           spaceComplexity: spaceComplexity || null,
           intuition: cleanIntuition(intuition),
+          statement: statement.trim() || null,
+          actuallyAsking: actuallyAsking.trim() || null,
+          pattern: pattern.trim() || null,
+          keyObservation: keyObservation.trim() || null,
+          maintainedState: maintainedState.trim() || null,
+          whyItWorks: whyItWorks.trim() || null,
           codeSnippet: codeSnippet.trim() || null,
           nextReviewDate: customNextReviewDate,
           link: referenceLink.trim() || null,
@@ -703,6 +763,12 @@ export default function DSAPage() {
             setTimeComplexity("O(N)");
             setSpaceComplexity("O(1)");
             setIntuition("");
+            setStatement("");
+            setActuallyAsking("");
+            setPattern("");
+            setKeyObservation("");
+            setMaintainedState("");
+            setWhyItWorks("");
             setCodeSnippet("");
             setReferenceLink("");
             setHasSrs(true);
@@ -743,8 +809,14 @@ Provide the following information:
    - Algorithmic Patterns: ${PRESET_PATTERNS.join(", ")})
 4. Time Complexity (e.g., O(N), O(N log N), O(1))
 5. Space Complexity (e.g., O(1), O(N))
-6. Intuition (Write the intuition using the "Approach" instruction. The intuition should not be detailed; do not include problem understanding, algorithm steps, line-by-line explanation, dry run, or edge cases here, but only cover the "Approach" section which explains the optimized idea and why it works. Format the string value exactly as: "## Approach\n[Explain the optimized idea and why it works.]")
-7. CodeSnippet (Clear, standard, optimal solution in Python using LeetCode class Solution structure, without stdin/stdout parsing)`;
+6. Intuition (Write the intuition using the "Approach" instruction. The intuition should not be detailed; format as "## Approach\n[Explain the optimized idea and why it works.]")
+7. Statement (Core problem statement summary)
+8. ActuallyAsking (What the problem is fundamentally asking for)
+9. Pattern (Core algorithmic pattern & technique used)
+10. KeyObservation (Crucial invariant or math observation)
+11. MaintainedState (Variables, pointers, or state tracked during iteration)
+12. WhyItWorks (Proof/reasoning of correctness)
+13. CodeSnippet (Clear, standard, optimal solution in Python using LeetCode class Solution structure, without stdin/stdout parsing)`;
 
     const schema = {
       type: "OBJECT",
@@ -755,6 +827,12 @@ Provide the following information:
         timeComplexity: { type: "STRING" },
         spaceComplexity: { type: "STRING" },
         intuition: { type: "STRING" },
+        statement: { type: "STRING" },
+        actuallyAsking: { type: "STRING" },
+        pattern: { type: "STRING" },
+        keyObservation: { type: "STRING" },
+        maintainedState: { type: "STRING" },
+        whyItWorks: { type: "STRING" },
         codeSnippet: { type: "STRING" }
       },
       required: ["problemUrl", "difficulty", "topics", "timeComplexity", "spaceComplexity", "intuition", "codeSnippet"]
@@ -853,6 +931,12 @@ Provide the following information:
       if (parsed.timeComplexity) setTimeComplexity(parsed.timeComplexity);
       if (parsed.spaceComplexity) setSpaceComplexity(parsed.spaceComplexity);
       if (parsed.intuition) setIntuition(parsed.intuition);
+      if (parsed.statement) setStatement(parsed.statement);
+      if (parsed.actuallyAsking) setActuallyAsking(parsed.actuallyAsking);
+      if (parsed.pattern) setPattern(parsed.pattern);
+      if (parsed.keyObservation) setKeyObservation(parsed.keyObservation);
+      if (parsed.maintainedState) setMaintainedState(parsed.maintainedState);
+      if (parsed.whyItWorks) setWhyItWorks(parsed.whyItWorks);
       if (parsed.codeSnippet) setCodeSnippet(parsed.codeSnippet);
 
       setIsUrlPristine(false);
@@ -1092,6 +1176,12 @@ Provide the following information:
     setEditTime(item.timeComplexity || "");
     setEditSpace(item.spaceComplexity || "");
     setEditIntuition(item.intuition || "");
+    setEditStatement(item.statement || "");
+    setEditActuallyAsking(item.actuallyAsking || "");
+    setEditPattern(item.pattern || "");
+    setEditKeyObservation(item.keyObservation || "");
+    setEditMaintainedState(item.maintainedState || "");
+    setEditWhyItWorks(item.whyItWorks || "");
     setEditSnippet(item.codeSnippet || "");
     setEditLink(item.link || "");
     setEditNextReviewDate(item.nextReviewDate ? format(item.nextReviewDate.toDate(), "yyyy-MM-dd") : "");
@@ -1101,6 +1191,12 @@ Provide the following information:
     setEditingId(null);
     setEditNextReviewDate("");
     setEditLink("");
+    setEditStatement("");
+    setEditActuallyAsking("");
+    setEditPattern("");
+    setEditKeyObservation("");
+    setEditMaintainedState("");
+    setEditWhyItWorks("");
   };
 
   const handleSaveEdit = async (itemId: string) => {
@@ -1124,6 +1220,12 @@ Provide the following information:
             timeComplexity: editTime || null,
             spaceComplexity: editSpace || null,
             intuition: cleanIntuition(editIntuition),
+            statement: editStatement.trim() || null,
+            actuallyAsking: editActuallyAsking.trim() || null,
+            pattern: editPattern.trim() || null,
+            keyObservation: editKeyObservation.trim() || null,
+            maintainedState: editMaintainedState.trim() || null,
+            whyItWorks: editWhyItWorks.trim() || null,
             codeSnippet: editSnippet.trim() || null,
             nextReviewDate: parsedDate ? Timestamp.fromDate(parsedDate) : null,
             link: editLink.trim() || null,
@@ -1134,6 +1236,12 @@ Provide the following information:
             setEditingId(null);
             setEditNextReviewDate("");
             setEditLink("");
+            setEditStatement("");
+            setEditActuallyAsking("");
+            setEditPattern("");
+            setEditKeyObservation("");
+            setEditMaintainedState("");
+            setEditWhyItWorks("");
           },
         }
       );
@@ -1588,6 +1696,97 @@ Provide the following information:
               />
             </div>
 
+            {/* Problem Breakdown Fields - Spanning Full Width */}
+            <div className="md:col-span-12 space-y-4 pt-4 border-t border-border/40">
+              <div className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5 mb-2">
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> Problem Breakdown
+              </div>
+
+              {/* Statement */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                  Statement
+                </label>
+                <textarea
+                  value={statement}
+                  onChange={(e) => setStatement(e.target.value)}
+                  placeholder="Core problem statement summary..."
+                  rows={2}
+                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all resize-y"
+                />
+              </div>
+
+              {/* Actually asking */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                  Actually asking
+                </label>
+                <textarea
+                  value={actuallyAsking}
+                  onChange={(e) => setActuallyAsking(e.target.value)}
+                  placeholder="What is the core question or underlying requirement?"
+                  rows={2}
+                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all resize-y"
+                />
+              </div>
+
+              {/* Pattern */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                  Pattern
+                </label>
+                <textarea
+                  value={pattern}
+                  onChange={(e) => setPattern(e.target.value)}
+                  placeholder="Algorithmic pattern or mental template used (e.g. Sliding Window + Monotonic Queue)..."
+                  rows={2}
+                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all resize-y"
+                />
+              </div>
+
+              {/* Key Observation */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                  Key Observation
+                </label>
+                <textarea
+                  value={keyObservation}
+                  onChange={(e) => setKeyObservation(e.target.value)}
+                  placeholder="Crucial invariant, property, or math observation that unlocks the solution..."
+                  rows={2}
+                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all resize-y"
+                />
+              </div>
+
+              {/* Maintained State */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                  Maintained State
+                </label>
+                <textarea
+                  value={maintainedState}
+                  onChange={(e) => setMaintainedState(e.target.value)}
+                  placeholder="Variables, state, pointers, or data structures tracked during iteration..."
+                  rows={2}
+                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all resize-y"
+                />
+              </div>
+
+              {/* Why does it work? */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
+                  Why does it work?
+                </label>
+                <textarea
+                  value={whyItWorks}
+                  onChange={(e) => setWhyItWorks(e.target.value)}
+                  placeholder="Proof or logic behind why this approach guarantees correctness and optimal bounds..."
+                  rows={2}
+                  className="w-full bg-background border border-border/60 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all resize-y"
+                />
+              </div>
+            </div>
+
             {/* Solution / Code Snippet */}
             <div className="md:col-span-12">
               <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
@@ -1939,6 +2138,52 @@ Provide the following information:
                                 onChange={setEditIntuition}
                                 placeholder="The Intuition / Approach"
                               />
+                              {/* Edit Breakdown Inputs */}
+                              <div className="w-full space-y-2 pt-2 border-t border-border/40">
+                                <span className="text-[9px] font-black uppercase tracking-wider text-primary block">Problem Breakdown</span>
+                                <input
+                                  type="text"
+                                  value={editStatement}
+                                  onChange={(e) => setEditStatement(e.target.value)}
+                                  placeholder="Statement summary..."
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary"
+                                />
+                                <input
+                                  type="text"
+                                  value={editActuallyAsking}
+                                  onChange={(e) => setEditActuallyAsking(e.target.value)}
+                                  placeholder="Actually asking..."
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary"
+                                />
+                                <input
+                                  type="text"
+                                  value={editPattern}
+                                  onChange={(e) => setEditPattern(e.target.value)}
+                                  placeholder="Pattern..."
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary"
+                                />
+                                <input
+                                  type="text"
+                                  value={editKeyObservation}
+                                  onChange={(e) => setEditKeyObservation(e.target.value)}
+                                  placeholder="Key Observation..."
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary"
+                                />
+                                <input
+                                  type="text"
+                                  value={editMaintainedState}
+                                  onChange={(e) => setEditMaintainedState(e.target.value)}
+                                  placeholder="Maintained State..."
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary"
+                                />
+                                <input
+                                  type="text"
+                                  value={editWhyItWorks}
+                                  onChange={(e) => setEditWhyItWorks(e.target.value)}
+                                  placeholder="Why does it work?..."
+                                  className="w-full bg-background border border-border/60 rounded-lg px-3 py-1.5 text-xs font-medium outline-none focus:border-primary"
+                                />
+                              </div>
                               <CodeTextarea
                                 value={editSnippet}
                                 onChange={setEditSnippet}
@@ -2191,6 +2436,7 @@ Provide the following information:
                                   The Intuition / Approach
                                 </h4>
                                 <IntuitionDisplay content={item.intuition} />
+                                <StructuredBreakdownDisplay item={item} />
                                 {item.link && (
                                   <div className="pt-2">
                                     <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60 block mb-1">
@@ -2440,6 +2686,7 @@ Provide the following information:
                           {revealIntuition[problem.id] && (
                             <div className="p-4 bg-background border border-border/40 rounded-xl animate-in fade-in duration-200">
                               <IntuitionDisplay content={problem.intuition} />
+                              <StructuredBreakdownDisplay item={problem} />
                             </div>
                           )}
                         </div>
