@@ -16,6 +16,7 @@ import {
   Wand2,
   X,
   Menu,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -47,6 +48,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
 
   const navItems = [
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
+    { href: "/flashcards", icon: Layers, label: "Flashcards" },
     { href: "/dsa", icon: Code, label: "DSA Arena" },
     { href: "/code-explainer", icon: Wand2, label: "Wizard" },
     { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },

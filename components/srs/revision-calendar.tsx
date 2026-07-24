@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   format,
   addMonths,
@@ -8,17 +8,13 @@ import {
   startOfMonth,
   endOfMonth,
   startOfWeek,
-  endOfWeek,
-  isSameMonth,
-  isSameDay,
+  endOfWeek, isSameDay,
   addDays,
   isPast,
   startOfDay,
-  startOfToday,
+  startOfToday
 } from "date-fns";
 import {
-  ChevronLeft,
-  ChevronRight,
   Brain,
   Code,
   CheckCircle2,
@@ -26,7 +22,7 @@ import {
   RefreshCw,
   CalendarDays,
   ListTodo,
-  Sparkles,
+  Sparkles
 } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";

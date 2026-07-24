@@ -3,7 +3,7 @@
 import { useAuth } from "@/components/auth-provider";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Logo } from "@/components/ui/logo";
-import { LogIn, Target, Brain, Code, Cpu, Trophy, ArrowRight, Zap, ChevronRight, Calendar, Wand2, Bot, ListTodo } from "lucide-react";
+import { LogIn, Target, Brain, Code, Cpu, Trophy, ArrowRight, Zap, ChevronRight, Calendar, Wand2, Bot, ListTodo, Layers, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -141,6 +141,7 @@ export default function Home() {
             {[
               "Goal streaks",
               "Spaced repetition",
+              "Interactive Flashcards",
               "DSA tracker",
               "Machine coding",
               "Revision calendar",
@@ -207,6 +208,12 @@ export default function Home() {
             {/* Regular cards */}
             {[
               {
+                icon: <Layers className="h-5 w-5" />,
+                label: "Flashcards",
+                title: "Interactive Decks",
+                desc: "Study concepts with 3D flip flashcards, smart SRS intervals (Again, Hard, Good, Easy), and deck organization.",
+              },
+              {
                 icon: <Calendar className="h-5 w-5" />,
                 label: "Calendar",
                 title: "Revision Calendar",
@@ -272,6 +279,68 @@ export default function Home() {
                 </div>
               </motion.div>
             ))}
+          </div>
+        </section>
+
+        {/* ── Spaced Repetition Video Section ── */}
+        <section className="py-16 border-t border-border/40">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <motion.div
+              custom={0}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-60px" }}
+              variants={fadeUp}
+              className="lg:col-span-5 space-y-4"
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
+                <Play className="h-3 w-3 fill-primary" />
+                The Science of Learning
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+                How Spaced Repetition Hack Your Memory
+              </h2>
+              <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                Without revision, humans forget up to 80% of new material within just 24 hours (the Ebbinghaus Forgetting Curve).
+              </p>
+              <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                By reviewing concepts at mathematically timed intervals right when forgetting begins, Streakly locks knowledge directly into your long-term memory.
+              </p>
+              <div className="pt-2 flex flex-col gap-2.5">
+                {[
+                  "Optimized review intervals (1d, 3d, 7d, 14d, 30d)",
+                  "Interactive 3D flashcards with customizable decks",
+                  "Automated daily revision reminders",
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs md:text-sm font-medium text-foreground">
+                    <span className="h-2 w-2 rounded-full bg-primary" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              custom={1}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-60px" }}
+              variants={fadeUp}
+              className="lg:col-span-7"
+            >
+              <div className="relative rounded-3xl border border-border/80 bg-card/60 p-2 sm:p-4 shadow-2xl backdrop-blur-sm overflow-hidden group">
+                <div className="pointer-events-none absolute -inset-px rounded-3xl border border-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
+                  <iframe
+                    className="h-full w-full border-0"
+                    src="https://www.youtube.com/embed/YL2NDkqRJpc"
+                    title="How Spaced Repetition Works"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
