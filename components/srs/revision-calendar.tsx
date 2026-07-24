@@ -8,7 +8,9 @@ import {
   startOfMonth,
   endOfMonth,
   startOfWeek,
-  endOfWeek, isSameDay,
+  endOfWeek,
+  isSameDay,
+  isSameMonth,
   addDays,
   isPast,
   startOfDay,
@@ -22,7 +24,9 @@ import {
   RefreshCw,
   CalendarDays,
   ListTodo,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 import { cn } from "@/lib/utils";
@@ -36,8 +40,6 @@ import { PRIORITY_META } from "@/components/tasks/task-ui";
 import { useAllUserNotes } from "@/hooks/use-notes";
 import { SRS_INTERVALS, calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
 import { useSrsPrompt } from "@/components/tasks/srs-prompt-provider";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
 import { Sheet } from "@/components/ui/sheet";
 
 export function RevisionCalendar() {
@@ -266,169 +268,254 @@ export function RevisionCalendar() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Monthly Calendar Grid Card powered by react-calendar */}
+      {/* Monthly Calendar Grid Card */}
       <div className="bg-card/75 dark:bg-zinc-900/50 backdrop-blur-2xl border border-border/40 dark:border-white/10 rounded-[2.5rem] p-4 sm:p-8 shadow-2xl shadow-purple-500/5 dark:shadow-black/70 flex flex-col justify-between relative overflow-hidden">
         {/* Subtle inner glow */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-violet-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="space-y-6">
-          {/* Top Filter Bar */}
+          {/* Header / Month Navigator */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/30 pb-5">
-            <div className="space-y-1">
-              <h3 className="text-2xl sm:text-3xl font-black tracking-tighter bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">
-                Revision Calendar
-              </h3>
-              <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                Powered by react-calendar • Visualize SRS, DSA & Tasks.
-              </p>
+            <div className="flex items-center justify-between w-full sm:w-auto">
+              <div className="space-y-1">
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tighter bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">
+                  {format(currentMonth, "MMMM yyyy")}
+                </h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                  Visualize active retention paths & upcoming milestones.
+                </p>
+              </div>
+
+              {/* Navigation buttons on mobile */}
+              <div className="flex sm:hidden items-center gap-1.5">
+                <button
+                  onClick={prevMonth}
+                  className="p-2 rounded-2xl bg-secondary/50 dark:bg-zinc-800/40 hover:bg-secondary border border-border/30 backdrop-blur-md transition-all active:scale-95 text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={nextMonth}
+                  className="p-2 rounded-2xl bg-secondary/50 dark:bg-zinc-800/40 hover:bg-secondary border border-border/30 backdrop-blur-md transition-all active:scale-95 text-foreground"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Type Filters */}
-            <div className="bg-secondary/40 dark:bg-zinc-800/40 p-1 sm:p-1.5 rounded-2xl flex items-center gap-1 border border-border/20 backdrop-blur-md shadow-inner">
-              <button
-                onClick={() => setFilterType("all")}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
-                  filterType === "all"
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                )}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterType("srs")}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
-                  filterType === "srs"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                )}
-              >
-                SRS
-              </button>
-              <button
-                onClick={() => setFilterType("dsa")}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
-                  filterType === "dsa"
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                )}
-              >
-                DSA
-              </button>
-              <button
-                onClick={() => setFilterType("task")}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
-                  filterType === "task"
-                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-500/25"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                )}
-              >
-                Tasks
-              </button>
+            <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto overflow-x-auto scrollbar-none py-0.5">
+              {/* Type Filters */}
+              <div className="bg-secondary/40 dark:bg-zinc-800/40 p-1 sm:p-1.5 rounded-2xl flex items-center gap-1 border border-border/20 backdrop-blur-md shadow-inner">
+                <button
+                  onClick={() => setFilterType("all")}
+                  className={cn(
+                    "px-3 py-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                    filterType === "all"
+                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  )}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilterType("srs")}
+                  className={cn(
+                    "px-3 py-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                    filterType === "srs"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  )}
+                >
+                  SRS
+                </button>
+                <button
+                  onClick={() => setFilterType("dsa")}
+                  className={cn(
+                    "px-3 py-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                    filterType === "dsa"
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-500/25"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  )}
+                >
+                  DSA
+                </button>
+                <button
+                  onClick={() => setFilterType("task")}
+                  className={cn(
+                    "px-3 py-1 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer",
+                    filterType === "task"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-500/25"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  )}
+                >
+                  Tasks
+                </button>
+              </div>
+
+              {/* Navigation buttons on desktop */}
+              <div className="hidden sm:flex items-center gap-1.5">
+                <button
+                  onClick={prevMonth}
+                  className="p-2 sm:p-2.5 rounded-2xl bg-secondary/50 dark:bg-zinc-800/40 hover:bg-secondary dark:hover:bg-zinc-700/60 border border-border/30 backdrop-blur-md transition-all active:scale-95 text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={nextMonth}
+                  className="p-2 sm:p-2.5 rounded-2xl bg-secondary/50 dark:bg-zinc-800/40 hover:bg-secondary dark:hover:bg-zinc-700/60 border border-border/30 backdrop-blur-md transition-all active:scale-95 text-foreground"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* React Calendar Integration */}
-          <div className="w-full">
-            <Calendar
-              onChange={(val) => {
-                if (val instanceof Date) {
-                  setSelectedDate(val);
-                  setIsSheetOpen(true);
-                }
-              }}
-              value={selectedDate}
-              activeStartDate={currentMonth}
-              onActiveStartDateChange={({ activeStartDate }) => {
-                if (activeStartDate) setCurrentMonth(activeStartDate);
-              }}
-              tileContent={({ date, view }) => {
-                if (view !== "month") return null;
-                const dayKey = format(date, "yyyy-MM-dd");
-                const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [], machineCoding: [] };
+          {/* Weekdays Labels */}
+          <div className="grid grid-cols-7 gap-1.5 text-center bg-secondary/20 dark:bg-zinc-800/20 p-1 rounded-2xl backdrop-blur-sm border border-border/20">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground/80 py-1.5"
+              >
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day[0]}</span>
+              </div>
+            ))}
+          </div>
 
-                const srsFiltered = filterType === "all" || filterType === "srs" ? dayData.srs : [];
-                const dsaFiltered = filterType === "all" || filterType === "dsa" ? dayData.dsa : [];
-                const taskFiltered = filterType === "all" || filterType === "task" ? dayData.task : [];
-                const mcFiltered = filterType === "all" ? (dayData.machineCoding || []) : [];
+          {/* Day Cells Grid */}
+          <div className="grid grid-cols-7 gap-2">
+            {calendarCells.map((day) => {
+              const dayKey = format(day, "yyyy-MM-dd");
+              const dayData = itemsByDate[dayKey] || { srs: [], dsa: [], task: [], machineCoding: [] };
 
-                const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length + mcFiltered.length;
+              const srsFiltered = filterType === "all" || filterType === "srs" ? dayData.srs : [];
+              const dsaFiltered = filterType === "all" || filterType === "dsa" ? dayData.dsa : [];
+              const taskFiltered = filterType === "all" || filterType === "task" ? dayData.task : [];
+              const mcFiltered = filterType === "all" ? (dayData.machineCoding || []) : [];
 
-                if (totalItemsCount === 0) return null;
+              const totalItemsCount = srsFiltered.length + dsaFiltered.length + taskFiltered.length + mcFiltered.length;
 
-                return (
-                  <div className="w-full mt-1 flex flex-col justify-end gap-1 flex-1 overflow-hidden pointer-events-none">
-                    {/* Desktop Badges */}
-                    <div className="hidden md:flex flex-col gap-1 w-full">
-                      {srsFiltered.slice(0, 2).map((item: any) => (
-                        <div
-                          key={item.id}
-                          className="text-[9px] truncate bg-blue-500/15 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
-                        >
-                          <Brain className="h-2.5 w-2.5 flex-shrink-0" />
-                          <span>{item.topic}</span>
-                        </div>
-                      ))}
+              const isCurrentMonth = isSameMonth(day, currentMonth);
+              const isDayToday = isSameDay(day, today);
+              const isDaySelected = isSameDay(day, selectedDate);
 
-                      {dsaFiltered.slice(0, 2).map((item: any) => (
+              const hasDueTasks = totalItemsCount > 0 && (isPast(day) || isSameDay(day, today));
+
+              return (
+                <button
+                  key={day.toString()}
+                  onClick={() => {
+                    setSelectedDate(day);
+                    setIsSheetOpen(true);
+                  }}
+                  className={cn(
+                    "min-h-[55px] md:min-h-[115px] p-1.5 sm:p-2 rounded-2xl flex flex-col items-stretch justify-between border transition-all duration-300 text-left group overflow-hidden relative backdrop-blur-sm cursor-pointer",
+                    isCurrentMonth
+                      ? "bg-secondary/20 dark:bg-zinc-800/25 hover:bg-violet-500/10 dark:hover:bg-violet-500/15 hover:border-violet-500/40 border-border/30 hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-0.5"
+                      : "bg-secondary/5 dark:bg-zinc-900/15 border-transparent opacity-30 text-muted-foreground",
+                    isDaySelected
+                      ? "ring-2 ring-violet-500 ring-offset-2 dark:ring-offset-zinc-950 bg-violet-500/20 border-violet-500 shadow-xl shadow-violet-500/20"
+                      : "border-border/30",
+                    isDayToday && "bg-gradient-to-br from-violet-500/20 via-indigo-500/10 to-blue-500/20 border-violet-500/60 shadow-[0_0_20px_rgba(139,92,246,0.2)] font-bold",
+                    hasDueTasks && !isDaySelected && "border-amber-500/50 bg-gradient-to-br from-amber-500/15 to-orange-500/10 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+                  )}
+                >
+                  <header className="flex justify-between items-center w-full px-0.5">
+                    <span
+                      className={cn(
+                        "text-xs font-bold leading-none transition-transform group-hover:scale-110",
+                        isDayToday ? "text-white bg-gradient-to-r from-violet-600 to-indigo-600 px-2 py-0.5 rounded-md shadow-sm shadow-violet-500/30" : "text-muted-foreground"
+                      )}
+                    >
+                      {format(day, "d")}
+                    </span>
+
+                    {totalItemsCount > 0 && (
+                      <span className="text-[9px] font-black leading-none bg-secondary/80 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded-full text-foreground/90 border border-border/40 scale-90 backdrop-blur-xs">
+                        {totalItemsCount}
+                      </span>
+                    )}
+                  </header>
+
+                  {/* Small pills/indicators representation - Desktop */}
+                  <div className="hidden md:flex mt-2 space-y-1 overflow-hidden pointer-events-none flex-1 flex flex-col justify-end">
+                    {srsFiltered.slice(0, 2).map((item) => (
+                      <div
+                        key={item.id}
+                        className="text-[9px] truncate bg-blue-500/15 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-500/30 dark:border-blue-400/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
+                      >
+                        <Brain className="h-2.5 w-2.5 flex-shrink-0" />
+                        <span>{item.topic}</span>
+                      </div>
+                    ))}
+
+                    {dsaFiltered.slice(0, 2).map((item) => {
+                      const isHard = item.difficulty === "Hard";
+                      const isEasy = item.difficulty === "Easy";
+                      return (
                         <div
                           key={item.id}
                           className={cn(
                             "text-[9px] truncate px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 border backdrop-blur-xs shadow-xs",
-                            item.difficulty === "Hard"
-                              ? "bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30"
-                              : item.difficulty === "Easy"
-                              ? "bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30"
-                              : "bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30"
+                            isHard
+                              ? "bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30 dark:border-rose-400/30"
+                              : isEasy
+                              ? "bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30 dark:border-emerald-400/30"
+                              : "bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30 dark:border-amber-400/30"
                           )}
                         >
                           <Code className="h-2.5 w-2.5 flex-shrink-0" />
                           <span>{item.problemName}</span>
                         </div>
-                      ))}
+                      );
+                    })}
 
-                      {taskFiltered.slice(0, 2).map((item: any) => (
-                        <div
-                          key={item.id}
-                          className="text-[9px] truncate bg-violet-500/15 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
-                        >
-                          <ListTodo className="h-2.5 w-2.5 flex-shrink-0" />
-                          <span>{item.title}</span>
-                        </div>
-                      ))}
+                    {taskFiltered.slice(0, 2).map((item) => (
+                      <div
+                        key={item.id}
+                        className="text-[9px] truncate bg-violet-500/15 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/30 dark:border-violet-400/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
+                      >
+                        <ListTodo className="h-2.5 w-2.5 flex-shrink-0" />
+                        <span>{item.title}</span>
+                      </div>
+                    ))}
 
-                      {mcFiltered.slice(0, 2).map((item: any) => (
-                        <div
-                          key={item.id}
-                          className="text-[9px] truncate bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
-                        >
-                          <Sparkles className="h-2.5 w-2.5 flex-shrink-0" />
-                          <span>{item.questionName}</span>
-                        </div>
-                      ))}
+                    {mcFiltered.slice(0, 2).map((item) => (
+                      <div
+                        key={item.id}
+                        className="text-[9px] truncate bg-cyan-500/15 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30 dark:border-cyan-400/30 px-1.5 py-0.5 rounded-lg leading-none font-bold uppercase tracking-wider flex items-center gap-1 backdrop-blur-xs shadow-xs"
+                      >
+                        <Sparkles className="h-2.5 w-2.5 flex-shrink-0" />
+                        <span>{item.questionName}</span>
+                      </div>
+                    ))}
 
-                      {totalItemsCount > 4 && (
-                        <span className="text-[8px] font-black text-muted-foreground/70 text-right leading-none pr-1">
-                          +{totalItemsCount - 4} more
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Mobile Dots */}
-                    <div className="flex md:hidden gap-1 justify-center items-center flex-wrap w-full mt-1">
-                      {srsFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm" />}
-                      {dsaFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" />}
-                      {taskFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-sm" />}
-                      {mcFiltered.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-sm" />}
-                    </div>
+                    {totalItemsCount > 4 && (
+                      <div className="text-[8px] font-black text-muted-foreground/70 text-right leading-none pr-1">
+                        +{totalItemsCount - 4} more
+                      </div>
+                    )}
                   </div>
-                );
-              }}
-            />
+
+                  {/* Tiny dot indicators - Mobile */}
+                  <div className="flex md:hidden mt-1 gap-1 justify-center items-center pointer-events-none flex-wrap w-full">
+                    {srsFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+                    )}
+                    {dsaFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+                    )}
+                    {taskFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-sm shadow-violet-500/50" />
+                    )}
+                    {mcFiltered.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-sm shadow-cyan-500/50" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
