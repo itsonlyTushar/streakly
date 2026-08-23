@@ -17,6 +17,7 @@ import {
   X,
   Menu,
   Layers,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -54,6 +55,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
     { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },
     { href: "/interview", icon: Bot, label: "Mock Interview (Beta)" },
     { href: "/tasks", icon: ListTodo, label: "Tasks" },
+    { href: "/record", icon: Video, label: "Record" },
     { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
     { href: "/app", icon: Target, label: "Active Goals" },
     { href: "/profile", icon: User, label: "Profile" },
