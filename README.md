@@ -32,7 +32,7 @@
 - **State/Queries**: React Query / TanStack Query
 - **Styling**: Tailwind CSS 4 + Framer Motion
 - **Backend**: Firebase Firestore + Firebase Auth
-- **Email**: Resend + React Email
+  - **Email**: Brevo + React Email
 - **AI**: Gemini API integration for code explanation and DSA auto-fill
 - **Utilities**: Zod, date-fns, Lucide icons, Zustand, Radix UI
 
@@ -46,7 +46,7 @@ npm install
 
 ### 2. Create environment file
 
-Create `.env.local` in the project root with the required Firebase, Resend, and secret values.
+Create `.env.local` in the project root with the required Firebase, Brevo, and secret values.
 
 ### 3. Run the app
 
@@ -68,7 +68,7 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=xxx
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=xxx
 NEXT_PUBLIC_FIREBASE_APP_ID=xxx
 
-RESEND_API_KEY=re_xxx
+BREVO_API_KEY=your_brevo_api_key
 FIREBASE_CLIENT_EMAIL=xxx
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n"
 CRON_SECRET=your_random_secret

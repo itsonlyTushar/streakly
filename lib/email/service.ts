@@ -1,10 +1,11 @@
-import { Resend } from "resend";
+import { render } from "@react-email/render";
 import { SRSReminderEmail } from "@/emails/srs-reminder";
 import React from "react";
 
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const FROM_NAME = "Streakly";
+const FROM_ADDRESS = "reminder@streakly.online";
 
-export const FROM_EMAIL = "Streakly <hello@streakly.online>";
 export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://streakly.online";
 
 interface SendReminderParams {
@@ -18,30 +19,50 @@ interface SendReminderParams {
 }
 
 export async function sendSRSReminder({ email, topics }: SendReminderParams) {
-  if (!resend) {
-    console.warn("Skipping email send because RESEND_API_KEY is missing");
-    return { success: false, error: "RESEND_API_KEY missing" };
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    console.error("Cannot send email because BREVO_API_KEY is missing");
+    return { success: false, error: "BREVO_API_KEY missing" };
   }
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `${topics.length} revision${topics.length > 1 ? "s" : ""} for today!`,
-      react: React.createElement(SRSReminderEmail, {
+    const htmlContent = await render(
+      React.createElement(SRSReminderEmail, {
         topics,
         baseUrl: BASE_URL,
+      })
+    );
+    const response = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "content-type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          name: FROM_NAME,
+          email: FROM_ADDRESS,
+        },
+        to: [{ email }],
+        subject: `${topics.length} revision${topics.length > 1 ? "s" : ""} for today!`,
+        htmlContent,
       }),
     });
 
-    if (error) {
-      console.error("Resend error:", error);
+    const responseBody = await response.text();
+    if (!response.ok) {
+      const error = `Brevo API returned ${response.status}: ${responseBody}`;
+      console.error(error);
       return { success: false, error };
     }
 
-    return { success: true, data };
+    return {
+      success: true,
+      data: responseBody,
+    };
   } catch (error) {
-    console.error("Failed to send email:", error);
+    console.error("Failed to send email through Brevo:", error);
     return { success: false, error };
   }
 }
