@@ -3,21 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Target,
-  Trophy,
   LogOut,
   User,
   Brain,
   Code,
   Cpu,
   Calendar,
-  ListTodo,
-  Bot,
   Wand2,
   X,
   Menu,
-  Layers,
-  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/auth-provider";
@@ -49,15 +43,9 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
 
   const navItems = [
     { href: "/srs", icon: Brain, label: "Spaced Repetition" },
-    { href: "/flashcards", icon: Layers, label: "Flashcards" },
     { href: "/dsa", icon: Code, label: "DSA Arena" },
     { href: "/code-explainer", icon: Wand2, label: "Wizard" },
     { href: "/machine-coding", icon: Cpu, label: "Machine Coding" },
-    { href: "/interview", icon: Bot, label: "Mock Interview (Beta)" },
-    { href: "/tasks", icon: ListTodo, label: "Tasks" },
-    { href: "/record", icon: Video, label: "Record" },
-    { href: "/hall-of-fame", icon: Trophy, label: "Hall of Fame" },
-    { href: "/app", icon: Target, label: "Active Goals" },
     { href: "/profile", icon: User, label: "Profile" },
   ];
 

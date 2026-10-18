@@ -1,42 +1,81 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import {
-  useSRSItems,
+  addDays,
+  format,
+  isBefore,
+  startOfDay,
+} from "date-fns";
+import { Timestamp } from "firebase/firestore";
+import {
+  Bell,
+  BookOpen,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  Link as LinkIcon,
+  Plus,
+  RotateCcw,
+  Save,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Switch } from "@/components/ui/switch";
+import { useAuthGuard } from "@/components/auth-guard";
+import {
   useAddSRSItem,
-  useUpdateSRSItem,
   useDeleteSRSItem,
+  useSRSItems,
+  useUpdateSRSItem,
 } from "@/hooks/use-srs";
 import {
-  Brain,
-  Plus,
-  History,
-  CheckCircle2,
-  Clock,
-  Search,
-  Calendar,
-  Sparkles,
-  Bell,
-  Edit2,
-  Save,
-  X,
-  Trash2,
-  Check,
-  RefreshCw,
-  Link,
-  ExternalLink,
-} from "lucide-react";
-import { useState } from "react";
-import { format, addDays, isPast, set } from "date-fns";
-import { Timestamp } from "firebase/firestore";
-import { Switch } from "@/components/ui/switch";
-import { DatePicker } from "@/components/ui/date-picker";
-import { useAuthGuard } from "@/components/auth-guard";
-
-import {
-  SRS_INTERVALS,
   calculateNextReviewDate,
   getInitialReviewDate,
+  SRS_INTERVALS,
 } from "@/lib/srs-utils";
+import type { SRSItem } from "@/services/srs.service";
+
+type StatusFilter = "all" | "due" | "in-progress" | "mastered" | "reminders";
+
+const statusFilters: { id: StatusFilter; label: string }[] = [
+  { id: "all", label: "All topics" },
+  { id: "due", label: "Due today" },
+  { id: "in-progress", label: "Scheduled" },
+  { id: "mastered", label: "Mastered" },
+  { id: "reminders", label: "Reminders" },
+];
+
+function isMastered(item: SRSItem) {
+  return item.reviewCount >= SRS_INTERVALS.length;
+}
+
+function isDue(item: SRSItem, today: Date) {
+  return Boolean(
+    item.nextReviewDate &&
+      item.reviewCount < SRS_INTERVALS.length &&
+      !isBefore(today, startOfDay(item.nextReviewDate.toDate())),
+  );
+}
+
+function getStatus(item: SRSItem, today: Date) {
+  if (isMastered(item)) {
+    return { label: "Mastered", className: "bg-[#e9f4d4] text-[#486b23] dark:bg-lime-300/10 dark:text-lime-200" };
+  }
+  if (item.nextReviewDate && isDue(item, today)) {
+    return { label: "Due today", className: "bg-[#fff0d7] text-[#8a5311] dark:bg-amber-300/10 dark:text-amber-200" };
+  }
+  if (item.nextReviewDate) {
+    return { label: "Scheduled", className: "bg-secondary text-muted-foreground" };
+  }
+  return { label: "Reminder", className: "bg-[#eeebff] text-[#6452a7] dark:bg-violet-300/10 dark:text-violet-200" };
+}
 
 export default function SRSPage() {
   const { data: items = [], isLoading } = useSRSItems();
@@ -48,28 +87,88 @@ export default function SRSPage() {
   const [newTopic, setNewTopic] = useState("");
   const [newDetails, setNewDetails] = useState("");
   const [newLink, setNewLink] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [hasReminder, setHasReminder] = useState(false);
-  const [reminderSelectedDate, setReminderSelectedDate] = useState<
-    Date | undefined
-  >(addDays(new Date(), 1));
-
-  // Edit states
+  const [reminderDate, setReminderDate] = useState<Date | undefined>(
+    addDays(new Date(), 1),
+  );
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTopic, setEditTopic] = useState("");
   const [editDetails, setEditDetails] = useState("");
   const [editLink, setEditLink] = useState("");
-
-  // Delete states
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "due" | "in-progress" | "mastered" | "reminders"
-  >("all");
+  const today = startOfDay(new Date());
+  const counts = {
+    all: items.length,
+    due: items.filter((item) => isDue(item, today)).length,
+    inProgress: items.filter(
+      (item) =>
+        item.nextReviewDate &&
+        item.reviewCount < SRS_INTERVALS.length &&
+        !isDue(item, today),
+    ).length,
+    mastered: items.filter(isMastered).length,
+    reminders: items.filter((item) => !item.nextReviewDate && item.reminderDate)
+      .length,
+  };
 
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const search = searchQuery.trim().toLowerCase();
+  const filteredItems = items
+    .filter((item) => {
+      const matchesSearch =
+        !search ||
+        item.topic.toLowerCase().includes(search) ||
+        item.details?.toLowerCase().includes(search);
+      if (!matchesSearch) return false;
+
+      switch (statusFilter) {
+        case "due":
+          return isDue(item, today);
+        case "in-progress":
+          return Boolean(
+            item.nextReviewDate &&
+              item.reviewCount < SRS_INTERVALS.length &&
+              !isDue(item, today),
+          );
+        case "mastered":
+          return isMastered(item);
+        case "reminders":
+          return Boolean(!item.nextReviewDate && item.reminderDate);
+        default:
+          return true;
+      }
+    })
+    .sort((a, b) => {
+      const aDue = isDue(a, today);
+      const bDue = isDue(b, today);
+      if (aDue !== bDue) return aDue ? -1 : 1;
+      if (a.nextReviewDate && b.nextReviewDate) {
+        return a.nextReviewDate.toMillis() - b.nextReviewDate.toMillis();
+      }
+      if (a.nextReviewDate) return -1;
+      if (b.nextReviewDate) return 1;
+      return a.topic.localeCompare(b.topic);
+    });
+
+  const nextReview = items
+    .filter(
+      (item) =>
+        item.nextReviewDate &&
+        !isDue(item, today) &&
+        !isMastered(item),
+    )
+    .sort(
+      (a, b) =>
+        a.nextReviewDate.toMillis() - b.nextReviewDate.toMillis(),
+    )[0];
+
+  const showCreateForm = isCreateOpen || items.length === 0;
+
+  function handleAddItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!newTopic.trim()) return;
 
     requireAuth(() => {
@@ -80,7 +179,7 @@ export default function SRSPage() {
           link: newLink.trim() || null,
           nextReviewDate: hasReminder ? null : getInitialReviewDate(),
           reminderDate:
-            hasReminder && reminderSelectedDate ? reminderSelectedDate : null,
+            hasReminder && reminderDate ? reminderDate : null,
         },
         {
           onSuccess: () => {
@@ -88,70 +187,43 @@ export default function SRSPage() {
             setNewDetails("");
             setNewLink("");
             setHasReminder(false);
+            setIsCreateOpen(false);
           },
         },
       );
     });
-  };
+  }
 
-  const handleReviewSuccess = async (item: any) => {
+  function handleReview(item: SRSItem, remembered: boolean) {
     requireAuth(() => {
-      const nextReviewCount = item.reviewCount + 1;
-      const nextDateValue = calculateNextReviewDate(nextReviewCount);
-
+      const nextReviewCount = remembered ? item.reviewCount + 1 : 0;
+      const nextDate = calculateNextReviewDate(nextReviewCount);
       updateMutation.mutate({
         itemId: item.id,
         data: {
           reviewCount: nextReviewCount,
-          nextReviewDate: nextDateValue
-            ? Timestamp.fromDate(nextDateValue)
-            : (null as any),
+          nextReviewDate: nextDate ? Timestamp.fromDate(nextDate) : null,
         },
       });
     });
-  };
+  }
 
-  const handleReviewForgot = async (item: any) => {
-    requireAuth(() => {
-      const nextDateValue = calculateNextReviewDate(0);
-
-      updateMutation.mutate({
-        itemId: item.id,
-        data: {
-          reviewCount: 0,
-          nextReviewDate: nextDateValue
-            ? Timestamp.fromDate(nextDateValue)
-            : (null as any),
-        },
-      });
-    });
-  };
-
-  const handleDeleteConfirm = async (itemId: string) => {
-    requireAuth(() => {
-      deleteMutation.mutate(itemId, {
-        onSuccess: () => {
-          setDeletingId(null);
-        },
-      });
-    });
-  };
-
-  const handleStartEdit = (item: any) => {
+  function startEditing(item: SRSItem) {
     setEditingId(item.id);
     setEditTopic(item.topic);
     setEditDetails(item.details || "");
     setEditLink(item.link || "");
-  };
+  }
 
-  const handleCancelEdit = () => {
+  function cancelEditing() {
     setEditingId(null);
     setEditTopic("");
     setEditDetails("");
     setEditLink("");
-  };
+  }
 
-  const handleSaveEdit = async (itemId: string) => {
+  function saveEdit(event: FormEvent<HTMLFormElement>, itemId: string) {
+    event.preventDefault();
     if (!editTopic.trim()) return;
 
     requireAuth(() => {
@@ -164,669 +236,617 @@ export default function SRSPage() {
             link: editLink.trim() || null,
           },
         },
-        {
-          onSuccess: () => {
-            handleCancelEdit();
-          },
-        },
+        { onSuccess: cancelEditing },
       );
     });
-  };
+  }
 
-  // Status counts
-  const counts = {
-    all: items.length,
-    due: items.filter(
-      (item) =>
-        item.nextReviewDate &&
-        isPast(item.nextReviewDate.toDate()) &&
-        item.reviewCount < SRS_INTERVALS.length,
-    ).length,
-    inProgress: items.filter(
-      (item) =>
-        item.nextReviewDate &&
-        !isPast(item.nextReviewDate.toDate()) &&
-        item.reviewCount < SRS_INTERVALS.length,
-    ).length,
-    mastered: items.filter(
-      (item) => item.nextReviewDate && item.reviewCount >= SRS_INTERVALS.length,
-    ).length,
-    reminders: items.filter((item) => !item.nextReviewDate && item.reminderDate)
-      .length,
-  };
-
-  const searchedItems = items.filter(
-    (item) =>
-      item.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.details?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const filteredItems = searchedItems.filter((item) => {
-    if (statusFilter === "all") return true;
-
-    const isDue = item.nextReviewDate && isPast(item.nextReviewDate.toDate());
-    const isCompleted =
-      item.nextReviewDate && item.reviewCount >= SRS_INTERVALS.length;
-
-    if (statusFilter === "due") {
-      return item.nextReviewDate && isDue && !isCompleted;
-    }
-    if (statusFilter === "in-progress") {
-      return item.nextReviewDate && !isDue && !isCompleted;
-    }
-    if (statusFilter === "mastered") {
-      return isCompleted;
-    }
-    if (statusFilter === "reminders") {
-      return !item.nextReviewDate && item.reminderDate;
-    }
-    return true;
-  });
+  function confirmDelete(itemId: string) {
+    requireAuth(() => {
+      deleteMutation.mutate(itemId, {
+        onSuccess: () => setDeletingId(null),
+      });
+    });
+  }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin text-primary">
-          <Brain className="h-10 w-10" />
-        </div>
+      <div className="mx-auto max-w-6xl space-y-8 pb-16" aria-label="Loading topics">
+        <div className="h-16 w-2/3 animate-pulse rounded-xl bg-secondary" />
+        <div className="h-36 animate-pulse rounded-3xl bg-secondary" />
+        <div className="h-64 animate-pulse rounded-3xl bg-secondary" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20 px-4">
-      {/* Header Section */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-2">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-primary text-sm font-black uppercase tracking-widest">
-            <Sparkles className="h-4 w-4" />
-            Active Learning
-          </div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tighter">
-            Spaced Repetition
-          </h1>
-          <p className="text-muted-foreground font-medium max-w-sm">
-            Retain mastery through scheduled revision milestones.
-          </p>
-        </div>
-      </header>
-
-      {/* Add New Learning Form - Refined & Premium */}
-      <section className="bg-gradient-to-br from-card to-secondary/20 border border-border/60 rounded-3xl p-5 md:p-6 shadow-2xl shadow-primary/5 relative group">
-        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-          <div className="absolute -top-10 -right-10 p-8 text-primary/5 -rotate-12 transition-transform group-hover:scale-110 duration-700">
-            <Brain className="h-64 w-64" />
-          </div>
-        </div>
-
-        <form
-          onSubmit={handleAddItem}
-          className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6"
-        >
-          <div className="md:col-span-12">
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-2">
-              <Plus className="h-5 w-5 text-primary" />
-              Capture new knowledge
-            </h2>
-          </div>
-
-          <div className="md:col-span-5">
-            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
-              Topic Title
-            </label>
-            <input
-              required
-              type="text"
-              value={newTopic}
-              onChange={(e) => setNewTopic(e.target.value)}
-              placeholder="e.g., React Server Components"
-              className="w-full bg-background border border-border/60 rounded-xl px-4 py-4 text-base font-bold focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/30"
-            />
-          </div>
-
-          <div className="md:col-span-5">
-            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
-              Context or Details
-            </label>
-            <input
-              type="text"
-              value={newDetails}
-              onChange={(e) => setNewDetails(e.target.value)}
-              placeholder="Key takeaway or reference"
-              className="w-full bg-background border border-border/60 rounded-xl px-4 py-4 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/30"
-            />
-          </div>
-
-          <div className="md:col-span-5">
-            <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
-              Reference Link
-            </label>
-            <div className="relative">
-              <Link className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
-              <input
-                type="url"
-                value={newLink}
-                onChange={(e) => setNewLink(e.target.value)}
-                placeholder="https://example.com/article"
-                className="w-full bg-background border border-border/60 rounded-xl pl-11 pr-4 py-4 text-base font-medium focus:border-primary focus:ring-4 ring-primary/10 outline-none transition-all placeholder:text-muted-foreground/30"
-              />
+    <MotionConfig reducedMotion="user">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: "easeOut" }}
+        className="mx-auto max-w-6xl space-y-8 pb-16"
+      >
+        <header className="flex flex-col justify-between gap-5 pt-2 sm:flex-row sm:items-end">
+          <div>
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-[#a6cf57]" />
+              Study system <span className="text-border">/</span> Recall
             </div>
+            <h1 className="text-3xl leading-tight tracking-tight sm:text-4xl">
+              Spaced repetition
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              Review each topic on schedule. Mark what you remember, or restart
+              its path if you need another pass.
+            </p>
           </div>
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen((open) => !open)}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-semibold text-background transition-colors hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-expanded={showCreateForm}
+            >
+              {showCreateForm ? <X size={16} /> : <Plus size={16} />}
+              {showCreateForm ? "Close form" : "Add a topic"}
+            </button>
+          )}
+        </header>
 
-          <div className="md:col-span-12 flex flex-wrap items-center gap-6 mt-2">
-            <div className="flex items-center gap-3 bg-background/50 border border-border/40 px-4 py-2 rounded-2xl shadow-sm">
-              <div className="flex items-center gap-2">
-                <Bell
-                  className={`h-4 w-4 ${hasReminder ? "text-primary" : "text-muted-foreground/30"}`}
-                />
-                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
-                  Set Reminder
+        <section
+          aria-label="Today's review summary"
+          className="relative overflow-hidden rounded-[1.75rem] bg-[#19251d] px-5 py-6 text-[#f2f4ea] sm:px-8 sm:py-7"
+        >
+          <div className="pointer-events-none absolute -right-8 -top-16 h-56 w-56 rounded-full border border-white/[0.06]" />
+          <div className="pointer-events-none absolute -right-1 -top-9 h-44 w-44 rounded-full border border-white/[0.06]" />
+          <div className="relative grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d4e1c5]/70">
+                <CalendarDays size={14} />
+                Today · {format(new Date(), "EEEE, MMM d")}
+              </div>
+              <div className="mt-3 flex items-baseline gap-3">
+                <span className="font-v-headings text-5xl leading-none tracking-tight text-[#d2f078] sm:text-6xl">
+                  {counts.due}
+                </span>
+                <span className="text-base text-[#f2f4ea]/80">
+                  {counts.due === 1 ? "topic to review" : "topics to review"}
                 </span>
               </div>
-              <Switch checked={hasReminder} onCheckedChange={setHasReminder} />
+              <p className="mt-2 text-sm text-[#d4e1c5]/60">
+                {counts.due > 0
+                  ? "Start with a quick recall, then advance each topic."
+                  : "You’re all caught up. Add a topic or check what’s coming next."}
+              </p>
             </div>
-
-            {hasReminder && (
-              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                <div className="flex flex-col min-w-[200px]">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-1 mb-1 block">
-                    Reminder Date
-                  </label>
-                  <DatePicker
-                    selected={reminderSelectedDate}
-                    onSelect={setReminderSelectedDate}
-                    placeholder="Pick a date"
-                    buttonClassName="p-2 md:p-2 text-sm h-10 rounded-xl"
-                  />
+            <div className="flex gap-6 border-t border-white/10 pt-4 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+              <div>
+                <div className="text-2xl font-semibold tabular-nums text-white">
+                  {counts.inProgress}
                 </div>
+                <div className="mt-1 text-xs text-[#d4e1c5]/60">scheduled</div>
               </div>
-            )}
+              <div>
+                <div className="text-2xl font-semibold tabular-nums text-white">
+                  {counts.mastered}
+                </div>
+                <div className="mt-1 text-xs text-[#d4e1c5]/60">mastered</div>
+              </div>
+              <div className="min-w-24">
+                <div className="text-sm font-medium text-white">
+                  {nextReview
+                    ? format(nextReview.nextReviewDate.toDate(), "MMM d")
+                    : "—"}
+                </div>
+                <div className="mt-1 text-xs text-[#d4e1c5]/60">next review</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="capture-heading" className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 id="capture-heading" className="text-lg font-semibold">
+                {items.length === 0 ? "Start a learning path" : "Capture a topic"}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Save a useful idea, then revisit it at increasing intervals.
+              </p>
+            </div>
           </div>
 
-          <div className="md:col-span-12 flex justify-end">
-            <button
-              type="submit"
-              disabled={addMutation.isPending || !newTopic.trim()}
-              className="w-full md:w-auto px-12 h-[60px] bg-primary text-primary-foreground rounded-xl font-black text-sm uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
-            >
-              {addMutation.isPending ? "Saving..." : "Start Learning Path"}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* Main Content - Search and Table */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter topics by title or details..."
-              className="w-full h-12 pl-12 pr-4 bg-secondary/30 rounded-xl border border-border/50 focus:ring-2 ring-primary/20 outline-none transition-all"
-            />
-          </div>
-          <div className="text-xs font-bold text-muted-foreground bg-secondary/50 px-4 py-2 rounded-lg border border-border/50 self-end md:self-auto uppercase tracking-wider">
-            {filteredItems.length} of {items.length} Showing
-          </div>
-        </div>
-
-        {/* Filter Tabs / Pills */}
-        <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-border/40">
-          <button
-            onClick={() => setStatusFilter("all")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "all"
-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            All
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                statusFilter === "all"
-                  ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "bg-secondary-foreground/10 text-muted-foreground"
-              }`}
-            >
-              {counts.all}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("due")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "due"
-                ? "bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-500/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <div
-              className={`h-2.5 w-2.5 rounded-full bg-amber-500 ${counts.due > 0 ? "" : ""}`}
-            />
-            Due Now
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                statusFilter === "due"
-                  ? "bg-white/20 text-white"
-                  : "bg-secondary-foreground/10 text-muted-foreground"
-              }`}
-            >
-              {counts.due}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("in-progress")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "in-progress"
-                ? "bg-sky-500 text-white border-sky-500 shadow-lg shadow-sky-500/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
-            In Progress
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                statusFilter === "in-progress"
-                  ? "bg-white/20 text-white"
-                  : "bg-secondary-foreground/10 text-muted-foreground"
-              }`}
-            >
-              {counts.inProgress}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("mastered")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "mastered"
-                ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-            Mastered
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                statusFilter === "mastered"
-                  ? "bg-white/20 text-white"
-                  : "bg-secondary-foreground/10 text-muted-foreground"
-              }`}
-            >
-              {counts.mastered}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setStatusFilter("reminders")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-              statusFilter === "reminders"
-                ? "bg-violet-500 text-white border-violet-500 shadow-lg shadow-violet-500/10"
-                : "bg-secondary/40 text-muted-foreground border-border/40 hover:bg-secondary hover:text-foreground"
-            }`}
-          >
-            <Bell className="h-3 w-3" />
-            Fixed Reminders
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md ${
-                statusFilter === "reminders"
-                  ? "bg-white/20 text-white"
-                  : "bg-secondary-foreground/10 text-muted-foreground"
-              }`}
-            >
-              {counts.reminders}
-            </span>
-          </button>
-        </div>
-
-        {/* The "Propro" Table */}
-        <div className="overflow-hidden rounded-2xl border border-border shadow-md bg-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead>
-                <tr className="bg-secondary/40 border-b border-border">
-                  <th className="p-5 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-r border-border/50">
-                    Topic & Background
-                  </th>
-                  <th className="p-5 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground min-w-[240px] border-r border-border/50">
-                    Learning Path (Milestones)
-                  </th>
-                  <th className="p-5 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground border-r border-border/50">
-                    Next Session
-                  </th>
-                  <th className="p-5 font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground text-right px-8">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredItems.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="p-20 text-center text-muted-foreground font-medium italic"
+          <AnimatePresence initial={false}>
+            {showCreateForm && (
+              <motion.form
+                key="capture-form"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.22, ease: "easeInOut" }}
+                onSubmit={handleAddItem}
+                className="overflow-hidden rounded-2xl border border-border/70 bg-card"
+              >
+                <div className="grid gap-x-5 gap-y-4 p-5 sm:p-6 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="new-topic"
+                      className="text-xs font-semibold text-foreground"
                     >
-                      No items found matching your search.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredItems.map((item) => {
-                    const isDue =
-                      item.nextReviewDate &&
-                      isPast(item.nextReviewDate.toDate());
-                    const isCompleted =
-                      item.reviewCount >= SRS_INTERVALS.length;
+                      Topic <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      id="new-topic"
+                      required
+                      value={newTopic}
+                      onChange={(event) => setNewTopic(event.target.value)}
+                      placeholder="e.g. React Server Components"
+                      className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-shadow placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="new-details"
+                      className="text-xs font-semibold text-foreground"
+                    >
+                      Key takeaway
+                    </label>
+                    <input
+                      id="new-details"
+                      value={newDetails}
+                      onChange={(event) => setNewDetails(event.target.value)}
+                      placeholder="What do you want to remember?"
+                      className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-shadow placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="new-link"
+                      className="text-xs font-semibold text-foreground"
+                    >
+                      Reference link
+                    </label>
+                    <div className="relative">
+                      <LinkIcon
+                        size={15}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <input
+                        id="new-link"
+                        type="url"
+                        value={newLink}
+                        onChange={(event) => setNewLink(event.target.value)}
+                        placeholder="https://..."
+                        className="h-11 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none transition-shadow placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-end justify-between gap-4">
+                    <div className="flex min-h-11 items-center gap-3">
+                      <Switch
+                        checked={hasReminder}
+                        onCheckedChange={setHasReminder}
+                        aria-label="Use a one-time reminder instead of review intervals"
+                      />
+                      <span className="text-sm text-foreground">
+                        One-time reminder
+                      </span>
+                    </div>
+                    {hasReminder && (
+                      <div className="min-w-48 flex-1 sm:max-w-56">
+                        <DatePicker
+                          selected={reminderDate}
+                          onSelect={setReminderDate}
+                          placeholder="Choose a date"
+                          buttonClassName="h-11 rounded-lg px-3 text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col-reverse gap-3 border-t border-border/60 bg-secondary/30 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div
+                    aria-label="Review schedule"
+                    className="flex items-center gap-2 text-xs text-muted-foreground"
+                  >
+                    <span className="mr-1 hidden sm:inline">Review path</span>
+                    {SRS_INTERVALS.map((day, index) => (
+                      <span key={day} className="inline-flex items-center gap-2">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-[#a6cf57]/40 bg-[#a6cf57]/10 font-semibold text-[#5a762c] dark:text-[#d2f078]">
+                          {day}
+                        </span>
+                        <span className="sr-only">Day {day}</span>
+                        {index < SRS_INTERVALS.length - 1 && (
+                          <span className="h-px w-3 bg-border" />
+                        )}
+                      </span>
+                    ))}
+                    <span className="ml-1">days</span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={
+                      addMutation.isPending ||
+                      !newTopic.trim() ||
+                      (hasReminder && !reminderDate)
+                    }
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#243222] px-5 text-sm font-semibold text-[#e8f4ce] transition-colors hover:bg-[#31452c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a6cf57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#d2f078] dark:text-[#19251d] dark:hover:bg-[#c1e65e]"
+                  >
+                    <Plus size={16} />
+                    {addMutation.isPending ? "Saving topic…" : "Save topic"}
+                  </button>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </section>
 
-                    return (
-                      <tr
-                        key={item.id}
-                        className="hover:bg-secondary/10 transition-colors group"
+        <section aria-labelledby="library-heading" className="space-y-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 id="library-heading" className="text-lg font-semibold">
+                Your topics
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {filteredItems.length} of {items.length}{" "}
+                {items.length === 1 ? "topic" : "topics"}
+                {searchQuery ? " · filtered" : ""}
+              </p>
+            </div>
+            <label className="relative block w-full sm:max-w-xs">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Find a topic"
+                aria-label="Search topics"
+                className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-sm outline-none transition-shadow placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+              />
+            </label>
+          </div>
+
+          <div
+            role="group"
+            aria-label="Filter topics by status"
+            className="flex gap-1 overflow-x-auto border-b border-border/70 scrollbar-hide"
+          >
+            {statusFilters.map(({ id, label }) => {
+              const count =
+                id === "all"
+                  ? counts.all
+                  : id === "due"
+                    ? counts.due
+                    : id === "in-progress"
+                      ? counts.inProgress
+                      : id === "mastered"
+                        ? counts.mastered
+                        : counts.reminders;
+              const selected = statusFilter === id;
+
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setStatusFilter(id)}
+                  aria-pressed={selected}
+                  className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#a6cf57] ${
+                    selected
+                      ? "border-[#789a3f] font-semibold text-foreground dark:border-[#d2f078]"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                  <span
+                    className={`min-w-5 rounded px-1 text-center text-[11px] tabular-nums ${
+                      selected
+                        ? "bg-[#e9f4d4] text-[#486b23] dark:bg-lime-300/10 dark:text-lime-200"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {filteredItems.length > 0 ? (
+            <ul className="divide-y divide-border/70 border-y border-border/70">
+              <AnimatePresence initial={false} mode="popLayout">
+                {filteredItems.map((item) => (
+                  <motion.li
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18 }}
+                    className="group py-5 transition-colors hover:bg-secondary/25 sm:px-3"
+                  >
+                    {editingId === item.id ? (
+                      <form
+                        onSubmit={(event) => saveEdit(event, item.id)}
+                        className="grid gap-3 sm:grid-cols-2"
                       >
-                        <td className="p-5 align-top border-r border-border/50">
-                          {editingId === item.id ? (
-                            <div className="flex flex-col gap-3">
-                              <input
-                                autoFocus
-                                type="text"
-                                value={editTopic}
-                                onChange={(e) => setEditTopic(e.target.value)}
-                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-sm font-bold focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all"
-                                placeholder="Topic Title"
-                              />
-                              <textarea
-                                value={editDetails}
-                                onChange={(e) => setEditDetails(e.target.value)}
-                                className="w-full bg-background border border-border/60 rounded-lg px-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all min-h-[60px]"
-                                placeholder="Details..."
-                              />
-                              <div className="relative">
-                                <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/40" />
-                                <input
-                                  type="url"
-                                  value={editLink}
-                                  onChange={(e) => setEditLink(e.target.value)}
-                                  className="w-full bg-background border border-border/60 rounded-lg pl-8 pr-3 py-2 text-xs font-medium focus:border-primary focus:ring-2 ring-primary/10 outline-none transition-all"
-                                  placeholder="https://reference-link.com"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <button
-                                  onClick={() => handleSaveEdit(item.id)}
-                                  disabled={
-                                    updateMutation.isPending ||
-                                    !editTopic.trim()
-                                  }
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-[10px] font-black uppercase tracking-wider hover:brightness-110 disabled:opacity-50"
-                                >
-                                  <Save className="h-3 w-3" /> Save
-                                </button>
-                                <button
-                                  onClick={handleCancelEdit}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-muted-foreground rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                                >
-                                  <X className="h-3 w-3" /> Cancel
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-1 relative group/title">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <div className="font-bold text-lg leading-tight group-hover/title:text-primary transition-colors">
-                                  {item.topic}
-                                  {item.link && (
-                                    <a
-                                      href={item.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 ml-2 align-middle px-1.5 py-0.5 rounded-md bg-primary/8 hover:bg-primary/15 text-primary/70 hover:text-primary transition-all"
-                                      title={item.link}
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <img
-                                        src={`https://www.google.com/s2/favicons?domain=${new URL(item.link).hostname}&sz=16`}
-                                        alt=""
-                                        className="h-3 w-3 rounded-sm"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        <label className="space-y-1.5 text-xs font-medium">
+                          Topic
+                          <input
+                            autoFocus
+                            required
+                            value={editTopic}
+                            onChange={(event) => setEditTopic(event.target.value)}
+                            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+                          />
+                        </label>
+                        <label className="space-y-1.5 text-xs font-medium">
+                          Key takeaway
+                          <input
+                            value={editDetails}
+                            onChange={(event) =>
+                              setEditDetails(event.target.value)
+                            }
+                            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+                          />
+                        </label>
+                        <label className="space-y-1.5 text-xs font-medium sm:col-span-2">
+                          Reference link
+                          <input
+                            type="url"
+                            value={editLink}
+                            onChange={(event) => setEditLink(event.target.value)}
+                            placeholder="https://..."
+                            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#a6cf57]/70"
+                          />
+                        </label>
+                        <div className="flex gap-2 sm:col-span-2">
+                          <button
+                            type="submit"
+                            disabled={updateMutation.isPending || !editTopic.trim()}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg bg-foreground px-3 text-sm font-medium text-background disabled:opacity-50"
+                          >
+                            <Save size={14} />
+                            Save changes
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          >
+                            <X size={14} />
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(13rem,0.78fr)_auto] lg:items-center">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="break-words text-base font-semibold leading-snug">
+                              {item.topic}
+                            </h3>
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${getStatus(item, today).className}`}
+                            >
+                              {item.nextReviewDate && isDue(item, today) && (
+                                <Clock3 size={12} />
+                              )}
+                              {isMastered(item) && <Sparkles size={12} />}
+                              {!item.nextReviewDate && <Bell size={12} />}
+                              {getStatus(item, today).label}
+                            </span>
+                          </div>
+                          {item.details && (
+                            <p className="mt-1.5 max-w-xl whitespace-pre-wrap text-sm leading-5 text-muted-foreground">
+                              {item.details}
+                            </p>
+                          )}
+                          {item.link && (
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-2 inline-flex max-w-full items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                            >
+                              <BookOpen size={13} />
+                              <span className="truncate">
+                                {new URL(item.link).hostname.replace(/^www\./, "")}
+                              </span>
+                              <ExternalLink size={11} />
+                            </a>
+                          )}
+                        </div>
+
+                        <div>
+                          {item.nextReviewDate || isMastered(item) ? (
+                            <ol
+                              aria-label={`Review milestones, ${item.reviewCount} of ${SRS_INTERVALS.length} complete`}
+                              className="grid max-w-[17rem] grid-cols-4"
+                            >
+                              {SRS_INTERVALS.map((day, index) => {
+                                const complete = item.reviewCount > index;
+                                const current = item.reviewCount === index;
+                                return (
+                                  <li
+                                    key={day}
+                                    className="relative flex flex-col items-center gap-1.5"
+                                  >
+                                    {index > 0 && (
+                                      <span
+                                        aria-hidden="true"
+                                        className={`absolute right-1/2 top-3.5 h-px w-full ${
+                                          complete
+                                            ? "bg-[#9fc455]"
+                                            : "bg-border"
+                                        }`}
                                       />
-                                      <span className="text-[10px] font-bold">
-                                        {new URL(item.link).hostname.replace('www.', '')}
-                                      </span>
-                                      <ExternalLink className="h-2.5 w-2.5" />
-                                    </a>
-                                  )}
-                                </div>
-                                {deletingId === item.id ? (
-                                  <div className="flex items-center gap-1.5 animate-in fade-in zoom-in duration-200 bg-destructive/10 border border-destructive/20 rounded-lg px-2 py-0.5 ml-2">
-                                    <span className="text-[9px] font-black text-destructive uppercase tracking-wider">
-                                      Confirm Delete?
-                                    </span>
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteConfirm(item.id)
-                                      }
-                                      disabled={deleteMutation.isPending}
-                                      className="p-0.5 hover:bg-destructive hover:text-white rounded text-destructive transition-colors"
-                                      title="Yes, delete"
-                                    >
-                                      <Check className="h-3 w-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => setDeletingId(null)}
-                                      className="p-0.5 hover:bg-secondary rounded text-muted-foreground transition-colors"
-                                      title="Cancel"
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => handleStartEdit(item)}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded-md text-muted-foreground/50 hover:text-primary transition-colors"
-                                      title="Edit topic"
-                                    >
-                                      <Edit2 className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => setDeletingId(item.id)}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded-md text-muted-foreground/50 hover:text-destructive transition-colors"
-                                      title="Delete topic"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                              {item.details && (
-                                <div className="text-xs text-muted-foreground font-medium max-w-[300px]">
-                                  {item.details}
-                                </div>
-                              )}
-                              {item.reminderDate && (
-                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary mt-1 bg-primary/5 w-fit px-2 py-0.5 rounded-full border border-primary/10">
-                                  <Bell className="h-2.5 w-2.5" />
-                                  Reminder:{" "}
-                                  {format(
-                                    item.reminderDate.toDate(),
-                                    "MMM d, yyyy",
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-5 align-top border-r border-border/50">
-                          {item.nextReviewDate ? (
-                            <div className="flex flex-col gap-3">
-                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                Started{" "}
-                                {item.dateLearned
-                                  ? format(item.dateLearned.toDate(), "MMM d")
-                                  : "---"}
-                              </div>
-
-                              {/* The Circle Progression UI */}
-                              <div className="flex items-center gap-4">
-                                {SRS_INTERVALS.map(
-                                  (day: number, idx: number) => {
-                                    const isDone = item.reviewCount > idx;
-                                    const isCurrent = item.reviewCount === idx;
-
-                                    return (
-                                      <div
-                                        key={day}
-                                        className="flex flex-col items-center gap-2"
-                                      >
-                                        <span
-                                          className={`text-[10px] font-black ${isCurrent && isDue ? "text-amber-500" : isDone ? "text-primary" : "text-muted-foreground/40"}`}
-                                        >
-                                          {day}
-                                          {day === 1
-                                            ? "st"
-                                            : day === 3
-                                              ? "rd"
-                                              : day === 7
-                                                ? "th"
-                                                : "th"}
-                                        </span>
-                                        <div
-                                          className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition-all ${
-                                            isDone
-                                              ? "bg-primary border-primary shadow-lg shadow-primary/20"
-                                              : isCurrent && isDue
-                                                ? "border-amber-500 bg-amber-500/5"
-                                                : "border-border/60 bg-secondary/20"
-                                          }`}
-                                        >
-                                          {isDone && (
-                                            <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
-                                          )}
-                                          {isCurrent && !isDone && (
-                                            <div
-                                              className={`h-2 w-2 rounded-full ${isDue ? "bg-amber-500" : "bg-primary/40"}`}
-                                            />
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  },
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-full py-2 bg-secondary/20 rounded-xl border border-dashed border-border/50">
-                              <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">
-                                No intervals
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-5 align-top border-r border-border/50">
-                          {item.nextReviewDate ? (
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between min-w-[120px]">
-                                {isCompleted ? (
-                                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-                                    <Sparkles className="h-3 w-3" />
-                                    Mastered
-                                  </div>
-                                ) : (
-                                  <div
-                                    className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${isDue ? "text-amber-600" : "text-primary/60"}`}
-                                  >
-                                    {isDue ? (
-                                      <>
-                                        <Clock className="h-3 w-3" />
-                                        Due Now
-                                      </>
-                                    ) : (
-                                      <>
-                                        <History className="h-3 w-3" />
-                                        Scheduled
-                                      </>
                                     )}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="text-xs font-black text-muted-foreground">
-                                {isCompleted
-                                  ? "Goal achieved"
-                                  : item.nextReviewDate
-                                    ? format(
-                                        item.nextReviewDate.toDate(),
-                                        "MMM d, h:mm a",
-                                      )
-                                    : "---"}
-                              </div>
-                            </div>
+                                    <span
+                                      aria-label={`Day ${day}${complete ? ", complete" : current ? ", next" : ""}`}
+                                      className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-semibold tabular-nums ${
+                                        complete
+                                          ? "border-[#789a3f] bg-[#789a3f] text-white"
+                                          : current
+                                            ? "border-[#789a3f] bg-background text-[#5a762c] ring-2 ring-[#a6cf57]/20 dark:text-[#d2f078]"
+                                            : "border-border bg-background text-muted-foreground"
+                                      }`}
+                                    >
+                                      {complete ? <Check size={13} /> : day}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Day {day}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ol>
                           ) : (
-                            <div className="flex flex-col gap-1.5">
-                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary/60">
-                                <Bell className="h-3 w-3" />
-                                One-off Alert
-                              </div>
-                              <div className="text-xs font-black text-muted-foreground italic">
-                                SRS cycle disabled
-                              </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Bell size={14} />
+                              {item.reminderDate
+                                ? `Reminder · ${format(item.reminderDate.toDate(), "MMM d, yyyy")}`
+                                : "One-time reminder"}
                             </div>
                           )}
-                        </td>
-                        <td className="p-5 align-top text-right px-8">
-                          {item.nextReviewDate && !isCompleted && (
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                          {item.nextReviewDate && !isMastered(item) && (
                             <>
-                              {isDue ? (
-                                <div className="flex items-center justify-end gap-2 flex-wrap">
-                                  <button
-                                    onClick={() => handleReviewForgot(item)}
-                                    disabled={updateMutation.isPending}
-                                    className="flex items-center justify-center gap-1.5 px-3 py-2 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive hover:text-white transition-all text-xs font-black uppercase tracking-widest active:scale-95 disabled:opacity-50"
-                                    title="Forgot this topic? Reset the SRS path to Day 1."
-                                  >
-                                    <RefreshCw className="h-3.5 w-3.5" />
-                                    Forgot
-                                  </button>
-                                  <button
-                                    onClick={() => handleReviewSuccess(item)}
-                                    disabled={updateMutation.isPending}
-                                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-xl hover:scale-105 active:scale-95 transition-all text-xs font-black uppercase tracking-widest disabled:opacity-50"
-                                    title="Remembered this topic! Advance to next milestone."
-                                  >
-                                    <Check className="h-3.5 w-3.5" />
-                                    Got it!
-                                  </button>
-                                </div>
-                              ) : (
+                              {isDue(item, today) && (
                                 <button
-                                  onClick={() => handleReviewSuccess(item)}
+                                  type="button"
+                                  onClick={() => handleReview(item, false)}
                                   disabled={updateMutation.isPending}
-                                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-secondary text-muted-foreground opacity-40 hover:opacity-100 hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
-                                  title="Manually advance to the next interval"
+                                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                                  title="Reset this topic to the first review"
                                 >
-                                  Mark Step
+                                  <RotateCcw size={13} />
+                                  Forgot
                                 </button>
                               )}
+                              <button
+                                type="button"
+                                onClick={() => handleReview(item, true)}
+                                disabled={updateMutation.isPending}
+                                className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a6cf57] disabled:opacity-50 ${
+                                  isDue(item, today)
+                                    ? "bg-[#243222] text-[#e8f4ce] hover:bg-[#31452c] dark:bg-[#d2f078] dark:text-[#19251d]"
+                                    : "border border-border bg-background text-foreground hover:bg-secondary"
+                                }`}
+                              >
+                                <CheckCircle2 size={14} />
+                                {isDue(item, today) ? "Remembered" : "Mark reviewed"}
+                              </button>
                             </>
                           )}
-                          {!item.nextReviewDate && (
-                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl text-[10px] font-black text-muted-foreground/30 uppercase tracking-widest">
-                              Fixed reminder
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+                          <div className="ml-auto flex items-center gap-1 lg:ml-1">
+                            {deletingId === item.id ? (
+                              <>
+                                <span className="mr-1 text-xs text-destructive">
+                                  Delete?
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => confirmDelete(item.id)}
+                                  disabled={deleteMutation.isPending}
+                                  aria-label={`Confirm delete ${item.topic}`}
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                                >
+                                  <Check size={15} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingId(null)}
+                                  aria-label="Cancel delete"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
+                                >
+                                  <X size={15} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditing(item)}
+                                  aria-label={`Edit ${item.topic}`}
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-100 transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                                >
+                                  <Save size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingId(item.id)}
+                                  aria-label={`Delete ${item.topic}`}
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground opacity-100 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
 
-    </div>
+                        {item.nextReviewDate && (
+                          <p className="text-xs text-muted-foreground lg:col-start-3 lg:row-start-2 lg:text-right">
+                            {isMastered(item)
+                              ? "All review milestones complete"
+                              : `Next · ${format(item.nextReviewDate.toDate(), "EEE, MMM d")}`}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          ) : (
+            <div className="flex flex-col items-center border-y border-border/70 px-5 py-14 text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#edf4df] text-[#607e35] dark:bg-lime-300/10 dark:text-lime-200">
+                {items.length === 0 ? (
+                  <BookOpen size={20} />
+                ) : (
+                  <Search size={20} />
+                )}
+              </div>
+              <h3 className="font-semibold">
+                {items.length === 0
+                  ? "Your review list is ready to begin"
+                  : "No topics match this view"}
+              </h3>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                {items.length === 0
+                  ? "Add a topic above and it will appear here with its first review scheduled for tomorrow."
+                  : searchQuery
+                    ? "Try a different search, or clear the filter to see all topics."
+                    : "Choose another status filter to see more of your topics."}
+              </p>
+              {items.length > 0 && searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-4 text-sm font-medium text-foreground underline underline-offset-4"
+                >
+                  Clear search
+                </button>
+              )}
+              {items.length > 0 && statusFilter !== "all" && !searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter("all")}
+                  className="mt-4 text-sm font-medium text-foreground underline underline-offset-4"
+                >
+                  Show all topics
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+      </motion.div>
+    </MotionConfig>
   );
 }

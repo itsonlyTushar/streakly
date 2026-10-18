@@ -2,11 +2,8 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { Sidebar } from "@/components/layout/sidebar";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { AddGoalModal } from "@/components/goals/add-goal-modal";
+import { useState } from "react";
 import { Logo } from "@/components/ui/logo";
-import { ChatFAB } from "@/components/ai-assistant/chat-fab";
 import { Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
@@ -15,19 +12,8 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const { loading } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
-  // Listen to open-add-goal-modal custom event to trigger opening of the modal
-  useEffect(() => {
-    const handleOpen = () => setIsAddModalOpen(true);
-    window.addEventListener("open-add-goal-modal", handleOpen);
-    return () => {
-      window.removeEventListener("open-add-goal-modal", handleOpen);
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -68,11 +54,6 @@ export default function AppLayout({
         </main>
       </div>
 
-      <ChatFAB />
-      <AddGoalModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useAuth } from "@/components/auth-provider";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Logo } from "@/components/ui/logo";
-import { LogIn, Target, Brain, Code, Cpu, Trophy, ArrowRight, Zap, ChevronRight, Calendar, Wand2, Bot, ListTodo, Layers, Play } from "lucide-react";
+import { LogIn, Brain, Code, Cpu, ArrowRight, Zap, ChevronRight, Calendar, Wand2, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -102,8 +102,8 @@ export default function Home() {
             variants={fadeUp}
             className="mx-auto mt-7 max-w-md text-base md:text-lg text-muted-foreground leading-relaxed"
           >
-            Track goals, study smarter, and prep for interviews — one clean
-            workspace, built for developers.
+            Study smarter and build coding skills in one focused workspace
+            built for developers.
           </motion.p>
 
           <motion.div
@@ -139,15 +139,11 @@ export default function Home() {
             className="mt-10 flex flex-wrap items-center justify-center gap-2"
           >
             {[
-              "Goal streaks",
               "Spaced repetition",
-              "Interactive Flashcards",
               "DSA tracker",
               "Machine coding",
               "Revision calendar",
               "AI code wizard",
-              "AI mock interviews",
-              "Smart checklists",
             ].map((f) => (
               <span
                 key={f}
@@ -208,40 +204,16 @@ export default function Home() {
             {/* Regular cards */}
             {[
               {
-                icon: <Layers className="h-5 w-5" />,
-                label: "Flashcards",
-                title: "Interactive Decks",
-                desc: "Study concepts with 3D flip flashcards, smart SRS intervals (Again, Hard, Good, Easy), and deck organization.",
-              },
-              {
                 icon: <Calendar className="h-5 w-5" />,
                 label: "Calendar",
                 title: "Revision Calendar",
-                desc: "Visualize your upcoming SRS reviews, DSA problems, and daily tasks in a unified monthly view.",
-              },
-              {
-                icon: <Target className="h-5 w-5" />,
-                label: "Goals",
-                title: "Goal Tracking & Archive",
-                desc: "Set timed goals with a daily log, and archive them in the Hall of Fame upon completion.",
+                desc: "Visualize your upcoming SRS reviews, DSA problems, and machine-coding practice in a unified monthly view.",
               },
               {
                 icon: <Wand2 className="h-5 w-5" />,
                 label: "Wizard",
                 title: "AI Code Explainer",
                 desc: "Let AI explain complex code blocks, suggest optimizations, and document your learnings.",
-              },
-              {
-                icon: <Bot className="h-5 w-5" />,
-                label: "Interviews",
-                title: "Mock Interview (Beta)",
-                desc: "Pre-empt actual technical rounds by chatting with a dedicated AI mock interviewer.",
-              },
-              {
-                icon: <ListTodo className="h-5 w-5" />,
-                label: "Tasks",
-                title: "Smart Task Lists",
-                desc: "Create daily check-lists and convert your completed tasks into active Spaced Repetition cards.",
               },
               {
                 icon: <Code className="h-5 w-5" />,
@@ -309,7 +281,7 @@ export default function Home() {
               <div className="pt-2 flex flex-col gap-2.5">
                 {[
                   "Optimized review intervals (1d, 3d, 7d, 14d, 30d)",
-                  "Interactive 3D flashcards with customizable decks",
+                  "Schedule reviews for study topics and concepts",
                   "Automated daily revision reminders",
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center gap-2 text-xs md:text-sm font-medium text-foreground">

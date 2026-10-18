@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import {
   User,
@@ -20,16 +21,23 @@ import {
   EyeOff,
   LogOut,
   Code,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/components/ui/toast";
 import { Switch } from "@/components/ui/switch";
 import { useSound } from "@/components/sound-provider";
 import Link from "next/link";
+import {
+  clearAppBrowserData,
+  resetUserData,
+} from "@/services/user-data-reset.service";
 
 export default function ProfilePage() {
   const { user, loginWithGoogle, logout } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: profile, isLoading } = useProfile();
   const updateMutation = useUpdateProfile();
 
@@ -81,6 +89,9 @@ export default function ProfilePage() {
   const [newLeetcodeCsrf, setNewLeetcodeCsrf] = useState("");
   const [showSession, setShowSession] = useState(false);
   const [showCsrf, setShowCsrf] = useState(false);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [resetConfirmationText, setResetConfirmationText] = useState("");
+  const [isResettingData, setIsResettingData] = useState(false);
 
   // LeetCode Stats states
   const [leetcodeStats, setLeetcodeStats] = useState<any>(null);
@@ -141,6 +152,55 @@ export default function ProfilePage() {
         });
       }
     });
+  };
+
+  const handleResetAllData = async () => {
+    if (!user || resetConfirmationText !== "DELETE") return;
+
+    let cloudResetComplete = false;
+    setIsResettingData(true);
+
+    try {
+      await queryClient.cancelQueries();
+      await resetUserData(user.uid);
+      cloudResetComplete = true;
+      queryClient.clear();
+
+      setNewBio("");
+      setNewLeetcode("");
+      setNewLeetcodeSession("");
+      setNewLeetcodeCsrf("");
+      setLeetcodeStats(null);
+      setGeminiApiKey("");
+      setIsKeySaved(false);
+      setSoundEnabled(true);
+      clearAppBrowserData();
+
+      setShowResetConfirmation(false);
+      setResetConfirmationText("");
+      toast({
+        title: "All data reset",
+        description:
+          "Your Streakly data and saved browser settings were deleted. Your sign-in account is unchanged.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Failed to reset account data", error);
+      if (!cloudResetComplete) {
+        queryClient.clear();
+      }
+      toast({
+        title: cloudResetComplete
+          ? "Browser data cleanup incomplete"
+          : "Data reset incomplete",
+        description: cloudResetComplete
+          ? "Your cloud data was deleted, but some saved browser data may remain. Please retry the reset."
+          : "Some cloud records may already have been deleted. Browser data was retained; please retry the reset.",
+        variant: "error",
+      });
+    } finally {
+      setIsResettingData(false);
+    }
   };
 
 
@@ -593,6 +653,71 @@ export default function ProfilePage() {
             </div>
           </Link>
         </div>
+
+        <section className="rounded-3xl border border-destructive/30 bg-destructive/5 p-6 space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-destructive/10 p-3 text-destructive">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h3 className="font-bold text-destructive">Reset all data</h3>
+              <p className="text-sm text-muted-foreground">
+                Permanently delete your Streakly records, profile settings, and
+                saved app data in this browser. Your sign-in account will stay
+                active.
+              </p>
+            </div>
+          </div>
+
+          {!showResetConfirmation ? (
+            <button
+              type="button"
+              onClick={() => setShowResetConfirmation(true)}
+              className="rounded-xl border border-destructive/30 px-4 py-2.5 text-sm font-bold text-destructive transition-colors hover:bg-destructive/10"
+            >
+              Reset all data
+            </button>
+          ) : (
+            <div className="space-y-3 rounded-2xl border border-destructive/20 bg-background/70 p-4">
+              <p className="text-sm font-semibold text-foreground">
+                This cannot be undone. Type <span className="font-mono">DELETE</span> to confirm.
+              </p>
+              <input
+                type="text"
+                value={resetConfirmationText}
+                onChange={(event) => setResetConfirmationText(event.target.value)}
+                placeholder="Type DELETE"
+                aria-label="Type DELETE to confirm resetting all data"
+                autoComplete="off"
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-destructive"
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetConfirmation(false);
+                    setResetConfirmationText("");
+                  }}
+                  disabled={isResettingData}
+                  className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-secondary disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetAllData}
+                  disabled={isResettingData || resetConfirmationText !== "DELETE"}
+                  className="inline-flex items-center gap-2 rounded-xl bg-destructive px-4 py-2.5 text-sm font-bold text-destructive-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isResettingData && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  {isResettingData ? "Deleting data..." : "Permanently delete data"}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
 
         <button
           onClick={logout}

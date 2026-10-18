@@ -21,7 +21,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Streakly",
-  description: "Minimalist goal tracker and revision system.",
+  description: "A focused workspace for spaced repetition and coding practice.",
   metadataBase: new URL("https://streakly.online"),
   icons: {
     icon: "/favicon.ico",
@@ -33,7 +33,6 @@ export const metadata: Metadata = {
 import { ToastProvider } from "@/components/ui/toast";
 import { SoundProvider } from "@/components/sound-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
-import { SrsPromptProvider } from "@/components/tasks/srs-prompt-provider";
 import NextTopLoader from "nextjs-toploader";
 
 export default function RootLayout({
@@ -57,9 +56,7 @@ export default function RootLayout({
             <ToastProvider>
               <AuthProvider>
                 <AuthGuardProvider>
-                  <SrsPromptProvider>
-                    <SoundProvider>{children}</SoundProvider>
-                  </SrsPromptProvider>
+                  <SoundProvider>{children}</SoundProvider>
                   <Analytics />
                 </AuthGuardProvider>
               </AuthProvider>

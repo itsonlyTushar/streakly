@@ -28,6 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    try {
+      const retiredHistoryPrefix = "streakly:ai_assistant:history:";
+      for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+        const key = localStorage.key(index);
+        if (key?.startsWith(retiredHistoryPrefix)) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to clear retired AI Coach history", error);
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -45,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Logged in successfully",
         variant: "success",
       });
-      router.push("/app");
+      router.push("/srs");
     } catch (error: any) {
       console.error("Error logging in with Google", error);
       toast({

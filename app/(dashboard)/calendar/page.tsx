@@ -3,7 +3,7 @@
 import { RevisionCalendar } from "@/components/srs/revision-calendar";
 import { RevisionHeatmap } from "@/components/srs/revision-heatmap";
 import { ConsolidatedList } from "@/components/consolidated-list";
-import { CalendarDays, Sparkles } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 export default function CalendarPage() {
   return (
@@ -25,7 +25,7 @@ export default function CalendarPage() {
             Revision Calendar
           </h1>
           <p className="text-muted-foreground font-medium text-sm md:text-base max-w-md leading-relaxed">
-            Visualize active retention paths, scheduled SRS reviews, DSA problems, and daily tasks in one unified glass view.
+            Visualize scheduled SRS reviews, DSA problems, and machine-coding practice in one unified view.
           </p>
         </div>
       </header>
@@ -36,7 +36,7 @@ export default function CalendarPage() {
       {/* Learning & Revision Heatmap */}
       <RevisionHeatmap />
 
-      {/* Consolidated Top 5 — Tasks + SRS + DSA + Machine Coding */}
+      {/* Consolidated Top 5 — SRS + DSA + Machine Coding */}
       <ConsolidatedList />
     </div>
   );

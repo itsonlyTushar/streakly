@@ -13,13 +13,21 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Goals collection rules
+    // Allow users to remove data from retired modules from Settings.
     match /goals/{goalId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId) 
-                    && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt']));
-      allow delete: if false; // Goals are permanent as per README
+      allow read, delete: if isOwner(resource.data.userId);
+    }
+
+    match /tasks/{taskId} {
+      allow read, delete: if isOwner(resource.data.userId);
+    }
+
+    match /taskProjects/{projectId} {
+      allow read, delete: if isOwner(resource.data.userId);
+    }
+
+    match /flashcards/{cardId} {
+      allow read, delete: if isOwner(resource.data.userId);
     }
 
     // Notes collection rules
@@ -53,30 +61,6 @@ service cloud.firestore {
 
     // Machine Coding collection rules
     match /machineCoding/{entryId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Tasks collection rules
-    match /tasks/{taskId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Task Projects (lists) collection rules
-    match /taskProjects/{projectId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Flashcards collection rules
-    match /flashcards/{cardId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
       allow update: if isOwner(resource.data.userId);

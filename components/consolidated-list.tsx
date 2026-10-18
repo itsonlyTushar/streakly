@@ -6,7 +6,6 @@ import {
   Circle,
   Brain,
   Code,
-  ListTodo,
   Sparkles,
   ChevronDown,
   ChevronUp,
@@ -19,19 +18,16 @@ import { cn } from "@/lib/utils";
 import { useAuthGuard } from "@/components/auth-guard";
 import { useToast } from "@/components/ui/toast";
 
-import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
-import { useSRSItems, useUpdateSRSItem, useAddSRSItem } from "@/hooks/use-srs";
+import { useSRSItems, useUpdateSRSItem } from "@/hooks/use-srs";
 import { useDSAItems, useUpdateDSAItem } from "@/hooks/use-dsa";
 import { useMachineCodingItems } from "@/hooks/use-machine-coding";
-import { useSrsPrompt } from "@/components/tasks/srs-prompt-provider";
 
-import { PRIORITY_META } from "@/components/tasks/task-ui";
-import { calculateNextReviewDate, getInitialReviewDate } from "@/lib/srs-utils";
+import { calculateNextReviewDate } from "@/lib/srs-utils";
 
 // ---------------------------------------------------------------------------
 // Unified item type used by the consolidated list
 // ---------------------------------------------------------------------------
-type ConsolidatedSource = "task" | "srs" | "dsa" | "machine-coding";
+type ConsolidatedSource = "srs" | "dsa" | "machine-coding";
 
 interface ConsolidatedItem {
   id: string;
@@ -40,7 +36,6 @@ interface ConsolidatedItem {
   subtitle?: string;
   urgency: number; // lower = more urgent
   isOverdue: boolean;
-  isDueToday: boolean;
   raw: any;
 }
 
@@ -58,15 +53,6 @@ const SOURCE_META: Record<
     ring: string;
   }
 > = {
-  task: {
-    label: "Task",
-    icon: ListTodo,
-    badge:
-      "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-    check: "text-violet-500",
-    glow: "shadow-violet-500/20",
-    ring: "ring-violet-500/30",
-  },
   srs: {
     label: "SRS",
     icon: Brain,
@@ -101,17 +87,13 @@ const SOURCE_META: Record<
 // ---------------------------------------------------------------------------
 
 export function ConsolidatedList() {
-  const { data: tasks = [], isLoading: isTasksLoading } = useTasks();
   const { data: srsItems = [], isLoading: isSrsLoading } = useSRSItems();
   const { data: dsaItems = [], isLoading: isDsaLoading } = useDSAItems();
   const { data: mcItems = [], isLoading: isMcLoading } =
     useMachineCodingItems();
 
-  const updateTask = useUpdateTask();
   const updateSrs = useUpdateSRSItem();
   const updateDsa = useUpdateDSAItem();
-  const addSrsItem = useAddSRSItem();
-  const { promptSrs } = useSrsPrompt();
   const { requireAuth } = useAuthGuard();
   const { toast } = useToast();
 
@@ -122,41 +104,6 @@ export function ConsolidatedList() {
   // Build the unified top-5 list
   const items = useMemo<ConsolidatedItem[]>(() => {
     const all: ConsolidatedItem[] = [];
-    const today = startOfDay(new Date());
-
-    // ----- Tasks (not done) -----
-    tasks
-      .filter((t) => t.status !== "Done")
-      .forEach((t) => {
-        const due = t.dueDate?.toDate?.() as Date | undefined;
-        const overdue = due ? isPast(startOfDay(due)) && !isToday(due) : false;
-        const dueToday = due ? isToday(due) : false;
-
-        // Urgency: overdue > due today > priority rank > no due date
-        const priorityRank = PRIORITY_META[t.priority]?.rank ?? 4;
-        let urgency = 100 + priorityRank;
-        if (overdue) urgency = 0;
-        else if (dueToday) urgency = 10 + priorityRank;
-
-        all.push({
-          id: t.id,
-          source: "task",
-          title: t.title,
-          subtitle: due
-            ? overdue
-              ? `Overdue · ${format(due, "MMM d")}`
-              : dueToday
-              ? "Due today"
-              : `Due ${format(due, "MMM d")}`
-            : t.priority !== "None"
-            ? t.priority
-            : undefined,
-          urgency,
-          isOverdue: overdue,
-          isDueToday: dueToday,
-          raw: t,
-        });
-      });
 
     // ----- SRS (due today or overdue) -----
     srsItems.forEach((item) => {
@@ -176,7 +123,6 @@ export function ConsolidatedList() {
           : "Review today",
         urgency: overdue ? 1 : 11,
         isOverdue: overdue,
-        isDueToday: dueToday,
         raw: item,
       });
     });
@@ -199,7 +145,6 @@ export function ConsolidatedList() {
           : "Review today",
         urgency: overdue ? 2 : 12,
         isOverdue: overdue,
-        isDueToday: dueToday,
         raw: item,
       });
     });
@@ -215,7 +160,6 @@ export function ConsolidatedList() {
         subtitle: item.language,
         urgency: 200 + idx, // lowest priority — they're for practice
         isOverdue: false,
-        isDueToday: false,
         raw: item,
       });
     });
@@ -223,55 +167,16 @@ export function ConsolidatedList() {
     // Sort by urgency, take top 5
     all.sort((a, b) => a.urgency - b.urgency);
     return all.slice(0, 5);
-  }, [tasks, srsItems, dsaItems, mcItems]);
+  }, [srsItems, dsaItems, mcItems]);
 
   // ----- Handlers -----
   const handleComplete = (item: ConsolidatedItem) => {
     if (completedIds.has(item.id)) return;
 
     requireAuth(() => {
-      if (item.source !== "task") {
-        setCompletedIds((prev) => new Set(prev).add(item.id));
-      }
+      setCompletedIds((prev) => new Set(prev).add(item.id));
 
       switch (item.source) {
-        case "task": {
-          const task = item.raw;
-          promptSrs(
-            task,
-            () => {
-              setCompletedIds((prev) => new Set(prev).add(item.id));
-              updateTask.mutate({
-                itemId: item.id,
-                data: { status: "Done" },
-              });
-              addSrsItem.mutate({
-                topic: task.title,
-                details: task.description || "",
-                nextReviewDate: getInitialReviewDate(),
-              });
-              toast({
-                title: "Task completed!",
-                description: "Nice work — added to SRS.",
-                variant: "success",
-              });
-            },
-            () => {
-              setCompletedIds((prev) => new Set(prev).add(item.id));
-              updateTask.mutate({
-                itemId: item.id,
-                data: { status: "Done" },
-              });
-              toast({
-                title: "Task completed!",
-                description: "Nice work — one less thing to do.",
-                variant: "success",
-              });
-            }
-          );
-          break;
-        }
-
         case "srs": {
           const srs = item.raw;
           const nextReviewCount = srs.reviewCount + 1;
@@ -339,7 +244,7 @@ export function ConsolidatedList() {
   };
 
   // ----- Loading -----
-  const isLoading = isTasksLoading || isSrsLoading || isDsaLoading || isMcLoading;
+  const isLoading = isSrsLoading || isDsaLoading || isMcLoading;
 
   if (isLoading) {
     return (
